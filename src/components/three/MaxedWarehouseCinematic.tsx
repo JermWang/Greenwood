@@ -43,11 +43,10 @@ const POSITIONS: [number, number, number][] = [
 /**
  * Seconds for one full lap of the camera path.
  *
- * This doubles as the b-roll loop length: scripts/build-cinematic-broll.mjs turns a
- * recording of this page into the blurred backdrop behind the app. At the original
- * 18s the camera crossed roughly a sixth of the warehouse between captured frames,
- * which strobed behind the UI, so the build script has to interpolate the capture
- * back to this pace. Re-record at this speed and that interpolation can drop away.
+ * Slow enough that a recording of this page yields usable stills, which is what
+ * scripts/build-cinematic-stills.mjs cuts the blurred app backdrop from. At the
+ * original 18s the camera crossed roughly a sixth of the warehouse between captured
+ * frames, leaving them smeared and too far apart to pick a clean set out of.
  */
 const LOOP_SECONDS = 54;
 

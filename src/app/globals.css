@@ -76,14 +76,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* Ambient GPU fab b-roll for non-immersive game screens. */
 .gpu-cinematic-broll { position: fixed; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; background: #050b17; }
 .gpu-cinematic-broll img { position: absolute; inset: -3%; width: 106%; height: 106%; object-fit: cover; filter: blur(5px) saturate(.82) contrast(1.06); opacity: .72; }
-.gpu-broll-poster { display: none; }
+/* Backdrop stills cross-fade while drifting. Both animations share one 75s cycle:
+   five stills, each held ~15s with a ~4s dissolve, so one fades out exactly as the
+   next fades in. Peak opacity matches the .72 the single backdrop image used, and
+   the pan is a compositor transform so it stays smooth however slow it runs. */
+.gpu-broll-still { animation: gpu-broll-fade 75s linear infinite, gpu-broll-pan 75s ease-in-out infinite; will-change: transform, opacity; }
+.gpu-broll-still:nth-child(even) { animation-name: gpu-broll-fade, gpu-broll-pan-alt; }
+@keyframes gpu-broll-fade { 0% { opacity: 0 } 5% { opacity: .72 } 20% { opacity: .72 } 25% { opacity: 0 } 100% { opacity: 0 } }
+@keyframes gpu-broll-pan { 0% { transform: scale(1.05) translate3d(-1.5%, -1%, 0) } 25%, 100% { transform: scale(1.16) translate3d(1.5%, 1%, 0) } }
+@keyframes gpu-broll-pan-alt { 0% { transform: scale(1.16) translate3d(1.5%, -1%, 0) } 25%, 100% { transform: scale(1.05) translate3d(-1.5%, 1%, 0) } }
 .gpu-broll-grade { position: absolute; inset: 0; background: radial-gradient(circle at 55% 34%, transparent 0 20%, rgba(3, 9, 21, .12) 48%, rgba(3, 8, 18, .67) 100%), linear-gradient(118deg, rgba(3, 10, 22, .76), rgba(5, 17, 34, .3) 48%, rgba(5, 10, 25, .68)); }
 .gpu-broll-grain { position: absolute; inset: 0; opacity: .08; mix-blend-mode: soft-light; background-image: repeating-linear-gradient(0deg, transparent 0 2px, rgba(202, 234, 255, .15) 3px), radial-gradient(circle at 25% 20%, rgba(183, 255, 74, .16), transparent 22%); background-size: auto, 100% 100%; }
 .gpu-cinematic-broll.is-exchange .gpu-broll-grade { background: linear-gradient(120deg, rgba(2, 9, 21, .76), rgba(22, 14, 41, .38), rgba(2, 11, 25, .7)); }
 .gpu-cinematic-broll.is-treasury .gpu-broll-grade { background: linear-gradient(120deg, rgba(2, 9, 21, .76), rgba(8, 33, 31, .37), rgba(2, 11, 25, .7)); }
 .gpu-cinematic-broll.is-telemetry .gpu-broll-grade { background: radial-gradient(circle at 70% 30%, rgba(91, 108, 255, .16), transparent 34%), linear-gradient(120deg, rgba(2, 9, 21, .93), rgba(3, 14, 30, .67)); }
 .gpu-cinematic-broll.is-inventory .gpu-broll-grade { background: linear-gradient(120deg, rgba(3, 9, 20, .91), rgba(17, 24, 45, .53), rgba(3, 9, 20, .89)); }
-@media(prefers-reduced-motion:reduce){.gpu-broll-motion{display:none}.gpu-broll-poster{display:block}}
+@media(prefers-reduced-motion:reduce){.gpu-broll-still{animation:none;opacity:0;transform:scale(1.06)}.gpu-broll-still:first-child{opacity:.72}}
 
 .fab-topbar {
   position: sticky;
