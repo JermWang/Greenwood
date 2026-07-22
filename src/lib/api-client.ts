@@ -101,6 +101,12 @@ export interface ProtocolOverview {
     nextRatePerSec: number;
     cycleProgress: number;
   };
+  totalEmitted: number;
+  /** Depth of the reserve at today's draw, not a solvency countdown. */
+  reserveDaysAtCurrentRate: number;
+  contracts: { open: number; lockedPrincipal: number; committedInterest: number };
+  mirroredBalances: number;
+  activeOperators: number;
 }
 
 
@@ -356,6 +362,50 @@ export interface FloorBonus {
   effects: FloorEffect[];
 }
 
+export interface StakePosition {
+  id: number;
+  principal: number;
+  termDays: number;
+  aprBps: number;
+  openedAt: number;
+  maturesAt: number;
+  status: 'active' | 'closed';
+  termInterest: number;
+  accruedInterest: number;
+  matured: boolean;
+  closeValueNow: number;
+  earlyExitPenalty: number;
+  closedAt: number | null;
+  paidPrincipal: number | null;
+  paidInterest: number | null;
+  penalty: number | null;
+}
+
+export interface StakeTotals {
+  openContracts: number;
+  lockedPrincipal: number;
+  accruedInterest: number;
+  maturityValue: number;
+}
+
+export interface StakeRates {
+  terms: Array<{ days: number; aprBps: number; label: string; maxPrincipal: number }>;
+  minPrincipal: number;
+  maxOpen: number;
+  earlyExitPenaltyBps: number;
+  reserveBalance: number;
+  committedInterest: number;
+  uncommittedReserve: number;
+}
+
+export interface StakeCloseResult {
+  principal: number;
+  interest: number;
+  penalty: number;
+  payout: number;
+  matured: boolean;
+}
+
 export const api = {
   privySession: (wallet: string) =>
     request<{ authenticated: boolean; userId: string; wallet: string; walletType: string }>(
@@ -386,6 +436,26 @@ export const api = {
     ),
   compound: (wallet: string) => request<CompoundInfo>(`/compound/${wallet}`),
   inventory: (wallet: string) => request<{ items: InventoryItem[] }>(`/user/${wallet}/inventory`),
+  stakeTerms: () => request<StakeRates>('/stake/terms'),
+  stakes: (wallet: string) =>
+    request<{ positions: StakePosition[]; totals: StakeTotals; rates: StakeRates }>(
+      `/stake/${wallet}`
+    ),
+  // Opening locks GPU away, so it is a spend and goes through the same
+  // quote/pay/settle lifecycle as every other priced action.
+  openStake: (wallet: string, amount: number, termDays: number, onStep?: StepHandler) =>
+    runAction<{ position: StakePosition; positions: StakePosition[]; totals: StakeTotals }>(
+      '/stake/open',
+      wallet,
+      { amount, termDays },
+      onStep
+    ),
+  // Closing pays out, so there is nothing for the operator to sign — one call.
+  closeStake: (wallet: string, stakeId: number) =>
+    request<{ result: StakeCloseResult; positions: StakePosition[]; totals: StakeTotals; txHash?: string }>(
+      '/stake/close',
+      { method: 'POST', body: JSON.stringify({ wallet, stakeId }) }
+    ),
   floor: (wallet: string) =>
     request<{ layout: FloorMachine[]; bonus: FloorBonus; kinds: Record<string, string> }>(
       `/floor/${wallet}`

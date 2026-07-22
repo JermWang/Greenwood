@@ -153,6 +153,52 @@ export const SPLIT_BURN_BPS = 5000;
 export const SPLIT_RESERVE_BPS = 3000;
 export const SPLIT_TREASURY_BPS = 2000;
 
+// ---------------------------------------------------------------------------
+// Fab Capacity Contracts — the staking vault
+// ---------------------------------------------------------------------------
+
+/**
+ * Lock GPU for a fixed term and be paid a published rate out of the emission
+ * reserve. The rates rise faster than the term does — 180 days pays more than
+ * six times the 30-day rate — because the point of the instrument is to take
+ * float out of circulation for long enough to matter, and a linear ladder gives
+ * nobody a reason to pick the long end.
+ *
+ * Interest is simple, not compounding, and is fixed at the moment a contract
+ * opens. A rate that moved underneath an open position would make the payout
+ * unknowable at the time of the decision, which is exactly what a fixed-term
+ * instrument exists to avoid.
+ */
+export interface StakeTerm {
+  days: number;
+  aprBps: number;
+  label: string;
+}
+
+export const STAKE_TERMS: readonly StakeTerm[] = [
+  { days: 30, aprBps: 800, label: 'Short run' },
+  { days: 90, aprBps: 1600, label: 'Production run' },
+  { days: 180, aprBps: 2800, label: 'Full campaign' },
+] as const;
+
+/** Below this a contract's interest is dust and the row costs more than it earns. */
+export const STAKE_MIN_OSR = 100;
+
+/** Cap on simultaneously open contracts per operator, so positions stay legible. */
+export const STAKE_MAX_OPEN = 8;
+
+/**
+ * Early exit forfeits all accrued interest and burns this much of the principal
+ * to the treasury. Without a principal penalty a contract would be a free
+ * option: lock at a fixed rate, and walk the moment anything better appears.
+ */
+export const STAKE_EARLY_EXIT_PENALTY_BPS = 1000;
+
+/** Interest owed over a full term, in GPU. Simple interest, not compounded. */
+export function stakeTermInterest(principal: number, term: StakeTerm): number {
+  return principal * (term.aprBps / 10_000) * (term.days / 365);
+}
+
 // Node families
 export interface NodeFamilyDef {
   key: 'oil_rig' | 'mine_shaft';

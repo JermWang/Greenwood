@@ -59,13 +59,15 @@ export function genesisMs(): number {
   return Number(g);
 }
 
-function addLedger(wallet: string, kind: string, amount: number, meta?: object) {
+/** Exported for stake.ts, which records its own principal and interest movements. */
+export function addLedger(wallet: string, kind: string, amount: number, meta?: object) {
   getDb()
     .prepare('INSERT INTO ledger (wallet, kind, amount, meta, created_at) VALUES (?,?,?,?,?)')
     .run(wallet, kind, amount, meta ? JSON.stringify(meta) : null, Date.now());
 }
 
-function bumpProtocolCounter(key: string, delta: number) {
+/** Exported alongside addLedger so staking draws from the same reserve counters. */
+export function bumpProtocolCounter(key: string, delta: number) {
   const cur = Number(getProtocolValue(key) ?? '0');
   setProtocolValue(key, String(cur + delta));
 }
@@ -960,6 +962,20 @@ export function protocolOverview() {
   const totalOilRigs = (db.prepare("SELECT COUNT(*) AS c FROM nodes WHERE family = 'oil'").get() as { c: number }).c;
   const totalMiningShafts = (db.prepare("SELECT COUNT(*) AS c FROM nodes WHERE family = 'mine'").get() as { c: number }).c;
   const halving = halvingInfo(g, now);
+  const reserve = Math.max(0, EMISSION_RESERVE - counters.emitted + counters.reserve);
+
+  // Queried here rather than imported from stake.ts: the engine must not depend
+  // on a module that already depends on it, and this is a plain aggregate.
+  const stakeStats = db
+    .prepare(
+      `SELECT COUNT(*) AS c, COALESCE(SUM(principal), 0) AS principal
+         FROM stakes WHERE status = 'active'`
+    )
+    .get() as { c: number; principal: number };
+  const balances = (
+    db.prepare('SELECT COALESCE(SUM(osr_balance), 0) AS t FROM users').get() as { t: number }
+  ).t;
+  const operators = (db.prepare('SELECT COUNT(*) AS c FROM users').get() as { c: number }).c;
   return {
     networkProductionRate: halving.currentRatePerSec,
     emissionFactors: { shareCap: SHARE_CAP },
@@ -971,12 +987,38 @@ export function protocolOverview() {
     totalCreatorRewardsProcessed: counters.solRevenue,
     // What is left in the rewards pool, not the whole supply: emission draws
     // from the reserve, and the reserve split on in-game spends tops it back up.
-    osrReserveBalance: Math.max(0, EMISSION_RESERVE - counters.emitted + counters.reserve),
+    osrReserveBalance: reserve,
     xomxReserveBalance: 0,
     cvxxReserveBalance: 0,
     treasury: counters.treasury,
     genesisMs: g,
     halving,
+
+    // --- Live network telemetry -------------------------------------------
+    // Read straight from the ledger rather than tracked in a counter, so these
+    // cannot drift out of step with what actually happened.
+    totalEmitted: counters.emitted,
+    /**
+     * Days of emission the reserve covers at today's rate.
+     *
+     * Not a solvency countdown. The halving curve means the rate keeps halving,
+     * so lifetime emission converges below the reserve and this number climbs
+     * over time — it answers "how deep is the pool at the current draw", which
+     * is the honest reading of it.
+     */
+    reserveDaysAtCurrentRate:
+      halving.currentRatePerSec > 0
+        ? reserve / (halving.currentRatePerSec * 86_400)
+        : Number.POSITIVE_INFINITY,
+    /** GPU locked in open capacity contracts, and the interest promised on it. */
+    contracts: {
+      open: stakeStats.c,
+      lockedPrincipal: stakeStats.principal,
+      committedInterest: Math.max(0, Number(getProtocolValue('stakeCommitted') ?? '0')),
+    },
+    /** Circulating float that is not locked away in a contract. */
+    mirroredBalances: balances,
+    activeOperators: operators,
   };
 }
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import PageShell from '@/components/ui/PageShell';
 import { api, type ProtocolOverview } from '@/lib/api-client';
+import { useOperation } from '@/lib/useOperation';
 import { CHAIN, TOKEN_LIVE } from '@/lib/config';
 
 interface ReserveRow {
@@ -24,12 +25,31 @@ interface TreasuryEvent {
 
 const compact = (value: number | undefined) => value == null ? '—' : new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 2 }).format(value);
 
+/** Coarse countdown to the next halving — cycles run for weeks. */
+function halvingCountdown(target: number, now: number): string {
+  const ms = target - now;
+  if (ms <= 0) return 'Due now';
+  const days = Math.floor(ms / 86_400_000);
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((ms % 3_600_000) / 60_000);
+  return days > 0 ? `${days}d ${hours}h` : `${hours}h ${minutes}m`;
+}
+
 export default function VaultPage() {
+  const op = useOperation((state) => state.op);
   const [overview, setOverview] = useState<ProtocolOverview | null>(null);
   const [reserves, setReserves] = useState<ReserveRow[]>([]);
   const [events, setEvents] = useState<TreasuryEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Ticks the halving countdown without re-fetching. A minute is finer than the
+  // display needs at day/hour resolution, and costs one render.
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,6 +75,9 @@ export default function VaultPage() {
     const retired = Math.max(0, overview.totalOsrBurned ?? 0);
     return reserve + retired > 0 ? reserve / (reserve + retired) : 0;
   }, [overview]);
+
+  const countdown = overview ? halvingCountdown(overview.halving.nextHalvingMs, now) : '—';
+  const share = op && op.networkGrowPower > 0 ? op.growPower / op.networkGrowPower : null;
 
   return (
     <PageShell title="Treasury Core" subtitle="Inspect the emission chamber, custody cells, and every network flow from one proof-of-reserve console." maxWidth="max-w-[1500px]">
@@ -85,6 +108,47 @@ export default function VaultPage() {
             <Signal code="BURN" label="GPU permanently retired" value={compact(overview?.totalOsrBurned)} unit="GPU" tone="lime" />
             <Signal code="LINES" label="Active process lines" value={String(overview?.totalNodes ?? 0)} unit="UNITS" tone="cobalt" />
             <Signal code="FLOW" label="Network silicon output" value={overview?.networkProductionRate?.toFixed(3) ?? '—'} unit="GPU/S" tone="cyan" />
+          </section>
+
+          <section className="treasury-network">
+            <div className="fab-console-heading"><span>EMISSION SCHEDULE</span><span>CYCLE {String((overview?.halving.cycleIndex ?? 0) + 1).padStart(2, '0')}</span></div>
+            <div className="treasury-halving">
+              <div className="treasury-halving-copy">
+                <span>Next halving</span>
+                <b>{countdown}</b>
+                <small>
+                  {overview?.halving.currentRatePerSec.toFixed(3) ?? '—'} → {overview?.halving.nextRatePerSec.toFixed(3) ?? '—'} GPU/sec
+                </small>
+              </div>
+              {/* The bar is cycle progress, which is also how close the rate is
+                  to halving — one number doing both jobs honestly. */}
+              <div className="treasury-halving-bar">
+                <i style={{ width: `${Math.min(100, (overview?.halving.cycleProgress ?? 0) * 100)}%` }} />
+              </div>
+            </div>
+
+            <dl className="treasury-network-stats">
+              <div>
+                <dt>Reserve depth at current rate</dt>
+                <dd>{overview && Number.isFinite(overview.reserveDaysAtCurrentRate) ? `${Math.round(overview.reserveDaysAtCurrentRate).toLocaleString()} d` : '—'}</dd>
+                <small>Not a countdown — the rate halves, so this grows</small>
+              </div>
+              <div>
+                <dt>Emitted to date</dt>
+                <dd>{compact(overview?.totalEmitted)} <em>GPU</em></dd>
+                <small>Drawn from the reserve since genesis</small>
+              </div>
+              <div>
+                <dt>Locked in contracts</dt>
+                <dd>{compact(overview?.contracts.lockedPrincipal)} <em>GPU</em></dd>
+                <small>{overview?.contracts.open ?? 0} open · {compact(overview?.contracts.committedInterest)} GPU promised</small>
+              </div>
+              <div>
+                <dt>Your share of output</dt>
+                <dd>{share == null ? '—' : `${(share * 100).toFixed(2)}%`}</dd>
+                <small>{op ? `${op.growPower.toFixed(1)} of ${op.networkGrowPower.toFixed(1)} grow power` : 'Link an operator to see it'}</small>
+              </div>
+            </dl>
           </section>
 
           <section className="treasury-cells">

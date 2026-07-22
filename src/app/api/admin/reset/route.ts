@@ -27,6 +27,7 @@ const TABLES = [
   'components',
   'nodes',
   'floor_layouts',
+  'stakes',
   'ledger',
   'settlements',
   'idempotency',

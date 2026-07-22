@@ -10,6 +10,7 @@ import {
   Factory,
   Gauge,
   List,
+  Lock,
   Package,
   Pulse,
   Storefront,
@@ -33,6 +34,7 @@ const FAB_LINKS: NavEntry[] = [
 
 const NETWORK_LINKS: NavEntry[] = [
   { href: '/app/market', label: 'Chip Exchange', short: 'Market', Icon: Storefront },
+  { href: '/app/stake', label: 'Capacity Contracts', short: 'Stake', Icon: Lock },
   { href: '/app/vault', label: 'Treasury Core', short: 'Vault', Icon: Vault },
   { href: '/app/tokenomics', label: 'GPU Model', short: 'Model', Icon: ChartDonut },
   { href: '/app/leaderboard', label: 'Silicon Race', short: 'Ranks', Icon: Trophy },

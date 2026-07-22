@@ -166,6 +166,28 @@ function migrate(db: DatabaseSync) {
       sold_price_osr REAL,
       fee_osr REAL
     );
+    -- Fab capacity contracts: GPU locked for a fixed term against a rate fixed
+    -- at open. apr_bps and term_interest are stored per row rather than looked
+    -- up from the current schedule, so changing the published terms can never
+    -- retroactively alter what an already-open contract is owed.
+    CREATE TABLE IF NOT EXISTS stakes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      wallet TEXT NOT NULL REFERENCES users(wallet),
+      principal REAL NOT NULL CHECK (principal > 0),
+      term_days INTEGER NOT NULL,
+      apr_bps INTEGER NOT NULL,
+      term_interest REAL NOT NULL,
+      opened_at INTEGER NOT NULL,
+      matures_at INTEGER NOT NULL,
+      -- 'active' | 'closed'. Closed rows are kept as position history.
+      status TEXT NOT NULL DEFAULT 'active',
+      closed_at INTEGER,
+      paid_principal REAL,
+      paid_interest REAL,
+      penalty REAL
+    );
+    CREATE INDEX IF NOT EXISTS idx_stakes_wallet ON stakes(wallet, status, opened_at);
+
     -- Where a wallet has physically placed its equipment on the fab floor.
     -- Stored as one JSON document per wallet rather than a row per machine: it
     -- is always read and written whole, and the arrangement only means anything

@@ -16,7 +16,8 @@ interface PageShellProps {
 const ROUTE_CODES: Record<string, string> = {
   '/app/inventory': 'BAY-02 / COMPONENT CONTROL',
   '/app/market': 'EX-04 / PEER LIQUIDITY',
-  '/app/vault': 'CORE-05 / RESERVE TELEMETRY',
+  '/app/stake': 'VLT-05 / CAPACITY CONTRACTS',
+  '/app/vault': 'CORE-06 / RESERVE TELEMETRY',
   '/app/ops': 'FAB-03 / LINE DIAGNOSTICS',
   '/app/tokenomics': 'NET-06 / EMISSION LOGIC',
   '/app/leaderboard': 'RACE-07 / NETWORK RANK',
