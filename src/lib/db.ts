@@ -131,7 +131,7 @@ function migrate(db: DatabaseSync) {
 
     -- Crates are found by mining, not bought. A row here is an unopened crate
     -- sitting in a wallet's inventory: it exists from the moment it drops, and
-    -- opening it (which costs OSR) resolves it into a component.
+    -- opening it (which costs GPU) resolves it into a component.
     CREATE TABLE IF NOT EXISTS crates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       wallet TEXT NOT NULL REFERENCES users(wallet),
@@ -150,7 +150,7 @@ function migrate(db: DatabaseSync) {
     CREATE INDEX IF NOT EXISTS idx_crates_wallet ON crates(wallet, opened_at);
 
     -- Player-to-player marketplace. Custodial: the server is the ledger and
-    -- moves the item, while OSR settles wallet-to-wallet on-chain. A listing is
+    -- moves the item, while GPU settles wallet-to-wallet on-chain. A listing is
     -- the seller's offer; ownership only moves when a sale is recorded.
     CREATE TABLE IF NOT EXISTS listings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,6 +166,17 @@ function migrate(db: DatabaseSync) {
       sold_price_osr REAL,
       fee_osr REAL
     );
+    -- Where a wallet has physically placed its equipment on the fab floor.
+    -- Stored as one JSON document per wallet rather than a row per machine: it
+    -- is always read and written whole, and the arrangement only means anything
+    -- as a set. The server normalises it on write, so what is in here is
+    -- already known to be owned, in bounds, and free of overlaps.
+    CREATE TABLE IF NOT EXISTS floor_layouts (
+      wallet TEXT PRIMARY KEY REFERENCES users(wallet),
+      layout TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_listings_open ON listings(status, item_kind, created_at);
     CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller, status);
     -- One live listing per item. Partial index so sold/cancelled rows can pile

@@ -36,14 +36,14 @@ import {
 } from '@/lib/rarity';
 
 const CONTENTS: Array<{ href: string; label: string }> = [
-  { href: '#trailer', label: 'Watch the trailer' },
-  { href: '#overview', label: '1. What is OSR?' },
+  { href: '#trailer', label: 'New art direction' },
+  { href: '#overview', label: '1. What is GPU?' },
   { href: '#quickstart', label: '2. Quick start' },
-  { href: '#nodes', label: '3. Nodes: Rigs vs Shafts' },
+  { href: '#nodes', label: '3. Nodes: Fabs vs Cleanrooms' },
   { href: '#levels', label: '4. Levels & Auras' },
-  { href: '#components', label: '5. Components & Crates' },
+  { href: '#components', label: '5. Components & Supply Pods' },
   { href: '#earning', label: '6. Earning & Claiming' },
-  { href: '#compounding', label: '7. Compound Levels' },
+  { href: '#compounding', label: '7. Warehouse Levels' },
   { href: '#fees', label: '8. Fees' },
   { href: '#emission', label: '9. Why rewards can slow down' },
   { href: '#safety', label: '10. Safety & FAQ' },
@@ -54,16 +54,16 @@ const rarityLabel = (r: Rarity) => r.charAt(0).toUpperCase() + r.slice(1);
 // Milestones are computed from the halving period rather than written out, so
 // retuning the schedule cannot leave the guide quoting the old curve.
 const emittedByDay = (day: number) => 1 - Math.pow(0.5, day / HALVING_PERIOD_DAYS);
-const EMISSION_CURVE = `E(t) = ${GENESIS_RATE_PER_SEC.toFixed(1)} OSR/sec × 0.5 ^ (t / ${HALVING_PERIOD_DAYS}d)
+const EMISSION_CURVE = `E(t) = ${GENESIS_RATE_PER_SEC.toFixed(1)} GPU/sec × 0.5 ^ (t / ${HALVING_PERIOD_DAYS}d)
 
-Day ${String(0).padStart(3)}  : ${DAY_ONE_EMISSION_LABEL} OSR emitted
+Day ${String(0).padStart(3)}  : ${DAY_ONE_EMISSION_LABEL} GPU emitted
 ${[1, 2, 4].
   map((c) => {
     const day = Math.round(c * HALVING_PERIOD_DAYS);
     return `Day ${String(day).padStart(3)}  : ${Math.round(emittedByDay(day) * 100)}% of lifetime emitted`;
   })
   .join('\n')}
-Lifetime total: ${LIFETIME_EMISSION_LABEL} OSR — the whole Emission Reserve,
+Lifetime total: ${LIFETIME_EMISSION_LABEL} GPU — the whole Emission Reserve,
 ${RESERVE_PCT_LABEL} of the ${SUPPLY_LABEL} fixed supply`;
 
 const USER_RATE = `user_rate = min(your_gp / network_gp, 30%) × E(t) × welcome_boost
@@ -76,11 +76,11 @@ Two key mechanics:
 
 const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   {
-    q: 'Is OSR a financial product or investment?',
+    q: 'Is GPU a financial product or investment?',
     a: (
       <p>
-        No. OSR is an on-chain game. Rewards are not guaranteed — they depend on the halving
-        emission schedule, reserve health, and the OSR token&rsquo;s market value. Treat any token
+        No. GPU is an on-chain game. Rewards are not guaranteed — they depend on the halving
+        emission schedule, reserve health, and the GPU token&rsquo;s market value. Treat any token
         interaction as risk capital.
       </p>
     ),
@@ -101,7 +101,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     q: 'What if I lose access to my wallet?',
     a: (
       <p>
-        OSR cannot recover wallet access. Protect your seed phrase. If you switch wallets, your
+        GPU cannot recover wallet access. Protect your seed phrase. If you switch wallets, your
         nodes stay with the original wallet — there&rsquo;s no transfer or migration feature in v1.
       </p>
     ),
@@ -110,13 +110,13 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     q: 'Where does the reward money come from?',
     a: (
       <p>
-        OSR launches on Flap: the full <strong className="text-white">{SUPPLY_LABEL}</strong> supply
-        is minted to the bonding curve and the contract has no mint function, so no new OSR can ever
-        be created. Of that, <strong className="text-white">{EMISSION_RESERVE_LABEL} OSR</strong> (
+        GPU launches on Flap: the full <strong className="text-white">{SUPPLY_LABEL}</strong> supply
+        is minted to the bonding curve and the contract has no mint function, so no new GPU can ever
+        be created. Of that, <strong className="text-white">{EMISSION_RESERVE_LABEL} GPU</strong> (
         {RESERVE_PCT_LABEL}) is acquired at genesis and held as the Emission Reserve, which funds
         every reward the protocol will ever pay. The other {PUBLIC_FLOAT_LABEL} ({FLOAT_PCT_LABEL})
-        is public float. Each second, the halving curve determines how much OSR flows out to users
-        proportional to their grow-power share, and the reserve split on in-game spends recycles OSR
+        is public float. Each second, the halving curve determines how much GPU flows out to users
+        proportional to their grow-power share, and the reserve split on in-game spends recycles GPU
         back into the pool. Protocol ETH revenue (ERC-20 transfer tax (2%)
         + DEX LP fees (2%)) goes to a separate treasury and funds infrastructure/ops, not user
         rewards. The{' '}
@@ -132,9 +132,9 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     q: 'How many nodes can I own?',
     a: (
       <p>
-        It scales with your Compound Level: 2 per family at L1 up to 8 per family at L10. Mining
-        Shafts add bonus slots on top (+2 at L5, +3 at L7, +4 at L9), so a maxed wallet can run 8
-        rigs and 12 shafts. The caps keep the 3D scene readable and prevent farming rewards with an
+        It scales with your Warehouse Level: 2 per family at L1 up to 8 per family at L10.
+        Cleanrooms add bonus slots on top (+2 at L5, +3 at L7, +4 at L9), so a maxed wallet can run 8
+        fabs and 12 cleanrooms. The caps keep the 3D scene readable and prevent farming rewards with an
         unbounded number of bare nodes.
       </p>
     ),
@@ -153,8 +153,8 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     q: 'Is my data safe?',
     a: (
       <p>
-        OSR reads wallet addresses only — no email, no KYC. Your game state (nodes, components,
-        pending rewards) lives on OSR servers keyed to your wallet; token balances, burns, and claim
+        GPU reads wallet addresses only — no email, no KYC. Your game state (nodes, components,
+        pending rewards) lives on GPU servers keyed to your wallet; token balances, burns, and claim
         payouts settle on Robinhood Chain to your wallet.
       </p>
     ),
@@ -164,8 +164,8 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
 export default function DocsPage() {
   return (
     <PageShell
-      title="Player Guide"
-      subtitle="How Oil Strategic Reserve works, start to finish"
+      title="Fab Manual"
+      subtitle="Field procedures for commissioning lines, tuning equipment, and navigating the GPU network."
       maxWidth="max-w-4xl"
     >
       <div className="space-y-10">
@@ -183,66 +183,55 @@ export default function DocsPage() {
           </ul>
         </nav>
 
-        {/* Trailer */}
+        {/* New visual system */}
         <section id="trailer" className="scroll-mt-20 space-y-3">
           <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-amber-500">
-            Watch the trailer
+            New fab art direction
           </h2>
-          <div className="panel overflow-hidden p-0">
-            {/*
-              preload="none" is deliberate: the file is ~35MB, and every visitor
-              to the guide would otherwise pay for it before reading a word. The
-              poster stands in until someone actually presses play.
-            */}
-            <video
-              controls
-              preload="none"
-              playsInline
-              poster="/media/osr-trailer-poster.webp"
-              className="aspect-video w-full bg-ink-950 object-contain"
-            >
-              <source src="/media/osr-trailer.mp4" type="video/mp4" />
-              Your browser cannot play this video.
-            </video>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+            {[
+              ['Lithography', '/assets/fab/lithography-machine-reference.png'],
+              ['Wafer Stack', '/assets/fab/wafer-stack-reference.png'],
+              ['Dicing Saw', '/assets/fab/dicing-saw-reference.png'],
+              ['Packaging', '/assets/fab/packaging-line-reference.png'],
+            ].map(([label, src]) => (
+              <figure key={label} className="panel overflow-hidden p-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={`${label} reference render`} className="aspect-square w-full object-cover" />
+                <figcaption className="px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-amber-300">{label}</figcaption>
+              </figure>
+            ))}
           </div>
           <p className="text-sm leading-relaxed text-steel-400">
-            A ninety-second run through the whole loop — deploying a rig, opening a crate, equipping
-            components, and claiming. Everything below is the same thing in writing.
-          </p>
-          <p className="text-xs leading-relaxed text-steel-500">
-            Figures shown on screen are from an earlier build and do not reflect current supply or
-            network size — see{' '}
-            <a href="#emission" className="text-amber-500 hover:underline">
-              how emission works
-            </a>{' '}
-            for the live numbers.
+            Rounded cleanroom machinery, toy-like proportions, and readable color-coded subsystems
+            keep the campus playful while every model remains procedural and animation-ready.
           </p>
         </section>
 
-        {/* 1. What is OSR? */}
-        <Section id="overview" title="1. What is OSR?">
+        {/* 1. What is GPU? */}
+        <Section id="overview" title="1. What is GPU?">
           <p>
-            <strong className="text-white">Oil Strategic Reserve (OSR)</strong> is a gamified,
-            virtual node-mining platform on Robinhood Chain — an EVM L2 settling on Ethereum. You
+            <strong className="text-white">Graphics Processing Utility (GPU)</strong> is a gamified,
+            virtual silicon-farming game on Robinhood Chain — an EVM L2 settling on Ethereum. You
             burn{' '}
-            <strong className="text-white">$OSR</strong> tokens to deploy virtual{' '}
-            <strong className="text-white">Oil Rigs</strong> and{' '}
-            <strong className="text-white">Mining Shafts</strong> on your own 3D compound. Those
-            nodes produce real rewards over time, paid out from a {EMISSION_RESERVE_LABEL} $OSR
+            <strong className="text-white">$GPU</strong> tokens to deploy virtual{' '}
+            <strong className="text-white">Wafer Fabs</strong> and{' '}
+            <strong className="text-white">Cleanrooms</strong> in your own 3D warehouse. Those
+            facilities produce rewards over time, paid out from a {EMISSION_RESERVE_LABEL} $GPU
             Emission Reserve released via a Bitcoin-style halving curve.
           </p>
           <p>
-            Think of it like an incremental game where every action is on-chain: your rigs and
-            shafts are real state, your burns reduce the $OSR supply, and your rewards settle to
+            Think of it like an incremental game where every action is on-chain: your fabs and
+            cleanrooms are real state, your burns reduce the $GPU supply, and your rewards settle to
             your wallet.
           </p>
           <p>
-            Both <strong className="text-white">Oil Rigs</strong> and{' '}
-            <strong className="text-white">Mining Shafts</strong> accrue{' '}
-            <strong className="text-white">$OSR</strong> per second. Progression is wallet-wide: you
-            raise your <strong className="text-white">Compound Level</strong> to unlock more node
-            slots, more daily crates, and higher rarity pools. Mining Shafts earn bonus node slots
-            at higher levels; Oil Rigs are claim-only in v1.
+            Both <strong className="text-white">Wafer Fabs</strong> and{' '}
+            <strong className="text-white">Cleanrooms</strong> accrue{' '}
+            <strong className="text-white">$GPU</strong> per second. Progression is wallet-wide: you
+            raise your <strong className="text-white">Warehouse Level</strong> to unlock more facility
+            slots, more daily supply pods, and higher rarity pools. Cleanrooms earn bonus slots
+            at higher levels; Wafer Fabs are claim-only in v1.
           </p>
         </Section>
 
@@ -252,67 +241,67 @@ export default function DocsPage() {
             <Step n={1} title="Connect a wallet">
               Open the{' '}
               <Link href="/app" className="text-amber-500 hover:underline">
-                Command Center
+                Fab Floor
               </Link>{' '}
               and sign in with email or Google to create a Privy embedded EVM wallet. You can also
               link MetaMask, Rabby, or Robinhood Wallet. Unauthenticated guest addresses are not
               supported because they cannot securely authorize transactions.
             </Step>
-            <Step n={2} title="Deploy your first node">
-              Tap <strong className="text-white">Deploy</strong>. Pick an Oil Rig or Mining Shaft,
-              burn the required $OSR + small ETH fee, and it appears on your compound.
+            <Step n={2} title="Deploy your first facility">
+              Tap <strong className="text-white">Deploy</strong>. Pick a Wafer Fab or Cleanroom,
+              burn the required $GPU + small ETH fee, and it appears in your warehouse.
             </Step>
             <Step n={3} title="Let it produce">
               Nodes accrue rewards every second based on your components&rsquo; grow-power and your
               share of the global halving emission. Watch{' '}
               <strong className="text-white">pending rewards</strong> tick up in your HUD.
             </Step>
-            <Step n={4} title="Claim, open crates, compound-upgrade">
-              Claim to cash out (2% fee, 1h cooldown), open Supply Crates to upgrade your
-              components, or compound-upgrade your wallet to unlock more nodes and crates. Repeat.
+            <Step n={4} title="Claim, open supply pods, upgrade">
+              Claim to cash out (2% fee, 1h cooldown), open Supply Pods to upgrade your
+              components, or upgrade your warehouse to unlock more facilities and pods. Repeat.
             </Step>
           </ol>
         </Section>
 
         {/* 3. Nodes */}
-        <Section id="nodes" title="3. Nodes: Rigs vs Shafts">
+        <Section id="nodes" title="3. Nodes: Fabs vs Cleanrooms">
           <p>
-            Node capacity scales with your <strong className="text-white">Compound Level</strong>: 2
+            Node capacity scales with your <strong className="text-white">Warehouse Level</strong>: 2
             per family at L1, growing to <strong className="text-white">8 per family</strong> at L10
-            — and Mining Shafts add bonus slots on top (+2 at L5, +3 at L7, +4 at L9). Each node is
+            — and Cleanrooms add bonus slots on top (+2 at L5, +3 at L7, +4 at L9). Each node is
             an independent entity with its own components and production rate.
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             <NodeCard
               accent="#ffb347"
-              title="Oil Rig"
-              tagline="Offshore platform on the water quadrant."
+              title="Wafer Fab"
+              tagline="Front-end silicon production with lithography and wafer handling."
               bullets={[
                 <>
-                  Earns <strong className="text-white">$OSR</strong> via the halving emission
+                  Earns <strong className="text-white">$GPU</strong> via the halving emission
                 </>,
-                <>Funded by the {EMISSION_RESERVE_LABEL} OSR Emission Reserve</>,
+                <>Funded by the {EMISSION_RESERVE_LABEL} GPU Emission Reserve</>,
                 <>
-                  <strong className="text-white">Claim-only</strong> in v1 — compound is a Mining
-                  Shaft feature
+                  <strong className="text-white">Claim-only</strong> in v1 — direct compounding is a
+                  Cleanroom feature
                 </>,
-                <>Slots: Derrick Tower, Pump Jack, Pipeline, Flare Stack</>,
+                <>Slots: Lithography Machine, Wafer Stack, Etch Chamber, Power Bus</>,
               ]}
             />
             <NodeCard
               accent="#d4d8de"
-              title="Mining Shaft"
-              tagline="Underground operation on the land quadrant."
+              title="Cleanroom"
+              tagline="Back-end dicing, testing, cooling, and chip packaging."
               bullets={[
                 <>
-                  Earns <strong className="text-white">$OSR</strong>
+                  Earns <strong className="text-white">$GPU</strong>
                 </>,
-                <>Funded by the OSR reserve wallet</>,
+                <>Funded by the GPU reserve wallet</>,
                 <>
-                  <strong className="text-white">Bonus node slots</strong> at Compound L5/L7/L9
-                  (+2/+3/+4 shafts)
+                  <strong className="text-white">Bonus facility slots</strong> at Warehouse L5/L7/L9
+                  (+2/+3/+4 cleanrooms)
                 </>,
-                <>Slots: Drill Bit, Ore Cart, Rail Track, Shaft Elevator</>,
+                <>Slots: Dicing Saw, Packaging Line, Test Handler, Cooling Array</>,
               ]}
             />
           </div>
@@ -322,8 +311,8 @@ export default function DocsPage() {
         <Section id="levels" title="4. Levels & Auras">
           <p>
             Your nodes&rsquo; visual level mirrors your wallet&rsquo;s{' '}
-            <strong className="text-white">Compound Level (L1 → L10)</strong>. Each level upgrades
-            the rig&rsquo;s <strong className="text-white">material era</strong> — rough steel
+            <strong className="text-white">Warehouse Level (L1 → L10)</strong>. Each level upgrades
+            the fab&rsquo;s <strong className="text-white">material era</strong> — rough steel
             through reinforced and high-tech to a black-and-gold prestige finish — and grows its
             size, making progress visible at a glance on the compound.
           </p>
@@ -359,19 +348,19 @@ export default function DocsPage() {
           </p>
           <InteractiveModelExplorer />
           <p className="text-xs text-steel-500">
-            Higher levels upgrade the rig&rsquo;s material era (rough steel → reinforced → high-tech
+            Higher levels upgrade the fab&rsquo;s material era (rough steel → reinforced → high-tech
             → black-and-gold prestige), grow its size, and light a powered deck ring at the
             milestone levels. The per-component rarity glow layers on top.
           </p>
         </Section>
 
-        {/* 5. Components & Crates */}
-        <Section id="components" title="5. Components & Crates">
+        {/* 5. Components & Supply Pods */}
+        <Section id="components" title="5. Components & Supply Pods">
           <p>
             Each node has <strong className="text-white">4 component slots</strong>. Components are
-            earned by opening <strong className="text-white">Supply Crates</strong> — 500 $OSR at L1
-            scaling to 1,625 $OSR at L10 (split 50/30/20 burn / reserve / treasury), plus a flat{' '}
-            {CRATE_FEE_ETH} ETH protocol fee. Your daily crate limit scales with Compound Level — from 3/day
+            earned by opening <strong className="text-white">Supply Pods</strong> — 500 $GPU at L1
+            scaling to 1,625 $GPU at L10 (split 50/30/20 burn / reserve / treasury), plus a flat{' '}
+            {CRATE_FEE_ETH} ETH protocol fee. Your daily crate limit scales with Warehouse Level — from 3/day
             at L1 up to 20/day at L10, per node type. Every drop has a rarity tier that multiplies
             the node&rsquo;s output:
           </p>
@@ -415,14 +404,14 @@ export default function DocsPage() {
             the average of its 4 slots&rsquo; durability-adjusted multipliers, raised to the power
             0.75 (capped at 500×), then multiplied by a rarity-boost stack (Epic ×1.05, Legendary
             ×1.15, Mythic ×1.4, Divine ×2.0 per component). Empty slots count as Common. Higher
-            rarity pools unlock with Compound Level: Legendary at L4, Mythic at L6, Divine at L8.
+            rarity pools unlock with Warehouse Level: Legendary at L4, Mythic at L6, Divine at L8.
             Drop odds are published and a bad-luck-protection (pity) system guarantees dry streaks
             on the top tiers can&rsquo;t run forever.
           </p>
           <p>
-            <strong className="text-white">Slot compatibility:</strong> Oil Rig components fit only
-            in Oil Rigs, Mining Shaft components fit only in Shafts. Each component has a specific
-            slot (you can&rsquo;t put a Derrick Tower in a Pump Jack socket).
+            <strong className="text-white">Slot compatibility:</strong> Wafer Fab components fit only
+            in Wafer Fabs, Cleanroom components fit only in Cleanrooms. Each component has a specific
+            slot (you can&rsquo;t put a Lithography Machine in a Wafer Stack socket).
           </p>
           <p>
             Use the{' '}
@@ -439,8 +428,8 @@ export default function DocsPage() {
             <div className="space-y-6">
               {(
                 [
-                  { family: 'oil' as const, title: 'Oil Rig slots', accent: '#ffb347' },
-                  { family: 'mine' as const, title: 'Mining Shaft slots', accent: '#c8e0f0' },
+                  { family: 'oil' as const, title: 'Wafer Fab slots', accent: '#ffb347' },
+                  { family: 'mine' as const, title: 'Cleanroom slots', accent: '#c8e0f0' },
                 ] as const
               ).map(({ family, title, accent }) => (
                 <div key={family} className="panel overflow-x-auto">
@@ -490,7 +479,7 @@ export default function DocsPage() {
             </div>
             <p className="mt-2 text-xs text-steel-500">
               Each tile shows that slot at that rarity — rarer tiers add emissive glow that blooms
-              in the scene. The live rig preview above shows the hero model these install into.
+              in the scene. The live fab preview above shows the hero model these install into.
             </p>
           </div>
         </Section>
@@ -527,25 +516,25 @@ export default function DocsPage() {
             <strong className="text-white">1-hour cooldown</strong> per wallet.
           </p>
           <p>
-            Crate installs and compound upgrades internally accrue first, so you never lose
+            Crate installs and warehouse upgrades internally accrue first, so you never lose
             production between actions — you&rsquo;re always paid at the rate you actually had for
             the time you had it.
           </p>
         </Section>
 
-        {/* 7. Compound Levels */}
-        <Section id="compounding" title="7. Compound Levels">
+        {/* 7. Warehouse Levels */}
+        <Section id="compounding" title="7. Warehouse Levels">
           <p>
-            Your <strong className="text-white">Compound Level</strong> (L1 → L10) is your
-            wallet-wide progression track. Each upgrade costs $OSR — from{' '}
-            <strong className="text-white">500 OSR</strong> for L2 up to{' '}
-            <strong className="text-white">60,000 OSR</strong> for L10, split 50/30/20 burn /
+            Your <strong className="text-white">Warehouse Level</strong> (L1 → L10) is your
+            wallet-wide progression track. Each upgrade costs $GPU — from{' '}
+            <strong className="text-white">500 GPU</strong> for L2 up to{' '}
+            <strong className="text-white">60,000 GPU</strong> for L10, split 50/30/20 burn /
             reserve / treasury — plus a flat {COMPOUND_FEE_ETH} ETH fee. Each level unlocks:
           </p>
           <ul className="list-disc space-y-1 pl-5">
             <li>
               More <strong className="text-white">node slots</strong> per family (2 at L1 → 8 at
-              L10; shafts +2/+3/+4 bonus at L5/L7/L9)
+              L10; cleanrooms +2/+3/+4 bonus at L5/L7/L9)
             </li>
             <li>
               A higher <strong className="text-white">daily crate limit</strong> (3/day at L1 →
@@ -573,13 +562,13 @@ export default function DocsPage() {
         {/* 8. Fees */}
         <Section id="fees" title="8. Fees">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <FeeCard label="Mint burn" value="70%" caption="of OSR cost to burn wallet" />
-            <FeeCard label="Mint treasury" value="30%" caption="of OSR cost to treasury" />
+            <FeeCard label="Mint burn" value="70%" caption="of GPU cost to burn wallet" />
+            <FeeCard label="Mint treasury" value="30%" caption="of GPU cost to treasury" />
             <FeeCard label="Mint ETH fee" value={`${MINT_FEE_ETH} ETH`} caption="flat, per mint" />
             <FeeCard label="Claim fee" value="2%" caption="retained in reserve · 1h cooldown" />
             <FeeCard
-              label="Compound upgrade"
-              value="500 → 60k OSR"
+              label="Warehouse upgrade"
+              value="500 → 60k GPU"
               caption={`L2→L10 · +${COMPOUND_FEE_ETH} ETH · 12h cooldown`}
             />
             <FeeCard
@@ -589,8 +578,8 @@ export default function DocsPage() {
             />
             <FeeCard
               label="Crate cost"
-              value="500 → 1625 OSR"
-              caption={`by compound level · +${CRATE_FEE_ETH} ETH fee`}
+              value="500 → 1625 GPU"
+              caption={`by warehouse level · +${CRATE_FEE_ETH} ETH fee`}
             />
             <FeeCard
               label="Upgrade & crate split"
@@ -599,7 +588,7 @@ export default function DocsPage() {
             />
           </div>
           <p className="text-xs text-steel-500">
-            Mints split 70/30 burn/treasury on the OSR leg; compound upgrades and crates split
+            Mints split 70/30 burn/treasury on the GPU leg; warehouse upgrades and crates split
             50/30/20 burn/reserve/treasury. See{' '}
             <Link href="/app/tokenomics" className="text-amber-500 hover:underline">
               Tokenomics
@@ -611,9 +600,9 @@ export default function DocsPage() {
         {/* 9. Emission */}
         <Section id="emission" title="9. How emission works">
           <p>
-            OSR uses a <strong className="text-white">halving emission curve</strong>. Global OSR
+            GPU uses a <strong className="text-white">halving emission curve</strong>. Global GPU
             issuance starts at{' '}
-            <strong className="text-white">{GENESIS_RATE_PER_SEC.toFixed(1)} OSR/sec</strong> at
+            <strong className="text-white">{GENESIS_RATE_PER_SEC.toFixed(1)} GPU/sec</strong> at
             genesis and halves every <strong className="text-white">{HALVING_PERIOD_LABEL}</strong>{' '}
             until the
             Emission Reserve is fully paid out.
@@ -634,13 +623,13 @@ export default function DocsPage() {
           <p>
             <strong className="text-white">Why does emission halve?</strong> To front-load
             excitement during the first 2 weeks while still leaving meaningful yields for
-            latecomers. By day 14, 75% of lifetime OSR has been distributed — but latecomers with
+            latecomers. By day 14, 75% of lifetime GPU has been distributed — but latecomers with
             the welcome boost still earn well for their first 72 hours.
           </p>
           <p>
             You can always see current global emission and your share on the{' '}
             <Link href="/app/vault" className="text-amber-500 hover:underline">
-              Reserve Vault
+              Treasury Core
             </Link>{' '}
             page — it&rsquo;s fully public.
           </p>
@@ -665,30 +654,19 @@ export default function DocsPage() {
         {/* Footer */}
         <footer className="space-y-2 border-t border-ink-600 pt-4 text-xs text-steel-500">
           <p>
-            <strong className="text-steel-300">More depth:</strong>{' '}
+            <strong className="text-steel-300">Continue through the fab OS:</strong>{' '}
             <Link href="/app/tokenomics" className="text-amber-500 hover:underline">
-              Tokenomics
+              GPU Network Model
             </Link>{' '}
             has live numbers and formulas,{' '}
             <Link href="/app/vault" className="text-amber-500 hover:underline">
-              Vault
+              Treasury Core
             </Link>{' '}
             shows the raw treasury flow,{' '}
             <Link href="/app/leaderboard" className="text-amber-500 hover:underline">
-              Leaderboard
+              Silicon Race
             </Link>{' '}
             ranks operators by max level, sum of levels, and total production.
-          </p>
-          <p>
-            <strong className="text-steel-300">Community:</strong>{' '}
-            <a
-              href="https://x.com/OSRRHOOD"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-500 hover:underline"
-            >
-              Follow @OSRRHOOD on 𝕏
-            </a>
           </p>
           <p>
             This guide describes current behavior. Mechanics may change as the protocol evolves —
@@ -719,8 +697,8 @@ function InteractiveModelExplorer() {
             value={family}
             onChange={(event) => setFamily(event.target.value as NodeFamily)}
           >
-            <option value="oil">Oil Rig</option>
-            <option value="mine">Mining Shaft</option>
+            <option value="oil">Wafer Fab</option>
+            <option value="mine">Cleanroom</option>
           </select>
         </div>
         <div>
@@ -758,7 +736,7 @@ function InteractiveModelExplorer() {
           </select>
         </div>
         <p className="ml-auto text-xs text-steel-500">
-          Original full-size Blender GLB · exact source geometry · 7 material tiers
+          Procedural Three.js sculpt · animation-ready hierarchy · 7 material tiers
         </p>
       </div>
       <NodePreview

@@ -106,19 +106,19 @@ export default function PrivyWalletButton() {
   }, [authenticated, identityToken, managedWallet, user?.id]);
 
   if (!ready || (authenticated && !walletsReady)) {
-    return <button className="btn-primary !py-1.5 text-sm" disabled>Loading wallet…</button>;
+    return <button className="btn-primary text-xs" disabled>Syncing operator…</button>;
   }
 
   if (!authenticated) {
     return (
-      <button className="btn-primary !py-1.5 text-sm" onClick={() => login()}>
-        Connect wallet
+      <button className="btn-primary text-xs" onClick={() => login()}>
+        Initialize operator
       </button>
     );
   }
 
   if (!managedWallet) {
-    return <button className="btn-primary !py-1.5 text-sm" disabled>Connecting wallet…</button>;
+    return <button className="btn-primary text-xs" disabled>Opening uplink…</button>;
   }
 
   // Wallet is the only login route, so the account is normally the operator's
@@ -128,23 +128,24 @@ export default function PrivyWalletButton() {
 
   return (
     <div className="relative flex items-center gap-2" ref={menuRef}>
-      <span className="hidden rounded border border-violet-500/30 bg-violet-500/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-violet-300 sm:block">
-        {isEmbedded ? 'Privy hot wallet' : 'Connected wallet'}
-      </span>
       <button
-        className="rounded border border-steel-500/60 bg-ink-800 px-3 py-1.5 font-mono text-xs text-steel-200 hover:border-amber-500"
+        className="fab-operator-button"
         onClick={() => setOpen((value) => !value)}
       >
-        {shortAddress(managedWallet.address)}
+        <span className="fab-operator-avatar">{managedWallet.address.slice(2, 4).toUpperCase()}</span>
+        <span className="hidden text-left sm:block">
+          <span className="block text-[8px] uppercase tracking-[.18em] text-sky-100/40">Operator linked</span>
+          <span className="mt-0.5 block font-mono text-[10px] text-white">{shortAddress(managedWallet.address)}</span>
+        </span>
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded border border-ink-600 bg-ink-800 p-2 shadow-xl">
-          <div className="rounded border border-ink-600 bg-ink-900/60 p-2.5">
+        <div className="fab-account-menu">
+          <div className="fab-account-balance">
             <p className="truncate text-xs text-steel-300">
               {shortAddress(managedWallet.address)}
             </p>
-            <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-violet-300">
-              {isEmbedded ? 'Managed embedded wallet' : 'Self-custodied wallet'} · mainnet
+            <p className="mt-1 font-mono text-[8px] uppercase tracking-[.16em] text-lime-300">
+              {isEmbedded ? 'Managed operator key' : 'Self-custodied operator key'} · mainnet
             </p>
             <div className="mt-3 flex items-center justify-between text-xs">
               <span className="text-steel-400">ETH balance</span>
@@ -163,27 +164,27 @@ export default function PrivyWalletButton() {
             <p className="px-2 py-2 text-[11px] text-red-400">{syncError || walletError}</p>
           )}
           <button
-            className="mt-1 w-full rounded px-3 py-2 text-left text-xs text-steel-300 hover:bg-ink-700"
+            className="fab-account-action mt-1"
             onClick={() => void navigator.clipboard.writeText(managedWallet.address)}
           >
-            Copy deposit address
+            Copy operator address
           </button>
           <button
-            className="w-full rounded px-3 py-2 text-left text-xs text-steel-300 hover:bg-ink-700"
+            className="fab-account-action"
             onClick={() => linkWallet()}
           >
             Link MetaMask / Robinhood Wallet
           </button>
           <a
-            className="block w-full rounded px-3 py-2 text-left text-xs text-steel-300 hover:bg-ink-700"
+            className="fab-account-action block"
             href={`${CHAIN.explorer}/address/${managedWallet.address}`}
             target="_blank"
             rel="noreferrer"
           >
-            View on Blockscout ↗
+            Inspect on Blockscout ↗
           </a>
           <button
-            className="w-full rounded px-3 py-2 text-left text-xs text-steel-300 hover:bg-ink-700"
+            className="fab-account-action text-rose-300"
             onClick={() => {
               setOpen(false);
               synced.current = null;
@@ -195,8 +196,8 @@ export default function PrivyWalletButton() {
           >
             Sign out
           </button>
-          <p className="mt-1 border-t border-ink-600 px-3 py-2 text-[10px] leading-relaxed text-steel-500">
-            OSR never stores raw private keys. Privy secures wallet key material and session recovery.
+          <p className="mt-1 border-t border-white/10 px-3 py-2 text-[9px] leading-relaxed text-sky-100/35">
+            GPU never stores raw private keys. Privy secures wallet key material and session recovery.
           </p>
         </div>
       )}

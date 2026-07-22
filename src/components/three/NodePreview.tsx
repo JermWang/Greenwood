@@ -16,7 +16,7 @@ export default function NodePreview({
   return (
     <div
       className={`relative overflow-hidden rounded-lg border border-ink-600 bg-ink-900 ${className}`}
-      aria-label={`Interactive 3D preview of ${node.type === 'oil' ? 'an oil rig' : 'a mining shaft'}`}
+      aria-label={`Interactive 3D preview of ${node.type === 'oil' ? 'a wafer fab' : 'a cleanroom line'}`}
     >
       <Canvas
         shadows

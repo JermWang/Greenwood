@@ -31,6 +31,6 @@ export const useWalletStore = create<WalletStore>()(
         set((s) => (s.onboarded.includes(w) ? s : { onboarded: [...s.onboarded, w] })),
       setTheme: (theme) => set({ theme }),
     }),
-    { name: 'osr-wallet-store' }
+    { name: 'gpu-wallet-store' }
   )
 );

@@ -1,6 +1,6 @@
-// OSR game engine — all economy state transitions live here. Route handlers
+// GPU game engine — all economy state transitions live here. Route handlers
 // are thin wrappers around these functions. Production accrual is lazy: every
-// read "settles" a node's accrued OSR up to now, so no background ticker is
+// read "settles" a node's accrued GPU up to now, so no background ticker is
 // needed.
 
 import { getDb, getProtocolValue, setProtocolValue } from './db';
@@ -41,14 +41,10 @@ import {
   STARTER_OSR_GRANT,
 } from './economy';
 import { NODE_SLOTS, RARITIES, type NodeFamily, type Rarity } from './rarity';
+import { allLayoutMultipliers, layoutBonus, type LayoutBonus } from './floor';
 
-export class GameError extends Error {
-  status: number;
-  constructor(message: string, status = 400) {
-    super(message);
-    this.status = status;
-  }
-}
+export { GameError } from './errors';
+import { GameError } from './errors';
 
 // ---------------------------------------------------------------------------
 // Protocol
@@ -199,7 +195,7 @@ export function componentMultiplier(comps: { rarity: Rarity }[]): number {
 }
 
 /**
- * Options for any action that costs OSR.
+ * Options for any action that costs GPU.
  *
  * When settlement is live the operator pays in real ERC-20 through
  * OSRGame.execute() before the server ever applies the state change. Debiting
@@ -252,32 +248,44 @@ export function networkGrowPower(now = Date.now()): number {
   }
   const rows = getDb()
     .prepare(
-      `SELECT n.id AS id, n.level AS level, c.rarity AS rarity
+      `SELECT n.id AS id, n.wallet AS wallet, n.level AS level, c.rarity AS rarity
          FROM nodes n
          LEFT JOIN components c ON c.equipped_node_id = n.id`
     )
-    .all() as unknown as Array<{ id: number; level: number; rarity: Rarity | null }>;
+    .all() as unknown as Array<{ id: number; wallet: string; level: number; rarity: Rarity | null }>;
 
-  const byNode = new Map<number, { level: number; comps: { rarity: Rarity }[] }>();
+  const byNode = new Map<number, { wallet: string; level: number; comps: { rarity: Rarity }[] }>();
   for (const r of rows) {
     let entry = byNode.get(r.id);
     if (!entry) {
-      entry = { level: r.level, comps: [] };
+      entry = { wallet: r.wallet, level: r.level, comps: [] };
       byNode.set(r.id, entry);
     }
     if (r.rarity) entry.comps.push({ rarity: r.rarity });
   }
 
+  // Floor-layout multipliers apply here as well as in settleUser. If they only
+  // raised the numerator, a well-arranged fab would grow its own share without
+  // shrinking anyone else's — the bonus would mint extra emission instead of
+  // redistributing a fixed one. Applying it to both sides keeps the schedule
+  // exact and makes layout a competition rather than a money printer.
+  const layoutMultipliers = allLayoutMultipliers();
+
   let total = 0;
   for (const n of byNode.values()) {
-    total += levelMultiplier(n.level) * componentMultiplier(n.comps);
+    const layout = layoutMultipliers.get(n.wallet) ?? 1;
+    total += levelMultiplier(n.level) * componentMultiplier(n.comps) * layout;
   }
   networkGpCache = { value: total, at: now };
   return total;
 }
 
-/** Drop the cached denominator after any write that changes node count/level/gear. */
-function invalidateNetworkGp(): void {
+/**
+ * Drop the cached denominator after any write that changes node count/level/gear
+ * — or floor layout, which now scales grow power too, so the floor save route
+ * calls this from outside the engine.
+ */
+export function invalidateNetworkGp(): void {
   networkGpCache = null;
 }
 
@@ -304,6 +312,7 @@ export function settleUser(wallet: string): {
   emission: number;
   boost: number;
   foundCrates: FoundCrate[];
+  layout: LayoutBonus;
 } {
   const db = getDb();
   const user = getOrCreateUser(wallet);
@@ -314,7 +323,11 @@ export function settleUser(wallet: string): {
 
   const rows = nodesOf(wallet);
   const withComps = rows.map((row) => ({ row, comps: equippedComponents(row.id) }));
-  const userGp = withComps.reduce((sum, n) => sum + nodeGp(n.row, n.comps), 0);
+  // How the equipment is arranged on the floor scales the whole operation's
+  // grow power. networkGrowPower applies the same factor to every wallet, so
+  // this shifts share between operators rather than creating new emission.
+  const layout = layoutBonus(wallet);
+  const userGp = withComps.reduce((sum, n) => sum + nodeGp(n.row, n.comps), 0) * layout.multiplier;
   // Denominator is the whole protocol. Math.max guards the case where a cached
   // total lags a just-written node, which would otherwise push share above 1.
   const networkGp = Math.max(networkGrowPower(now), userGp);
@@ -355,7 +368,7 @@ export function settleUser(wallet: string): {
     now
   );
 
-  return { user, nodes: settled, userRate, userGp, networkGp, emission, boost, foundCrates };
+  return { user, nodes: settled, userRate, userGp, networkGp, emission, boost, foundCrates, layout };
 }
 
 /** Per-family node cap (mine shafts get bonus slots at L5/7/9). */
@@ -483,7 +496,7 @@ export function openCrate(
 
   const cost = crateCostOsr(getOsrUsdPrice().usdPerOsr);
   const debit = offChainDebit(user, cost, opts, (have) =>
-    `Not enough OSR for crate: need ${cost.toLocaleString()} OSR (you have ${have}). Claim rewards or earn more OSR first.`
+    `Not enough GPU for crate: need ${cost.toLocaleString()} GPU (you have ${have}). Claim rewards or earn more GPU first.`
   );
 
   const family: NodeFamily = crateType === 'rig_crate' ? 'oil' : 'mine';
@@ -594,7 +607,7 @@ export function mintNode(wallet: string, familyKey: string, opts?: SpendOpts) {
   const owned = nodes.filter((n) => n.row.family === fam.family).length;
   if (owned >= cap) throw new GameError('Capacity full · upgrade compound to add more');
   const debit = offChainDebit(user, fam.burnCostOsr, opts, (have) =>
-    `Not enough OSR: need ${fam.burnCostOsr.toLocaleString()} OSR (you have ${have}). Claim rewards or open crates first.`
+    `Not enough GPU: need ${fam.burnCostOsr.toLocaleString()} GPU (you have ${have}). Claim rewards or open crates first.`
   );
 
   const burn = (fam.burnCostOsr * fam.burnShareBps) / 10000;
@@ -669,7 +682,7 @@ export function claimRewards(
     db.prepare(
       'UPDATE nodes SET accrued = 0, accrued_updated_at = ?, last_claim_at = ? WHERE id = ?'
     ).run(now, now, n.row.id);
-    // A settled claim already moved real OSR out of the vault into the
+    // A settled claim already moved real GPU out of the vault into the
     // operator's wallet, so crediting the mirrored balance too would pay twice.
     // This holds for compound mode as well: once settlement is live, compounding
     // is a claim at the lower reinvest fee that still lands real tokens on-chain,
@@ -738,7 +751,7 @@ export function upgradeCompound(wallet: string, expedite = false, opts?: SpendOp
     throw new GameError('Compound is cooling down — expedite for 0.005 ETH or wait.');
   const { totalOsr, burnOsr, reserveOsr, treasuryOsr, targetLevel } = info.nextUpgradeCost;
   const debit = offChainDebit(user, totalOsr, opts, (have) =>
-    `Not enough OSR for compound upgrade: need ${totalOsr.toLocaleString()} OSR (you have ${have}).`
+    `Not enough GPU for compound upgrade: need ${totalOsr.toLocaleString()} GPU (you have ${have}).`
   );
 
   const now = Date.now();
@@ -844,7 +857,7 @@ export function upgradeNode(wallet: string, nodeId: number, opts?: SpendOpts) {
   if (!node) throw new GameError('Node not found', 404);
   const cost = nodeUpgradeCost(node.row.level);
   const debit = offChainDebit(user, cost, opts, (have) =>
-    `Not enough OSR to level up: need ${cost.toLocaleString()} OSR (you have ${have}).`
+    `Not enough GPU to level up: need ${cost.toLocaleString()} GPU (you have ${have}).`
   );
   const burn = Math.floor((cost * SPLIT_BURN_BPS) / 10000);
   const reserve = Math.floor((cost * SPLIT_RESERVE_BPS) / 10000);
@@ -904,8 +917,8 @@ export function userOperation(wallet: string) {
     welcomeBoostFactor: boost,
     osrBalance: user.osr_balance,
     totalProduced: totals.t,
-    totals: { OSR: totals.t },
-    pending: { OSR: nodes.reduce((s, n) => s + n.pendingOsr, 0) },
+    totals: { GPU: totals.t },
+    pending: { GPU: nodes.reduce((s, n) => s + n.pendingOsr, 0) },
     claimCooldownRemainingMs,
     crateCooldown: {
       rigCratesRemaining: allowance.rigCratesRemaining,
@@ -1023,7 +1036,7 @@ export function treasuryEvents(limit = 100) {
     eventType: e.kind,
     walletLabel: `${e.wallet.slice(0, 4)}…${e.wallet.slice(-4)}`,
     amount: e.amount,
-    assetSymbol: 'OSR',
+    assetSymbol: 'GPU',
     meta: e.meta ? JSON.parse(e.meta) : null,
   }));
 }

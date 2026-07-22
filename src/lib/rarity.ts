@@ -1,4 +1,4 @@
-// OSR rarity system — 7 component tiers + 10 node aura levels.
+// GPU rarity system — 7 component tiers + 10 node aura levels.
 // Multipliers/colors match the original game spec (ORS MODELS/rarity_system.js).
 
 import { AURA_TIERS, auraLabel } from './aura';
@@ -83,14 +83,14 @@ export const NODE_SLOTS: Record<NodeFamily, string[]> = {
 };
 
 export const SLOT_LABELS: Record<string, string> = {
-  derrick: 'Derrick Tower',
-  pump_jack: 'Pump Jack',
-  pipeline: 'Pipeline',
-  flare_stack: 'Flare Stack',
-  drill_bit: 'Drill Bit',
-  ore_cart: 'Ore Cart',
-  rail_track: 'Rail Track',
-  elevator: 'Shaft Elevator',
+  derrick: 'Lithography Machine',
+  pump_jack: 'Wafer Stack',
+  pipeline: 'Etch Chamber',
+  flare_stack: 'Power Bus',
+  drill_bit: 'Dicing Saw',
+  ore_cart: 'Packaging Line',
+  rail_track: 'Test Handler',
+  elevator: 'Cooling Array',
 };
 
 /** Average multiplier across 4 slots; empty slots count as 1.0x. */

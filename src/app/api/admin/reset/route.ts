@@ -26,6 +26,7 @@ const TABLES = [
   'crates',
   'components',
   'nodes',
+  'floor_layouts',
   'ledger',
   'settlements',
   'idempotency',

@@ -30,8 +30,8 @@ function NodeChip({ type, abbrev }: { type: 'oil' | 'mine'; abbrev?: boolean }) 
         color: '#cbd5e1',
       }}
     >
-      <span aria-hidden>{oil ? '⛽' : '⛏'}</span>
-      {abbrev ? (oil ? 'OIL' : 'MINE') : oil ? 'Oil Rig' : 'Mining Shaft'}
+      <span aria-hidden>{oil ? '◉' : '⬡'}</span>
+      {abbrev ? (oil ? 'FAB' : 'CLEAN') : oil ? 'Wafer Fab' : 'Cleanroom'}
     </span>
   );
 }
@@ -108,7 +108,7 @@ export default function InventoryPage() {
     async (slot: string) => {
       if (!wallet || !selected || !node || busy) return;
       if (selected.nodeType !== node.type) {
-        showToast(`That component belongs to a ${selected.nodeType === 'oil' ? 'rig' : 'shaft'}`);
+        showToast(`That component belongs to a ${selected.nodeType === 'oil' ? 'fab' : 'cleanroom'}`);
         return;
       }
       if (selected.slot !== slot) {
@@ -148,9 +148,9 @@ export default function InventoryPage() {
   );
 
   return (
-    <PageShell title="Component Inventory" subtitle="Equip rarity-tiered parts across your nodes to raise grow-power." backHref="/app" backLabel="← Command" maxWidth="max-w-7xl">
+    <PageShell title="Parts Bay" subtitle="Stage, compare, and install process equipment across every live silicon line." backHref="/app" backLabel="Fab Floor" maxWidth="max-w-[1560px]">
       {!wallet ? (
-        <p className="text-sm text-steel-400">Connect a wallet from the Command Center first.</p>
+        <p className="text-sm text-steel-400">Initialize an operator uplink from the Fab Floor first.</p>
       ) : !loaded ? (
         <p className="text-sm text-steel-400">Loading inventory…</p>
       ) : error ? (
@@ -222,7 +222,7 @@ export default function InventoryPage() {
                 <div className="rounded-lg border border-dashed border-steel-500/40 p-8 text-center">
                   <p className="text-sm text-steel-300">Locker is empty.</p>
                   <p className="mt-1 text-xs text-steel-500">
-                    New crate drops land here. Open a crate from the Command Center to start filling
+                    New supply pods land here. Open one from the Fab Floor to start filling
                     it.
                   </p>
                   {equippedItems.length > 0 && (
@@ -242,7 +242,7 @@ export default function InventoryPage() {
                 <div className="rounded-lg border border-dashed border-steel-500/40 p-8 text-center">
                   <p className="text-sm text-steel-300">Nothing equipped.</p>
                   <p className="mt-1 text-xs text-steel-500">
-                    Deploy a node from the Command Center to start installing components.
+                    Commission a production line from the Fab Floor to start installing equipment.
                   </p>
                 </div>
               )
@@ -345,8 +345,8 @@ export default function InventoryPage() {
                   {compatible
                     ? `Click the ${SLOT_LABELS[selected.slot]} slot on this node to equip.`
                     : selected.nodeType === 'oil'
-                      ? 'Navigate to an Oil Rig to equip this part.'
-                      : 'Navigate to a Mining Shaft to equip this part.'}
+                      ? 'Navigate to a Wafer Fab to equip this part.'
+                      : 'Navigate to a Cleanroom to equip this part.'}
                 </p>
               </div>
             )}
@@ -357,7 +357,7 @@ export default function InventoryPage() {
             <h2 className="stat-label mb-3">Target Node</h2>
             {nodes.length === 0 ? (
               <p className="panel p-4 text-sm text-steel-400">
-                You don&rsquo;t own any nodes yet. Deploy a rig or shaft from the Command Center.
+                You don&rsquo;t own any production lines yet. Commission a fab or cleanroom from the Fab Floor.
               </p>
             ) : node ? (
               <div className="panel p-4">
@@ -469,7 +469,7 @@ export default function InventoryPage() {
                 ) : !compatible ? (
                   <p className="mt-3 text-center text-xs text-steel-500">
                     This item only fits on{' '}
-                    {selected.nodeType === 'oil' ? 'an Oil Rig' : 'a Mining Shaft'}. Page to one.
+                    {selected.nodeType === 'oil' ? 'a Wafer Fab' : 'a Cleanroom'}. Page to one.
                   </p>
                 ) : null}
               </div>

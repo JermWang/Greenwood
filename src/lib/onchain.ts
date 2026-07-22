@@ -6,7 +6,7 @@ const client = createPublicClient({
 });
 
 /**
- * Live total supply from the deployed OSR token, in whole units.
+ * Live total supply from the deployed GPU token, in whole units.
  *
  * Returns null when the token is not configured yet or the RPC call fails, so
  * callers fall back to the TOTAL_SUPPLY constant rather than reporting zero.
@@ -30,8 +30,8 @@ export async function onchainTotalSupply(): Promise<number | null> {
  * Live balances of the wallets that back the protocol.
  *
  * The emission reserve and every spend sit in one treasury wallet — there are
- * no game or vault contracts — so this is a single holder, reported in both OSR
- * and ETH. The ETH figure matters as much as the OSR one: payouts are signed
+ * no game or vault contracts — so this is a single holder, reported in both GPU
+ * and ETH. The ETH figure matters as much as the GPU one: payouts are signed
  * from this wallet, so if it runs dry on gas, claims stop working.
  */
 export async function onchainReserves() {

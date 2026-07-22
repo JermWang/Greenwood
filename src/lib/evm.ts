@@ -119,7 +119,7 @@ async function balances(provider: Eip1193Provider, address: Address) {
   const client = createPublicClient({ chain: robinhoodChain, transport: custom(provider) });
   const native = await client.getBalance({ address });
   let osrBalance: string | null = null;
-  let osrSymbol = 'OSR';
+  let osrSymbol = 'GPU';
   if (isConfiguredAddress(OSR_TOKEN_ADDRESS)) {
     const token = getAddress(OSR_TOKEN_ADDRESS);
     const [amount, decimals, symbol] = await Promise.all([
@@ -204,7 +204,7 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
   chainId: null,
   nativeBalance: null,
   osrBalance: null,
-  osrSymbol: 'OSR',
+  osrSymbol: 'GPU',
   connecting: false,
   initialized: false,
   error: null,
@@ -212,7 +212,7 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
   initialize: () => {
     if (typeof window === 'undefined' || discoveryBound) return;
     discoveryBound = true;
-    const lastRdns = window.localStorage.getItem('osr:last-wallet-rdns');
+    const lastRdns = window.localStorage.getItem('gpu:last-wallet-rdns');
     window.addEventListener('eip6963:announceProvider', (event) => {
       const { info, provider } = event.detail;
       if (!info?.uuid || !provider?.request) return;
@@ -256,7 +256,7 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
       const address = getAddress(accounts[0]);
       const chainId = await providerChainId(option.provider);
       bindProvider(option.provider);
-      window.localStorage.setItem('osr:last-wallet-rdns', option.rdns);
+      window.localStorage.setItem('gpu:last-wallet-rdns', option.rdns);
       set({ address, chainId, selectedWalletUuid: option.uuid, connecting: false });
       await get().refreshBalances();
       return address;

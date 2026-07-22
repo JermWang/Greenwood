@@ -56,7 +56,7 @@ describe('recordPayout', () => {
 
   test('a failed payout is recorded as an open debt', () => {
     const w = wallet(2);
-    recordPayout(w, 250, null, { error: 'treasury out of OSR' });
+    recordPayout(w, 250, null, { error: 'treasury out of GPU' });
 
     const [row] = payouts(w);
     expect(row.status).toBe('owed');

@@ -6,39 +6,29 @@ import { CHAIN } from '@/lib/config';
 
 export default function DisclaimerModal() {
   const pathname = usePathname();
-  const termsAcceptedAt = useWalletStore((s) => s.termsAcceptedAt);
-  const acceptTerms = useWalletStore((s) => s.acceptTerms);
-  const wallet = useWalletStore((s) => s.wallet);
+  const termsAcceptedAt = useWalletStore((state) => state.termsAcceptedAt);
+  const acceptTerms = useWalletStore((state) => state.acceptTerms);
+  const wallet = useWalletStore((state) => state.wallet);
 
-  if (pathname === '/' || pathname?.startsWith('/rarity-test') || termsAcceptedAt) return null;
+  const isWalletFreeRoute = pathname === '/demo' || (pathname === '/start' && !wallet);
+  if (pathname === '/' || pathname?.startsWith('/rarity-test') || isWalletFreeRoute || termsAcceptedAt) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink-900/95 p-6">
-      <div className="max-w-lg rounded-lg border border-amber-500/50 bg-ink-800 p-6">
-        <h2 className="mb-3 font-mono text-sm uppercase tracking-widest text-amber-500">
-          {CHAIN.name} — Mainnet
-        </h2>
-        <p className="mb-4 text-sm leading-relaxed text-steel-300">
-          You’re about to play OSR on <strong>{CHAIN.name}</strong> (chain {CHAIN.id}), an
-          EVM L2 that settles on Ethereum with ETH as gas. Privy can provision an embedded wallet,
-          or you can link MetaMask, Rabby, or Robinhood Wallet. Wallet approvals and transactions
-          must be confirmed through your authenticated wallet. Mainnet transactions use real
-          assets and cannot be reversed. OSR is a game, not a financial product; rewards are not
-          guaranteed.
-        </p>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            className="w-full rounded border border-steel-500/60 py-3 font-semibold text-steel-200 hover:border-steel-400 hover:bg-ink-700/60 sm:w-1/3"
-            onClick={() => window.location.replace('/')}
-          >
-            Decline
-          </button>
-          <button
-            className="w-full rounded bg-amber-500 py-3 font-semibold text-ink-900 hover:bg-amber-400 sm:flex-1"
-            onClick={() => acceptTerms()}
-          >
-            {wallet ? 'I understand and accept' : 'Accept & Continue'}
-          </button>
+    <div className="fab-safety-overlay">
+      <div className="fab-safety-modal">
+        <div className="fab-safety-code"><span>SAFETY INTERLOCK</span><span>MAINNET / {CHAIN.id}</span></div>
+        <div className="fab-safety-layout">
+          <div className="fab-safety-wafer" aria-hidden><span>!</span></div>
+          <div>
+            <h2 className="text-[clamp(2rem,5vw,3.8rem)] font-semibold leading-[.92] tracking-[-.055em] text-white">Real network.<br />Exact review.</h2>
+            <p className="mt-5 text-sm leading-relaxed text-sky-100/58">
+              You are entering GPU on <strong>{CHAIN.name}</strong> (chain {CHAIN.id}), an EVM L2 that settles with ETH gas. Privy can provision an embedded wallet or link MetaMask, Rabby, or Robinhood Wallet. Mainnet transfers use real assets and cannot be reversed. Before any wallet prompt, GPU simulates the exact direct transfer and shows the amount, token, treasury, network, and zero native value. GPU never requests an unlimited token allowance. GPU is a game, not a financial product, and rewards are not guaranteed.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-col gap-2 border-t border-white/10 pt-5 sm:flex-row sm:justify-end">
+          <button className="btn-secondary w-full sm:w-auto" onClick={() => window.location.replace('/')}>Exit to title</button>
+          <button className="btn-primary w-full sm:w-auto" onClick={() => acceptTerms()}>{wallet ? 'Unlock fab controls' : 'Acknowledge & enter'}</button>
         </div>
       </div>
     </div>

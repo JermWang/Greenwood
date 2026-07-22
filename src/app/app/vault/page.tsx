@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import PageShell from '@/components/ui/PageShell';
 import { api, type ProtocolOverview } from '@/lib/api-client';
 import { CHAIN, TOKEN_LIVE } from '@/lib/config';
@@ -12,7 +13,6 @@ interface ReserveRow {
   balanceUi: number;
 }
 
-// Actual server response shape (api-client's declared type lags the route).
 interface TreasuryEvent {
   id: number;
   createdAt: number;
@@ -21,6 +21,8 @@ interface TreasuryEvent {
   amount: number;
   assetSymbol: string;
 }
+
+const compact = (value: number | undefined) => value == null ? '—' : new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 2 }).format(value);
 
 export default function VaultPage() {
   const [overview, setOverview] = useState<ProtocolOverview | null>(null);
@@ -37,181 +39,100 @@ export default function VaultPage() {
       setOverview(ov);
       setReserves(rs);
       setEvents(ev as unknown as TreasuryEvent[]);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'API unreachable';
-      setError(msg.startsWith('429') ? 'Servers busy — try again in a moment.' : msg);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'API unreachable';
+      setError(message.startsWith('429') ? 'Telemetry bus is saturated. Retry in a moment.' : message);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
+
+  const reserveFill = useMemo(() => {
+    if (!overview) return 0;
+    const reserve = Math.max(0, overview.osrReserveBalance ?? 0);
+    const retired = Math.max(0, overview.totalOsrBurned ?? 0);
+    return reserve + retired > 0 ? reserve / (reserve + retired) : 0;
+  }, [overview]);
 
   return (
-    <PageShell title="Reserve Vault" subtitle="Public transparency dashboard" maxWidth="max-w-6xl">
+    <PageShell title="Treasury Core" subtitle="Inspect the emission chamber, custody cells, and every network flow from one proof-of-reserve console." maxWidth="max-w-[1500px]">
       {loading && !overview ? (
-        <p className="text-sm text-steel-400">Loading…</p>
+        <div className="fab-loading-deck"><span className="fab-loading-scan" /><p className="font-mono text-[10px] uppercase tracking-[.25em] text-cyan-200">Reading reserve lattice</p></div>
       ) : error ? (
-        <div className="panel border-red-500/40 p-4 text-sm text-red-400">
-          <p>{error}</p>
-          <button type="button" className="btn-secondary mt-3 text-xs" onClick={() => void load()}>
-            Retry
-          </button>
-        </div>
+        <div className="fab-system-alert is-error"><span>CORE</span><p>{error}</p><button className="btn-secondary ml-auto" onClick={() => void load()}>Retry link</button></div>
       ) : (
-        <div className="space-y-8">
-          {overview && (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <StatCard
-                label="OSR Emission Reserve"
-                value={overview.osrReserveBalance?.toLocaleString() ?? '—'}
-                suffix="OSR"
-              />
-              <StatCard
-                label="Total OSR Burned"
-                value={overview.totalOsrBurned?.toLocaleString() ?? '—'}
-                suffix="OSR"
-              />
-              <StatCard label="Total Nodes" value={String(overview.totalNodes ?? '0')} suffix="" />
-              <StatCard
-                label="Network Rate"
-                value={
-                  overview.networkProductionRate != null
-                    ? overview.networkProductionRate.toFixed(2)
-                    : '—'
-                }
-                suffix="OSR/s"
-              />
-              {overview.xomxReserveBalance > 0 && (
-                <StatCard
-                  label="XOMx Reserve"
-                  value={overview.xomxReserveBalance.toFixed(4)}
-                  suffix="XOMX"
-                />
-              )}
-              {overview.cvxxReserveBalance > 0 && (
-                <StatCard
-                  label="CVXx Reserve"
-                  value={overview.cvxxReserveBalance.toFixed(4)}
-                  suffix="CVXX"
-                />
-              )}
+        <div className="treasury-layout">
+          <section className="treasury-reactor">
+            <div className="treasury-reactor-copy">
+              <span className="fab-scene-kicker">EMISSION CHAMBER / LIVE</span>
+              <h2>{compact(overview?.osrReserveBalance)} <small>GPU</small></h2>
+              <p>Unrouted network reserve</p>
+              <div className="treasury-flow-legend">
+                <span><i className="is-reserve" /> Reserve {Math.round(reserveFill * 100)}%</span>
+                <span><i className="is-retired" /> Retired {Math.round((1 - reserveFill) * 100)}%</span>
+              </div>
             </div>
-          )}
+            <div className="treasury-orbit" style={{ '--reserve-fill': `${reserveFill * 360}deg` } as CSSProperties}>
+              <span className="treasury-orbit-ring is-a" />
+              <span className="treasury-orbit-ring is-b" />
+              <span className="treasury-orbit-core"><b>GPU</b><small>RESERVE</small></span>
+            </div>
+          </section>
 
-          <section>
-            <h2 className="stat-label mb-3">Treasury Wallets</h2>
+          <section className="treasury-signal-grid">
+            <Signal code="BURN" label="GPU permanently retired" value={compact(overview?.totalOsrBurned)} unit="GPU" tone="lime" />
+            <Signal code="LINES" label="Active process lines" value={String(overview?.totalNodes ?? 0)} unit="UNITS" tone="cobalt" />
+            <Signal code="FLOW" label="Network silicon output" value={overview?.networkProductionRate?.toFixed(3) ?? '—'} unit="GPU/S" tone="cyan" />
+          </section>
+
+          <section className="treasury-cells">
+            <div className="fab-console-heading"><span>CUSTODY CELLS</span><span>{TOKEN_LIVE ? 'ON-CHAIN' : 'PRE-TOKEN'}</span></div>
             {reserves.length === 0 ? (
-              <p className="panel p-4 text-sm leading-relaxed text-steel-400">
-                {TOKEN_LIVE
-                  ? 'The treasury wallet returned no balances.'
-                  : 'The OSR token is not live yet, so there are no on-chain balances to report.'}
-              </p>
+              <div className="treasury-empty">
+                <span className="treasury-empty-icon">◇</span>
+                <strong>{TOKEN_LIVE ? 'No balances returned' : 'Custody cells awaiting token launch'}</strong>
+                <p>{TOKEN_LIVE ? 'The configured treasury returned no indexed assets.' : 'Protocol accounting is active; public chain balances appear here after GPU launches.'}</p>
+              </div>
             ) : (
-              <>
-                {/* Desktop table */}
-                <div className="panel hidden overflow-hidden md:block">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-ink-600">
-                        <th className="stat-label px-4 py-3 font-normal">Label</th>
-                        <th className="stat-label px-4 py-3 font-normal">Address</th>
-                        <th className="stat-label px-4 py-3 font-normal">Asset</th>
-                        <th className="stat-label px-4 py-3 text-right font-normal">Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-ink-600/60">
-                      {reserves.map((r) => (
-                        <tr key={r.walletAddress}>
-                          <td className="px-4 py-3 text-steel-200">{r.walletLabel}</td>
-                          <td className="px-4 py-3 font-mono text-xs text-steel-400">
-                            {r.walletAddress.slice(0, 16)}…
-                          </td>
-                          <td className="px-4 py-3 font-mono text-xs text-amber-500">
-                            {r.assetSymbol}
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono text-white">
-                            {r.balanceUi.toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Mobile cards */}
-                <div className="space-y-2 md:hidden">
-                  {reserves.map((r) => (
-                    <div key={r.walletAddress} className="panel p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm text-steel-200">{r.walletLabel}</p>
-                        <span className="rounded bg-ink-700 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-amber-500">
-                          {r.assetSymbol}
-                        </span>
-                      </div>
-                      <p className="mt-1 font-mono text-[11px] text-steel-400">
-                        {r.walletAddress.slice(0, 12)}…{r.walletAddress.slice(-6)}
-                      </p>
-                      <p className="mt-1 font-mono text-sm text-white">
-                        {r.balanceUi.toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </>
+              <div className="treasury-cell-grid">
+                {reserves.map((row, index) => (
+                  <article key={row.walletAddress} className="treasury-cell">
+                    <div className="treasury-cell-index">{String(index + 1).padStart(2, '0')}</div>
+                    <div><span>{row.walletLabel}</span><strong>{row.balanceUi.toLocaleString()} <small>{row.assetSymbol}</small></strong><code>{row.walletAddress.slice(0, 10)}…{row.walletAddress.slice(-6)}</code></div>
+                    <a href={`${CHAIN.explorer}/address/${row.walletAddress}`} target="_blank" rel="noreferrer" aria-label={`Inspect ${row.walletLabel} on explorer`}>↗</a>
+                  </article>
+                ))}
+              </div>
             )}
           </section>
 
-          <section>
-            <h2 className="stat-label mb-3">Recent Treasury Events</h2>
-            <div className="panel max-h-96 overflow-y-auto p-0">
-              {events.length === 0 ? (
-                <p className="p-4 text-sm text-steel-400">No treasury events yet</p>
-              ) : (
-                <ul className="divide-y divide-ink-600/60">
-                  {events.map((e) => (
-                    <li key={e.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="shrink-0 font-mono text-[11px] text-steel-500">
-                          {new Date(e.createdAt).toLocaleTimeString()}
-                        </span>
-                        <span className="shrink-0 rounded bg-ink-700 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-500">
-                          {e.eventType}
-                        </span>
-                        <span className="truncate font-mono text-xs text-steel-400">
-                          {e.walletLabel}
-                        </span>
-                      </div>
-                      <span className="shrink-0 font-mono text-xs text-white">
-                        {e.amount.toLocaleString()}{' '}
-                        <span className="text-steel-400">{e.assetSymbol}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+          <section className="treasury-events">
+            <div className="fab-console-heading"><span>FLOW LEDGER</span><span>{events.length} SIGNALS</span></div>
+            <div className="treasury-event-stream">
+              {events.length === 0 ? <p className="treasury-event-empty">No indexed treasury movement yet.</p> : events.map((event) => (
+                <article key={event.id}>
+                  <time>{new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+                  <span className="treasury-event-pulse" />
+                  <div><strong>{event.eventType.replaceAll('_', ' ')}</strong><small>{event.walletLabel}</small></div>
+                  <b>{event.amount.toLocaleString()} <small>{event.assetSymbol}</small></b>
+                </article>
+              ))}
             </div>
           </section>
 
-          <p className="border-t border-ink-600 pt-4 text-xs text-steel-500">
-            Configured balances are read directly from {CHAIN.name} through JSON-RPC. Treasury
-            activity will appear only after deployed contract logs are indexed; local development
-            ledger entries are never presented as blockchain transactions.
-          </p>
+          <footer className="treasury-proof">
+            <span className="network-pulse" />
+            <p><strong>Proof path</strong> Balances read directly from {CHAIN.name} JSON-RPC. Only indexed contract logs enter this flow ledger; local simulation records are never represented as chain activity.</p>
+            <button type="button" onClick={() => void load()}>{loading ? 'Syncing…' : 'Refresh proof'}</button>
+          </footer>
         </div>
       )}
     </PageShell>
   );
 }
 
-function StatCard({ label, value, suffix }: { label: string; value: string; suffix: string }) {
-  return (
-    <div className="panel p-4">
-      <p className="stat-label">{label}</p>
-      <p className="mt-1 break-words font-mono text-lg text-white">
-        {value} {suffix && <span className="text-xs text-steel-400">{suffix}</span>}
-      </p>
-    </div>
-  );
+function Signal({ code, label, value, unit, tone }: { code: string; label: string; value: string; unit: string; tone: 'lime' | 'cobalt' | 'cyan' }) {
+  return <article className={`treasury-signal is-${tone}`}><span>{code}</span><strong>{value}</strong><small>{unit}</small><p>{label}</p></article>;
 }

@@ -1,56 +1,83 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Cpu, Lightning, Radio } from '@phosphor-icons/react';
 import WalletButton from '@/components/ui/WalletButton';
 import DisclaimerModal from '@/components/ui/DisclaimerModal';
 import DeployNotice from '@/components/ui/DeployNotice';
 import NavBar from '@/components/ui/NavBar';
 import SoundToggle from '@/components/ui/SoundToggle';
+import TransactionSafetyModal from '@/components/ui/TransactionSafetyModal';
 import { useEvmWallet } from '@/lib/evm';
 import { CHAIN, TOKEN_LIVE } from '@/lib/config';
 
-function OsrBalancePill() {
+const ROUTE_TITLES: Record<string, string> = {
+  '/app': 'Fab Floor',
+  '/app/floor': 'Build Floor',
+  '/app/inventory': 'Parts Bay',
+  '/app/ops': 'Telemetry',
+  '/app/market': 'Chip Exchange',
+  '/app/vault': 'Treasury Core',
+  '/app/tokenomics': 'GPU Model',
+  '/app/leaderboard': 'Silicon Race',
+  '/app/profile': 'Operator ID',
+  '/app/docs': 'Fab Manual',
+};
+
+function routeTitle(pathname: string) {
+  const exact = ROUTE_TITLES[pathname];
+  if (exact) return exact;
+  return Object.entries(ROUTE_TITLES).find(([path]) => path !== '/app' && pathname.startsWith(path))?.[1] ?? 'GPU Network';
+}
+
+function GpuBalanceModule() {
   const osrBalance = useEvmWallet((state) => state.osrBalance);
   const symbol = useEvmWallet((state) => state.osrSymbol);
-  if (!TOKEN_LIVE || osrBalance == null) return null;
   return (
-    <div className="hidden items-center gap-2 rounded-[10px] border border-amber-500/30 bg-ink-800 px-3 py-2 font-mono text-xs text-amber-300 sm:flex">
-      <span className="grid h-4 w-4 place-items-center rounded-full bg-gradient-to-br from-amber-100 via-amber-400 to-amber-700 text-[7px] text-[#3a1e05]">◆</span>
-      {Number(osrBalance).toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
-      <span className="text-[10px] text-steel-500">{symbol}</span>
+    <div className="fab-balance-module">
+      <span className="fab-balance-glyph"><Lightning size={14} weight="fill" /></span>
+      <span className="hidden sm:block">
+        <span className="block font-mono text-[8px] uppercase tracking-[.18em] text-sky-100/45">Utility reserve</span>
+        <span className="mt-0.5 block font-mono text-[12px] font-bold text-white">
+          {TOKEN_LIVE && osrBalance != null ? Number(osrBalance).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}{' '}
+          <span className="text-lime-300">{TOKEN_LIVE ? symbol : 'GPU'}</span>
+        </span>
+      </span>
     </div>
   );
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   return (
-    <div className="app-surface flex min-h-screen flex-col">
-      {/* Mounted once: starts the status poller for the whole app. */}
+    <div className="gpu-os min-h-screen">
       <DeployNotice />
-      <div className="border-b border-emerald-500/20 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent py-[5px] text-center font-mono text-[10.5px] uppercase tracking-[.24em] text-emerald-400">
-        <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#00c805]" />
-        {CHAIN.name} — Mainnet · chain {CHAIN.id} · gas ETH
-      </div>
-      <div className="sticky top-0 z-40 border-b border-white/[.07] bg-[#080808]/90 shadow-[0_18px_50px_-34px_rgba(0,0,0,.95)] backdrop-blur-xl">
-        <header className="flex items-center gap-3 border-b border-white/[.07] px-4 py-2.5 md:px-[22px]">
-          <Link href="/" className="flex items-center gap-2.5">
+      <NavBar />
+      <div className="gpu-stage lg:pl-[244px]">
+        <header className="fab-topbar">
+          <Link href="/" className="flex items-center gap-2 lg:hidden" aria-label="GPU home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.jpg" alt="OSR" className="h-[34px] w-[34px] rounded-[10px] shadow-[0_0_0_1px_rgba(245,166,35,.4),0_6px_18px_-6px_rgba(245,166,35,.5)]" />
-            <span className="leading-none">
-              <span className="gold-text block font-mono text-[18px] font-bold tracking-[.28em]">OSR</span>
-              <span className="mt-0.5 hidden font-mono text-[8.5px] uppercase tracking-[.34em] text-steel-500 sm:block">Oil Strategic Reserve</span>
-            </span>
+            <img src="/gpu-mark.svg" alt="" className="h-8 w-8 rounded-[10px]" />
+            <span className="font-mono text-sm font-bold tracking-[.24em] text-white">GPU</span>
           </Link>
+          <div className="hidden min-w-0 items-center gap-3 lg:flex">
+            <span className="fab-route-chip"><Cpu size={15} weight="duotone" /> {routeTitle(pathname)}</span>
+            <span className="h-4 w-px bg-white/10" />
+            <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[.18em] text-sky-100/45">
+              <Radio size={13} className="text-lime-300" /> {CHAIN.name} · {CHAIN.id}
+            </span>
+          </div>
           <div className="ml-auto flex items-center gap-2">
-            <OsrBalancePill />
+            <GpuBalanceModule />
             <SoundToggle />
             <WalletButton />
           </div>
         </header>
-        <NavBar />
+        <div className="gpu-stage-content">{children}</div>
       </div>
-      <div className="flex-1">{children}</div>
       <DisclaimerModal />
+      <TransactionSafetyModal />
     </div>
   );
 }

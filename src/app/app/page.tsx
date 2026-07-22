@@ -1,6 +1,6 @@
 'use client';
 
-// Command Center — the main game screen: 3D compound + sidebar HUD.
+// Fab Floor — the GPU campus cockpit, digital twin, and production controls.
 
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -25,7 +25,9 @@ import { CHAIN, TOKEN_LIVE } from '@/lib/config';
 /** Operator-facing wording for each stage of an on-chain settlement. */
 const SETTLEMENT_STEP_LABEL: Record<SettlementStep, string> = {
   quoting: 'Pricing action…',
-  submitting: 'Confirm the OSR payment in your wallet',
+  preflighting: 'Simulating exact wallet call...',
+  reviewing: 'Review the verified transaction details',
+  submitting: 'Confirm the GPU payment in your wallet',
   confirming: 'Waiting for confirmation…',
   settling: 'Finalising…',
 };
@@ -35,14 +37,14 @@ const CrateCinematic = dynamic(() => import('@/components/three/CrateCinematic')
 const CrateThumb = dynamic(() => import('@/components/three/CrateThumb'), { ssr: false });
 
 const SLOT_GLYPH: Record<string, string> = {
-  derrick: '⛰',
-  pump_jack: '⚡',
-  pipeline: '⛓',
-  flare_stack: '🔥',
-  drill_bit: '⛏',
-  ore_cart: '🚲',
-  rail_track: '═',
-  elevator: '↕',
+  derrick: '◎',
+  pump_jack: '◫',
+  pipeline: '⌬',
+  flare_stack: 'ϟ',
+  drill_bit: '◉',
+  ore_cart: '◇',
+  rail_track: '⊞',
+  elevator: '≈',
 };
 
 function fmt(n: number, digits = 2): string {
@@ -71,12 +73,12 @@ export default function CommandPage() {
   const [cameraFocusId, setCameraFocusId] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('osr:lighting-preset') as LightingPreset | null;
+    const stored = localStorage.getItem('gpu:lighting-preset') as LightingPreset | null;
     if (stored && ['sunset', 'dusk', 'neutral', 'night'].includes(stored)) setPreset(stored);
   }, []);
   const changePreset = (p: LightingPreset) => {
     setPreset(p);
-    localStorage.setItem('osr:lighting-preset', p);
+    localStorage.setItem('gpu:lighting-preset', p);
   };
 
   const say = useCallback((msg: string) => {
@@ -157,7 +159,7 @@ export default function CommandPage() {
     async (label: string, fn: (onStep: StepHandler) => Promise<unknown>, success?: string) => {
       if (!wallet) return say('Connect your wallet first');
       // Refuse to start anything while a deploy is rolling out. A spend puts
-      // OSR on-chain before the server records it, so a cutover landing between
+      // GPU on-chain before the server records it, so a cutover landing between
       // those two steps costs the player real tokens and leaves us owing a
       // refund. Waiting a couple of minutes is much cheaper than reconciling.
       if (useDeployStatus.getState().deploying) {
@@ -171,8 +173,8 @@ export default function CommandPage() {
       // Held so a background reload cannot fire mid-transaction.
       useDeployStatus.getState().setBusy(true);
       try {
-        // Settlement is several transactions deep — an approval, the action
-        // itself, then confirmation — so narrate each stage rather than leaving
+        // Settlement runs quote, preflight simulation, review, direct transfer,
+        // then confirmation, so narrate each stage rather than leaving
         // the operator staring at a spinner wondering which prompt is theirs.
         await fn((step) => say(SETTLEMENT_STEP_LABEL[step]));
         await refresh();
@@ -197,7 +199,7 @@ export default function CommandPage() {
       const n = r.claims.length;
       if (n === 0) return say('Nothing to claim');
       // Name the network fee rather than letting the payout quietly arrive short.
-      const gas = r.gasOsr > 0 ? ` — ${r.gasOsr.toFixed(2)} OSR network fee` : '';
+      const gas = r.gasOsr > 0 ? ` — ${r.gasOsr.toFixed(2)} GPU network fee` : '';
       say(`Rewards claimed (${n})${gas}`);
     });
 
@@ -215,378 +217,183 @@ export default function CommandPage() {
 
   if (!storeWallet) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
-        <div className="panel flex flex-col items-center gap-3 p-10 text-center">
-          <div className="font-mono text-sm uppercase tracking-widest text-amber-500">
-            Sign in to create your OSR wallet
+      <div className="gpu-page mx-auto max-w-[1180px]">
+        <div className="fab-uplink-empty">
+          <div className="fab-uplink-visual" aria-hidden>
+            <span className="fab-uplink-orbit orbit-a" />
+            <span className="fab-uplink-orbit orbit-b" />
+            <span className="fab-uplink-chip">GPU</span>
           </div>
-          <p className="text-sm text-steel-400">
-            Sign in with email or Google to create a Privy embedded hot wallet, or link MetaMask,
-            Rabby, or Robinhood Wallet on {CHAIN.name}. Every transaction stays tied to your
-            authenticated account.
-          </p>
+          <div className="relative z-10 max-w-xl">
+            <div className="font-mono text-[9px] font-bold uppercase tracking-[.28em] text-lime-300">Operator uplink offline</div>
+            <h1 className="mt-4 text-[clamp(2.5rem,7vw,5.5rem)] font-semibold leading-[.9] tracking-[-.06em] text-white">Bring your fab online.</h1>
+            <p className="mt-5 max-w-lg text-sm leading-6 text-sky-100/58">
+              Connect an authenticated wallet to initialize your cleanroom identity, production ledger, and first wafer line on {CHAIN.name}.
+            </p>
+            <div className="mt-7 grid gap-2 sm:grid-cols-3">
+              {[
+                ['01', 'Link operator'],
+                ['02', 'Commission fab'],
+                ['03', 'Start yield'],
+              ].map(([step, label]) => (
+                <div key={step} className="fab-uplink-step"><span>{step}</span>{label}</div>
+              ))}
+            </div>
+            <p className="mt-5 font-mono text-[9px] uppercase tracking-[.15em] text-sky-100/35">Use the connect control in the command bar to begin</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!op) {
+    return (
+      <div className="gpu-page mx-auto max-w-[1180px]">
+        <div className="fab-loading-deck">
+          <span className="fab-loading-scan" />
+          <div className="font-mono text-[10px] uppercase tracking-[.28em] text-lime-300">Synchronizing fab telemetry</div>
+          <p className="mt-2 text-sm text-sky-100/45">Reading facilities, production buffers, and network share…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh_-_136px)] max-w-[1560px] flex-col gap-[18px] p-4 md:grid md:grid-cols-[378px_minmax(0,1fr)] md:items-start md:px-[22px] md:py-5">
-      {/* Sidebar */}
-      <aside className="flex w-full flex-col gap-[14px] md:max-h-[calc(100vh_-_176px)] md:overflow-y-auto md:pr-1">
-
-        {!TOKEN_LIVE && (
-          <div className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-200">
-            Pre-token phase on {CHAIN.name}. Your compound is fully playable and OSR balances are
-            tracked by the protocol; they settle on-chain once the OSR token goes live.
+    <main className="fab-command-page">
+      <section className="fab-command-hero">
+        <div className="relative z-10">
+          <div className="flex flex-wrap items-center gap-2 font-mono text-[9px] font-bold uppercase tracking-[.24em] text-lime-300">
+            <span>LIVE FAB OS</span><span className="h-1 w-1 rounded-full bg-sky-300/50" /><span className="text-sky-100/42">CAMPUS {wallet?.slice(2, 8).toUpperCase()}</span>
           </div>
-        )}
-
-        {/* Mined-crate notice. Crates arrive on their own while the operator is
-            playing, so a find has to announce itself — otherwise it silently
-            appears in a modal nobody has open. Dismissing acknowledges it
-            server-side, so it does not reappear on the next device. */}
-        {unseen.length > 0 && (
-          <button
-            onClick={() => {
-              setCrateOpen(true);
-              void api.markCratesSeen(wallet!).then(refresh).catch(() => {});
-            }}
-            className="group flex items-center gap-2.5 rounded border border-amber-500/60 bg-amber-500/10 px-3 py-2.5 text-left transition hover:border-amber-400 hover:bg-amber-500/15"
-          >
-            <CrateThumb size={38} rarity="legendary" />
-            <div className="min-w-0">
-              <div className="font-mono text-[11px] font-bold uppercase tracking-widest text-amber-300">
-                {unseen.length === 1 ? 'Crate mined' : `${unseen.length} crates mined`}
-              </div>
-              <div className="text-[11px] leading-snug text-amber-200/80">
-                Your rigs turned {unseen.length === 1 ? 'one' : 'some'} up — tap to open
-              </div>
-            </div>
-            <span className="ml-auto shrink-0 font-mono text-lg text-amber-400 transition group-hover:translate-x-0.5">
-              →
-            </span>
-          </button>
-        )}
-
-        {error && (
-          <div className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-            {/^\d{3}\b|auth|privy|token|unauthor/i.test(error)
-              ? `Sign-in could not be verified (${error}) — retrying…`
-              : `API unreachable (${error}) — retrying…`}
-          </div>
-        )}
-
-        {/* Compound header */}
-        <div className="panel p-4">
-          <div className="flex items-baseline justify-between">
-            <div>
-              <div className="stat-label">Compound Level</div>
-              <div className="text-3xl font-bold text-white">
-                L<span className="text-amber-500">{op?.level ?? 1}</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="stat-label">Capacity</div>
-              <div className="text-sm text-steel-300">
-                {oilCount}/{oilCapacity} rigs · {mineCount}/{mineCapacity} shafts
-              </div>
-              <div className="mt-0.5 text-[10px] text-steel-500">
-                {op?.compound.cratesPerDay ?? 3} crates per family / day
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink-700">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-600 to-amber-300 shadow-[0_0_12px_rgba(245,166,35,.5)] transition-all"
-              style={{ width: `${Math.min(100, (nodes.length / Math.max(1, totalCapacity)) * 100)}%` }}
-            />
-          </div>
-          <div className="mt-1.5 flex justify-between font-mono text-[10px] text-steel-500">
-            <span>{nodes.length} / {totalCapacity} nodes online</span>
-            <span>Next: L{Math.min(10, (op?.level ?? 1) + 1)}</span>
-          </div>
+          <h1 className="mt-4 text-[clamp(2.4rem,6vw,5.8rem)] font-semibold leading-[.86] tracking-[-.065em] text-white">Campus operations.</h1>
+          <p className="mt-5 max-w-2xl text-sm leading-6 text-sky-100/55">Commission silicon lines, tune equipment, route production, and grow your share of the GPU emission network from one live control surface.</p>
         </div>
-
-        {/* Earnings */}
-        <div className="panel p-4">
-          <div className="stat-label">Estimated Daily Earnings</div>
-          <div className="mt-1 text-2xl font-bold text-amber-400">
-            {nodes.length ? fmt(dailyOsr) : '—'} <span className="text-sm text-steel-400">OSR / day</span>
-          </div>
-          <p className="mt-1 text-[11px] text-steel-500">
-            Based on current production rate across all your nodes.
-          </p>
-          <div className="mt-3">
-            <div className="flex justify-between text-[11px]">
-              <span className="stat-label">Network Share</span>
-              <span className="font-mono text-amber-500">Halving Active</span>
-            </div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded bg-ink-700">
-              <div
-                className="h-full bg-amber-500 transition-all"
-                style={{ width: `${Math.min(100, networkShare)}%` }}
-              />
-            </div>
-            <div className="mt-0.5 text-right font-mono text-[11px] text-steel-400">
-              {networkShare.toFixed(1)} %
-            </div>
-          </div>
-          {overview && (
-            <div className="mt-2 flex items-center justify-between text-[11px] text-steel-400">
-              <span>Halving #{overview.halving.cycleIndex + 2} in</span>
-              <span className="font-mono text-amber-500">
-                <Countdown ms={Math.max(0, overview.halving.nextHalvingMs - Date.now())} />
-              </span>
-            </div>
-          )}
-          {boostActive && (
-            <div className="mt-3 rounded border border-purple-400/40 bg-purple-500/10 p-2">
-              <div className="flex justify-between text-[11px]">
-                <span className="font-mono uppercase tracking-wider text-purple-300">
-                  Welcome Boost {op!.welcomeBoostFactor.toFixed(2)}×
-                </span>
-                <span className="text-steel-400">{Math.round(WELCOME_BOOST_WINDOW_S / 3600)}h window</span>
-              </div>
-              <div className="mt-1 h-1 overflow-hidden rounded bg-ink-700">
-                <div className="h-full bg-purple-400" style={{ width: `${boostPct * 100}%` }} />
-              </div>
-              <p className="mt-1 text-[10px] text-steel-500">
-                Your share is multiplied — accrual is larger during the boost window
-              </p>
-            </div>
-          )}
+        <div className="fab-hero-actions">
+          <button className="btn-secondary" onClick={() => setDeployOpen(true)} disabled={capacityFull}>+ Commission line</button>
           <button
-            className="btn-primary mt-3 w-full"
-            disabled={pendingTotal <= 0 || busy === 'claim' || (op?.claimCooldownRemainingMs ?? 0) > 0}
+            className="btn-primary"
+            disabled={pendingTotal <= 0 || busy === 'claim' || op.claimCooldownRemainingMs > 0}
             onClick={claimAll}
           >
-            {busy === 'claim'
-              ? 'Claiming…'
-              : (op?.claimCooldownRemainingMs ?? 0) > 0
-                ? `Claim ready in ${Math.ceil((op!.claimCooldownRemainingMs) / 60000)}m`
-                : `Claim Rewards${pendingTotal > 0 ? ` · ${fmt(pendingTotal)} OSR` : ''}`}
+            {busy === 'claim' ? 'Routing yield…' : op.claimCooldownRemainingMs > 0 ? `Buffer locked · ${Math.ceil(op.claimCooldownRemainingMs / 60000)}m` : `Route ${fmt(pendingTotal)} GPU`}
           </button>
         </div>
-
-        {/* Nodes */}
-        <div className="panel p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="stat-label">Your Nodes</div>
-            <span className="font-mono text-[11px] text-steel-400">
-              {nodes.length} / {totalCapacity}
-            </span>
-          </div>
-          {nodes.length === 0 && (
-            <p className="text-xs text-steel-500">No nodes — tap Deploy to ignite your first rig.</p>
-          )}
-          <div className="flex flex-col gap-1.5">
-            {nodes.map((n) => (
-              <button
-                key={n.id}
-                onClick={() => selectNode(n.id === selectedNodeId ? null : n.id)}
-                className={`flex items-center gap-2 rounded border px-2.5 py-2 text-left text-xs transition ${
-                  n.id === selectedNodeId
-                    ? 'border-amber-500 bg-amber-500/10'
-                    : 'border-ink-600 bg-ink-800 hover:border-steel-500'
-                }`}
-              >
-                <span className="text-base">{n.type === 'oil' ? '⛽' : '⛏'}</span>
-                {/* Same colour as this node's ring in the 3D scene, so cycling
-                    the list maps onto what is on screen without guessing. */}
-                <span
-                  aria-hidden
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: auraHex(n.level), boxShadow: `0 0 5px ${auraHex(n.level)}99` }}
-                />
-                <span className="font-semibold text-steel-200">
-                  {n.type === 'oil' ? 'Oil Rig' : 'Mining Shaft'} · L{n.level}
-                </span>
-                <span className="font-mono text-[10px] uppercase" style={{ color: auraHex(n.level) }}>
-                  {auraLabel(n.level)}
-                </span>
-                <span className="ml-auto font-mono text-amber-400">{fmt(n.pendingOsr)} OSR</span>
-              </button>
-            ))}
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button
-              className="btn-primary"
-              disabled={capacityFull}
-              onClick={() => setDeployOpen(true)}
-              title={capacityFull ? 'Both family capacities are full · upgrade compound to add more' : undefined}
-            >
-              Deploy Node {nodes.length}/{totalCapacity}
-            </button>
-            <button className="btn-secondary" onClick={() => setCrateOpen(true)}>
-              Open Crate
-            </button>
-          </div>
+        <div className="fab-metric-grid">
+          <div className="fab-metric-card"><span className="fab-metric-code">TIER</span><strong>0{op.level}</strong><small>Campus certification</small></div>
+          <div className="fab-metric-card"><span className="fab-metric-code">FLOW</span><strong>{nodes.length ? fmt(dailyOsr, 0) : '0'}</strong><small>GPU per day</small></div>
+          <div className="fab-metric-card"><span className="fab-metric-code">LINES</span><strong>{nodes.length}/{totalCapacity}</strong><small>Active capacity</small></div>
+          <div className="fab-metric-card"><span className="fab-metric-code">SHARE</span><strong>{networkShare.toFixed(1)}%</strong><small>Emission grid</small></div>
         </div>
+        <div className="fab-hero-trace" aria-hidden />
+      </section>
 
-        {/* Compound upgrade */}
-        <CompoundPanel busy={busy} run={run} />
-
-        {/* xStock teaser */}
-        <div className="panel p-4 text-[11px] leading-relaxed text-steel-500">
-          Oil rig owners at compound level 5+ earn a share of tokenized Exxon (XOMx) and Chevron
-          (CVXx) dividends purchased with protocol revenue.
-        </div>
-
-        {/* Node detail */}
-        {selected && <NodeDetail node={selected} busy={busy} run={run} onOpenCrate={() => setCrateOpen(true)} />}
-      </aside>
-
-      {/* 3D scene */}
-      <div className="relative h-[max(440px,60vh)] overflow-hidden rounded-[18px] border border-white/[.08] bg-ink-800 shadow-[0_1px_0_rgba(255,255,255,.045)_inset,0_24px_60px_-32px_rgba(0,0,0,.95)] md:h-[max(560px,calc(100vh_-_176px))]">
-        <Scene
-          nodes={sceneNodes}
-          preset={preset}
-          selectedNodeId={selectedNodeId}
-          focusNodeId={cameraFocusId}
-          onSelect={(id) => {
-            selectNode(id || null);
-            setCameraFocusId(id || null);
-          }}
-        />
-        {/* Focused-rig readout. Cycling used to name the family and nothing
-            else, so the fine detail — level, aura tier, which components are
-            fitted and at what rarity — was only reachable by leaving the scene.
-            The aura swatch here is the same colour as the ring drawn under the
-            rig, which is what makes the ring legible as a rank. */}
-        {focusedRig && (
-          <div className="pointer-events-none absolute bottom-20 left-1/2 z-10 w-[min(92vw,420px)] -translate-x-1/2 rounded-lg border border-ink-500/80 bg-ink-900/92 px-3 py-2.5 shadow-2xl backdrop-blur">
-            <div className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{
-                  background: auraHex(focusedRig.level),
-                  boxShadow: `0 0 7px ${auraHex(focusedRig.level)}aa`,
-                }}
-              />
-              <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-steel-100">
-                {focusedRig.type === 'oil' ? 'Oil Rig' : 'Mining Shaft'} · L{focusedRig.level}
-              </span>
-              <span
-                className="font-mono text-[10px] font-bold uppercase"
-                style={{ color: auraHex(focusedRig.level) }}
-              >
-                {auraLabel(focusedRig.level)}
-              </span>
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-              {NODE_SLOTS[focusedRig.type === 'oil' ? 'oil' : 'mine'].map((slot) => {
-                const fitted = focusedRig.components.find((c) => c.slot === slot);
-                const rarity = (fitted?.rarity ?? null) as Rarity | null;
-                return (
-                  <div key={slot} className="flex items-baseline gap-1.5 text-[10px]">
-                    <span className="text-steel-500">{SLOT_GLYPH[slot]}</span>
-                    <span className="truncate text-steel-400">{SLOT_LABELS[slot]}</span>
-                    <span
-                      className="ml-auto shrink-0 font-mono font-bold uppercase"
-                      style={{ color: rarity ? rarityHex(rarity) : '#5b5b5b' }}
-                    >
-                      {rarity ? COMPONENT_RARITIES[rarity].label : '—'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+      <div className="fab-alert-stack">
+        {!TOKEN_LIVE && <div className="fab-system-alert"><span>SIM</span><p>Pre-token simulation is active. Campus activity is tracked now and settles when GPU goes live.</p></div>}
+        {unseen.length > 0 && (
+          <button className="fab-system-alert is-reward" onClick={() => { setCrateOpen(true); void api.markCratesSeen(wallet!).then(refresh).catch(() => {}); }}>
+            <CrateThumb size={34} rarity="legendary" />
+            <p><strong>{unseen.length} sealed supply {unseen.length === 1 ? 'pod' : 'pods'}</strong><br />Recovered by your production lines · inspect contents</p>
+            <span className="ml-auto">OPEN</span>
+          </button>
         )}
-        <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border border-ink-500/80 bg-ink-900/90 p-1 shadow-2xl backdrop-blur">
-          <button
-            className="rounded-full px-3 py-2 font-mono text-lg text-steel-200 transition hover:bg-amber-500/20 hover:text-amber-300"
-            onClick={() => cycleCameraFocus(-1)}
-            aria-label="Focus previous rig"
-            title="Previous rig (Left Arrow)"
-          >
-            ←
-          </button>
-          <button
-            className="min-w-36 rounded-full px-3 py-2 text-center font-mono text-[10px] font-bold uppercase tracking-widest text-amber-400 transition hover:bg-ink-700"
-            onClick={() => setCameraFocusId(null)}
-            title="Return to compound overview"
-          >
-            {focusedRig ? 'Back to Compound' : 'Compound Overview'}
-          </button>
-          <button
-            className="rounded-full px-3 py-2 font-mono text-lg text-steel-200 transition hover:bg-amber-500/20 hover:text-amber-300"
-            onClick={() => cycleCameraFocus(1)}
-            aria-label="Focus next rig"
-            title="Next rig (Right Arrow)"
-          >
-            →
-          </button>
-        </div>
-        {/* Lighting selector */}
-        <div className="absolute right-3 top-3 flex gap-1 rounded border border-ink-600 bg-ink-900/80 p-1 backdrop-blur">
-          {(
-            [
-              ['sunset', '🌅'],
-              ['dusk', '🌆'],
-              ['neutral', '☀️'],
-              ['night', '🌙'],
-            ] as [LightingPreset, string][]
-          ).map(([p, icon]) => (
-            <button
-              key={p}
-              title={p}
-              onClick={() => changePreset(p)}
-              className={`rounded px-2 py-1 text-sm ${preset === p ? 'bg-amber-500/20' : 'hover:bg-ink-700'}`}
-            >
-              {icon}
-            </button>
-          ))}
-        </div>
+        {error && <div className="fab-system-alert is-error"><span>ERR</span><p>{/^\d{3}\b|auth|privy|token|unauthor/i.test(error) ? `Operator uplink verification failed (${error}) · retrying` : `Fab API unreachable (${error}) · retrying`}</p></div>}
       </div>
 
-      {/* Modals */}
-      {deployOpen && (
-        <DeployModal
-          onClose={() => setDeployOpen(false)}
-          busy={busy}
-          counts={{ oil: oilCount, mine: mineCount }}
-          capacities={{ oil: oilCapacity, mine: mineCapacity }}
-          onDeploy={(familyKey) =>
-            run('mint', async (onStep) => {
-              await api.mintNode(wallet!, familyKey, onStep);
-              setDeployOpen(false);
-              say('Node deployed — production started');
-            })
-          }
-        />
-      )}
-      {crateOpen && (
-        <CratePicker
-          onClose={() => setCrateOpen(false)}
-          busy={busy}
-          op={op}
-          onOpen={openCrate}
-        />
-      )}
-      {crateResult && (
-        <CrateCinematic
-          result={crateResult}
-          onClose={() => setCrateResult(null)}
-          // There is no "buy another" any more — the operator can only open
-          // what they have mined, so this reopens the inventory rather than
-          // silently charging for a crate they may not own.
-          onOpenAnother={() => {
-            setCrateResult(null);
-            setCrateOpen(true);
-          }}
-        />
-      )}
+      <div className="fab-command-grid">
+        <section className="fab-digital-twin" aria-label="Interactive fab digital twin">
+          <div className="fab-scene-head">
+            <div><span className="fab-scene-kicker">DIGITAL TWIN / REALTIME</span><strong>{focusedRig ? `${focusedRig.type === 'oil' ? 'WAFER FAB' : 'CLEANROOM'} · L${focusedRig.level}` : 'CAMPUS OVERVIEW'}</strong></div>
+            <div className="fab-lighting-tabs" aria-label="Scene lighting">
+              {([['sunset', 'DAY'], ['dusk', 'SHIFT'], ['neutral', 'LAB'], ['night', 'NIGHT']] as [LightingPreset, string][]).map(([lighting, label]) => (
+                <button key={lighting} onClick={() => changePreset(lighting)} className={preset === lighting ? 'is-active' : ''}>{label}</button>
+              ))}
+            </div>
+          </div>
+          <div className="fab-scene-canvas">
+            <Scene
+              nodes={sceneNodes}
+              preset={preset}
+              selectedNodeId={selectedNodeId}
+              focusNodeId={cameraFocusId}
+              onSelect={(id) => { selectNode(id || null); setCameraFocusId(id || null); }}
+            />
+            {focusedRig && (
+              <div className="fab-focus-card">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: auraHex(focusedRig.level), boxShadow: `0 0 12px ${auraHex(focusedRig.level)}` }} />
+                  <strong>{auraLabel(focusedRig.level)} LINE</strong>
+                  <span className="ml-auto">L{focusedRig.level}</span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                  {NODE_SLOTS[focusedRig.type === 'oil' ? 'oil' : 'mine'].map((slot) => {
+                    const fitted = focusedRig.components.find((component) => component.slot === slot);
+                    const rarity = (fitted?.rarity ?? null) as Rarity | null;
+                    return <div key={slot} className="flex items-center gap-1.5"><span className="text-sky-100/30">{SLOT_GLYPH[slot]}</span><span className="truncate text-sky-100/58">{SLOT_LABELS[slot]}</span><span className="ml-auto font-mono text-[8px] font-bold uppercase" style={{ color: rarity ? rarityHex(rarity) : '#55708e' }}>{rarity ? COMPONENT_RARITIES[rarity].label : 'EMPTY'}</span></div>;
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="fab-scene-nav">
+              <button onClick={() => cycleCameraFocus(-1)} aria-label="Previous facility">←</button>
+              <button onClick={() => setCameraFocusId(null)}>{focusedRig ? 'Release focus' : 'Campus view'}</button>
+              <button onClick={() => cycleCameraFocus(1)} aria-label="Next facility">→</button>
+            </div>
+          </div>
+        </section>
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-full border border-ink-600 bg-ink-800 px-4 py-2 text-sm text-steel-200 shadow-xl">
-          {toast}
-        </div>
-      )}
-    </div>
+        <aside className="fab-console-stack">
+          <section className="fab-console-card is-yield">
+            <div className="fab-console-heading"><span>YIELD BUFFER</span><span>{overview ? `HALVING ${overview.halving.cycleIndex + 2}` : 'SYNCING'}</span></div>
+            <div className="mt-5 flex items-end justify-between gap-4">
+              <div><strong className="text-[clamp(2.2rem,5vw,4.2rem)] font-semibold leading-none tracking-[-.06em] text-white">{fmt(pendingTotal)}</strong><span className="ml-2 font-mono text-[10px] text-lime-300">GPU</span></div>
+              <span className="font-mono text-[9px] text-sky-100/42">{fmt(op.productionRate, 4)} / SEC</span>
+            </div>
+            <div className="fab-flow-track"><span style={{ width: `${Math.max(4, Math.min(100, networkShare))}%` }} /></div>
+            <div className="mt-2 flex justify-between font-mono text-[8px] uppercase tracking-[.14em] text-sky-100/38"><span>Grid ownership {networkShare.toFixed(2)}%</span><span>{overview ? <Countdown ms={Math.max(0, overview.halving.nextHalvingMs - Date.now())} /> : '—'}</span></div>
+            {boostActive && <div className="fab-boost-chip">WELCOME ACCELERATOR · {op.welcomeBoostFactor.toFixed(2)}× · {Math.round(boostPct * 100)}% WINDOW</div>}
+          </section>
+
+          <section className="fab-console-card">
+            <div className="fab-console-heading"><span>PRODUCTION LINES</span><span>{nodes.length}/{totalCapacity}</span></div>
+            <div className="mt-3 space-y-2">
+              {nodes.length === 0 && <button className="fab-empty-line" onClick={() => setDeployOpen(true)}><span>+</span><strong>Commission your first wafer fab</strong><small>Start silicon production</small></button>}
+              {nodes.map((node, index) => (
+                <button key={node.id} onClick={() => { selectNode(node.id); setCameraFocusId(node.id); }} className={`fab-line-row ${node.id === selectedNodeId ? 'is-active' : ''}`}>
+                  <span className="fab-line-index">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="min-w-0 text-left"><strong>{node.type === 'oil' ? 'Wafer Fab' : 'Cleanroom'}</strong><small>{auraLabel(node.level)} · {fmt(node.productionRate, 4)} GPU/s</small></span>
+                  <span className="ml-auto text-right"><strong style={{ color: auraHex(node.level) }}>L{node.level}</strong><small>{fmt(node.pendingOsr)} GPU</small></span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2"><button className="btn-primary text-xs" disabled={capacityFull} onClick={() => setDeployOpen(true)}>Commission</button><button className="btn-secondary text-xs" onClick={() => setCrateOpen(true)}>Supply pods</button></div>
+          </section>
+        </aside>
+      </div>
+
+      <div className="fab-lower-grid">
+        <CompoundPanel busy={busy} run={run} />
+        {selected ? <NodeDetail node={selected} busy={busy} run={run} onOpenCrate={() => setCrateOpen(true)} /> : (
+          <section className="fab-console-card fab-inspector-empty"><div className="fab-console-heading"><span>LINE INSPECTOR</span><span>STANDBY</span></div><div className="mt-7"><strong>Select a line in the digital twin.</strong><p>Inspect fitted equipment, storage saturation, production rate, and calibration options without leaving the fab floor.</p></div></section>
+        )}
+        <section className="fab-console-card">
+          <div className="fab-console-heading"><span>SUPPLY RECOVERY</span><span>{op.crates.length} SEALED</span></div>
+          <div className="mt-4 flex items-center gap-4"><CrateThumb size={68} rarity={unseen.length ? 'legendary' : 'rare'} /><div><strong className="text-white">Process equipment pods</strong><p className="mt-1 text-xs leading-5 text-sky-100/45">Production lines recover randomized fab components. Fit them in the Parts Bay to increase grow-power.</p></div></div>
+          <button className="btn-secondary mt-4 w-full text-xs" onClick={() => setCrateOpen(true)}>Open pod inventory</button>
+        </section>
+        <section className="fab-console-card is-co-yield">
+          <div className="fab-console-heading"><span>AI SECTOR CO-YIELD</span><span>UNLOCK · TIER 05</span></div>
+          <div className="mt-5 text-3xl font-semibold tracking-[-.04em] text-white">Build toward the compute economy.</div>
+          <p className="mt-3 text-xs leading-5 text-sky-100/46">High-tier campuses route a strategic bonus pool beside base GPU production, weighted by active fab power.</p>
+        </section>
+      </div>
+
+      {deployOpen && <DeployModal onClose={() => setDeployOpen(false)} busy={busy} counts={{ oil: oilCount, mine: mineCount }} capacities={{ oil: oilCapacity, mine: mineCapacity }} onDeploy={(familyKey) => run('mint', async (onStep) => { await api.mintNode(wallet!, familyKey, onStep); setDeployOpen(false); say('Production line commissioned'); })} />}
+      {crateOpen && <CratePicker onClose={() => setCrateOpen(false)} busy={busy} op={op} onOpen={openCrate} />}
+      {crateResult && <CrateCinematic result={crateResult} onClose={() => setCrateResult(null)} onOpenAnother={() => { setCrateResult(null); setCrateOpen(true); }} />}
+      {toast && <div className="fab-toast">{toast}</div>}
+    </main>
   );
+
 }
 
 function CompoundPanel({
@@ -604,13 +411,13 @@ function CompoundPanel({
   return (
     <div className="panel p-4">
       <div className="mb-1 flex items-center justify-between">
-        <div className="stat-label">Compound Upgrade</div>
+        <div className="stat-label">Warehouse Upgrade</div>
         {next && <span className="font-mono text-[11px] text-steel-400">L{c.level} → L{next.targetLevel}</span>}
       </div>
       {next ? (
         <>
           <div className="text-sm text-steel-300">
-            {next.totalOsr.toLocaleString()} OSR
+            {next.totalOsr.toLocaleString()} GPU
             <span className="text-[11px] text-steel-500"> · 50/30/20 burn/reserve/treasury · +0.00001 ETH</span>
           </div>
           {cooling && (
@@ -625,7 +432,7 @@ function CompoundPanel({
               onClick={() =>
                 run('upgrade', async (onStep) => {
                   await api.upgradeCompound(wallet!, onStep);
-                }, 'Compound upgraded!')
+                }, 'Warehouse upgraded!')
               }
             >
               {busy === 'upgrade' ? 'Upgrading…' : 'Confirm Upgrade'}
@@ -639,7 +446,7 @@ function CompoundPanel({
                   if (confirm('Skip cooldown for 0.005 ETH?'))
                     run('expedite', async (onStep) => {
                       await api.expediteCompound(wallet!, onStep);
-                    }, 'Compound expedited!');
+                    }, 'Warehouse upgrade expedited!');
                 }}
               >
                 Skip Cooldown (0.005 ETH)
@@ -650,7 +457,7 @@ function CompoundPanel({
         </>
       ) : (
         <div className="text-sm text-steel-400">
-          Max Level · {c.maxNodes} nodes · {c.cratesPerDay} crates/day
+          Max Level · {c.maxNodes} facilities · {c.cratesPerDay} supply pods/day
         </div>
       )}
     </div>
@@ -676,7 +483,7 @@ function NodeDetail({
     <div className="panel p-4">
       <div className="mb-2 flex items-center justify-between">
         <div className="stat-label">
-          {node.type === 'oil' ? 'Oil Rig' : 'Mining Shaft'} · L{node.level}
+          {node.type === 'oil' ? 'Wafer Fab' : 'Cleanroom'} · L{node.level}
         </div>
         <span className="font-mono text-[11px] text-amber-400">
           {node.componentMultiplier.toFixed(2)}× GP
@@ -684,7 +491,7 @@ function NodeDetail({
       </div>
 
       {/* Names the aura tier and shows its colour, which is the same colour as
-          the ring drawn under this rig in the 3D scene — so the ring is
+          the ring drawn under this fab in the 3D scene — so the ring is
           readable as a rank instead of being unexplained decoration. */}
       <div className="mb-2 flex items-center gap-1.5 text-[11px]">
         <span
@@ -700,7 +507,7 @@ function NodeDetail({
           {auraLabel(node.level)}
         </span>
         <span className="ml-auto font-mono text-steel-500">
-          {fmt(node.productionRate)} OSR/s
+          {fmt(node.productionRate)} GPU/s
         </span>
       </div>
 
@@ -746,7 +553,7 @@ function NodeDetail({
 
       <div className="mt-2 grid grid-cols-2 gap-2">
         <button className="btn-secondary text-xs" onClick={onOpenCrate}>
-          Open Supply Crate
+          Open Supply Pod
         </button>
         <button
           className="btn-secondary text-xs"
@@ -754,10 +561,10 @@ function NodeDetail({
           onClick={() =>
             run('nodeUp', async (onStep) => {
               await api.upgradeNode(wallet!, node.id, onStep);
-            }, `Node leveled up!`)
+            }, `Facility leveled up!`)
           }
         >
-          Level Up · {node.nextLevelCost.toLocaleString()} OSR
+          Level Up · {node.nextLevelCost.toLocaleString()} GPU
         </button>
       </div>
       {node.type === 'mine' && node.pendingOsr > 0 && (
@@ -770,7 +577,7 @@ function NodeDetail({
             }, 'Compounded at 0.75% fee')
           }
         >
-          Compound Pending → Balance (0.75% fee)
+          Compound GPU → Balance (0.75% fee)
         </button>
       )}
     </div>
@@ -822,7 +629,7 @@ function DeployModal({
     : true;
 
   return (
-    <Modal onClose={onClose} title="Deploy Node">
+    <Modal onClose={onClose} title="Deploy Facility">
       <div className="flex flex-col gap-2">
         {(families ?? []).map((f) => {
           const full = counts[f.family] >= capacities[f.family];
@@ -832,19 +639,19 @@ function DeployModal({
               disabled={full}
               onClick={() => setSel(f.key)}
               className={`rounded border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                sel === f.key ? 'border-amber-500 bg-amber-500/10' : 'border-ink-600 bg-ink-800 hover:border-steel-500'
+                sel === f.key ? 'border-lime-400 bg-lime-400/10' : 'border-ink-600 bg-ink-800 hover:border-steel-500'
               }`}
             >
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={f.family === 'oil' ? '/oil rig.png' : '/mining shaft.png'}
+                src={f.family === 'oil' ? '/assets/fab/lithography-machine-reference.png' : '/assets/fab/packaging-line-reference.png'}
                 alt=""
                 className="h-12 w-12 rounded object-cover"
               />
               <span className="font-semibold text-white">{f.name}</span>
-              <span className="ml-auto font-mono text-sm text-amber-400">
-                {f.burnCostOsr.toLocaleString()} OSR
+              <span className="ml-auto font-mono text-sm text-lime-300">
+                {f.burnCostOsr.toLocaleString()} GPU
               </span>
             </div>
             <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-steel-500">
@@ -873,7 +680,7 @@ function DeployModal({
           disabled={busy === 'mint' || selectedFull || !families}
           onClick={() => onDeploy(sel)}
         >
-          {busy === 'mint' ? 'Igniting…' : 'Deploy · Starting level L1'}
+          {busy === 'mint' ? 'Calibrating…' : 'Deploy · Starting level L1'}
         </button>
       </div>
     </Modal>
@@ -899,7 +706,7 @@ function CratePicker({
   const cost = op?.compound.crateCost ?? 0;
   const crates = op?.crates ?? [];
   return (
-    <Modal onClose={onClose} title="Supply Crates">
+    <Modal onClose={onClose} title="Supply Pods">
       {odds && (
         <>
           <div className="mb-2 grid grid-cols-7 gap-1">
@@ -927,10 +734,10 @@ function CratePicker({
           a buy button. */}
       {crates.length === 0 ? (
         <div className="rounded border border-ink-600 bg-ink-800/60 p-4 text-center">
-          <div className="text-sm font-semibold text-steel-200">No crates in your inventory</div>
+          <div className="text-sm font-semibold text-steel-200">No supply pods in your inventory</div>
           <p className="mt-1 text-[11px] leading-relaxed text-steel-500">
-            Crates are found by mining — your rigs turn them up on their own. Bigger operations find
-            them more often, and the whole network only turns up so many a day.
+            Supply pods are found while your fabs run. Larger warehouses find them more often, and
+            the whole network only releases so many each day.
           </p>
         </div>
       ) : (
@@ -947,10 +754,10 @@ function CratePicker({
               <CrateThumb size={44} rarity={crate.crateType === 'rig_crate' ? 'legendary' : 'epic'} />
               <div className="min-w-0">
                 <div className="text-xs font-semibold text-white">
-                  {crate.crateType === 'rig_crate' ? 'Rig Crate' : 'Shaft Crate'}
+                  {crate.crateType === 'rig_crate' ? 'Fab Supply Pod' : 'Cleanroom Supply Pod'}
                 </div>
                 <div className="text-[10px] text-steel-500">
-                  Mined {new Date(crate.foundAt).toLocaleDateString()}
+                  Fabricated {new Date(crate.foundAt).toLocaleDateString()}
                 </div>
               </div>
               <button
@@ -958,7 +765,7 @@ function CratePicker({
                 disabled={busy === 'crate'}
                 onClick={() => onOpen(crate.id)}
               >
-                Open · {cost.toLocaleString()} OSR
+                Open · {cost.toLocaleString()} GPU
               </button>
             </div>
           ))}

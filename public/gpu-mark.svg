@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">GPU mark</title>
+  <desc id="desc">A lime silicon wafer wrapped by a rounded charcoal letter G.</desc>
+  <defs>
+    <linearGradient id="bg" x1="18" y1="14" x2="108" y2="116" gradientUnits="userSpaceOnUse"><stop stop-color="#21362d"/><stop offset="1" stop-color="#0b1511"/></linearGradient>
+    <linearGradient id="wafer" x1="41" y1="35" x2="91" y2="93" gradientUnits="userSpaceOnUse"><stop stop-color="#c6ff7f"/><stop offset=".52" stop-color="#79e85f"/><stop offset="1" stop-color="#42bd68"/></linearGradient>
+  </defs>
+  <rect x="5" y="5" width="118" height="118" rx="31" fill="url(#bg)"/>
+  <path d="M95 39c-8-10-18-15-32-15-24 0-42 18-42 41s18 40 43 40c15 0 27-5 36-15V63H65v17h16v6c-5 3-10 4-16 4-14 0-24-10-24-25s10-25 24-25c8 0 14 3 19 9z" fill="#eff8f1"/>
+  <circle cx="65" cy="64" r="15" fill="url(#wafer)" stroke="#d9ffad" stroke-width="3"/>
+  <path d="M65 51v26M52 64h26M55.5 55.5l19 19M74.5 55.5l-19 19" stroke="#193d31" stroke-opacity=".38" stroke-width="1.6"/>
+  <rect x="84" y="64" width="23" height="16" rx="5" fill="#79e85f"/>
+</svg>

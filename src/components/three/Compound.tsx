@@ -1,529 +1,384 @@
 'use client';
 
-// The compound world: a drilling island — sea at the outskirts, oil slicks
-// around the pads, node placement, lighting presets, and environment.
+// The GPU campus: a bright modular fab floor with cleanroom bays, service
+// gantries, and procedural equipment. Protocol family IDs remain `oil` and
+// `mine`; the presentation layer treats them as Wafer Fab and Cleanroom.
 
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
+import { RoundedBox } from '@react-three/drei';
 import SafeEnvironment from './SafeEnvironment';
+import { concrete, epoxyFloor, paintedPanel } from './surfaces';
 import { NodeRig, type RigNodeData } from './NodeRig';
 
 export type LightingPreset = 'sunset' | 'dusk' | 'neutral' | 'night';
 
 export const LIGHTING_PRESETS: Record<
   LightingPreset,
-  { sun: [number, number, number]; sunColor: string; sunIntensity: number; ambient: number; sky: string; fog: string; envIntensity: number }
+  {
+    key: [number, number, number];
+    keyColor: string;
+    keyIntensity: number;
+    fill: number;
+    sky: string;
+    fog: string;
+    envIntensity: number;
+    label: string;
+  }
 > = {
-  sunset: { sun: [40, 22, -30], sunColor: '#ffb066', sunIntensity: 2, ambient: 0.45, sky: '#2b1a3a', fog: '#54303a', envIntensity: 0.7 },
-  dusk: { sun: [30, 12, -40], sunColor: '#ff8a5c', sunIntensity: 1.4, ambient: 0.36, sky: '#1c1430', fog: '#3a2440', envIntensity: 0.5 },
-  neutral: { sun: [35, 45, 20], sunColor: '#ffffff', sunIntensity: 2.2, ambient: 0.55, sky: '#20304a', fog: '#44546a', envIntensity: 1 },
-  night: { sun: [-20, 18, -40], sunColor: '#7a9fff', sunIntensity: 0.6, ambient: 0.22, sky: '#070a18', fog: '#0c1226', envIntensity: 0.25 },
+  sunset: { key: [28, 34, 18], keyColor: '#effff3', keyIntensity: 2.3, fill: 0.62, sky: '#dff0e7', fog: '#d8ebe0', envIntensity: 0.65, label: 'Shift A' },
+  dusk: { key: [22, 22, -22], keyColor: '#b8d5ff', keyIntensity: 1.6, fill: 0.44, sky: '#182c37', fog: '#263c43', envIntensity: 0.4, label: 'Shift B' },
+  neutral: { key: [18, 42, 22], keyColor: '#ffffff', keyIntensity: 2.6, fill: 0.68, sky: '#eaf4ef', fog: '#dfece6', envIntensity: 0.8, label: 'Inspection' },
+  night: { key: [-18, 20, -28], keyColor: '#7ea5ff', keyIntensity: 0.9, fill: 0.28, sky: '#071411', fog: '#10241e', envIntensity: 0.24, label: 'Night Shift' },
 };
 
-/** Oil rigs west, mines east — all on the island; the sea is scenery. */
+/** Two production wings per row, with deterministic offsets for expansion. */
 export function nodePosition(index: number, family: 'oil' | 'mine', seed: number): [number, number, number] {
-  const col = family === 'oil' ? -1 : 1;
+  const side = family === 'oil' ? -1 : 1;
   const row = Math.floor(index / 2);
   const inner = index % 2;
-  const x = col * ((family === 'oil' ? 13 : 9) + inner * 10);
-  const z = -12 + row * 12 + ((seed % 7) - 3) * 0.3;
+  const x = side * (5.3 + inner * 9.8);
+  const z = -3 + row * 10.4 + ((seed % 5) - 2) * 0.12;
   return [x, 0, z];
 }
 
-/**
- * Landing-page hero rigs ONLY. Never rendered inside the app: the in-game
- * compound shows exactly what the wallet owns, and nothing it does not.
- */
+/** Hero campus used only on the public landing page. */
 export const SHOWROOM_NODES: RigNodeData[] = [
   {
-    id: 'showroom-oil',
+    id: 'showroom-fab',
     type: 'oil',
     level: 7,
     isActive: true,
     components: [
       { slot: 'derrick', rarity: 'legendary' },
-      { slot: 'pump_jack', rarity: 'legendary' },
+      { slot: 'pump_jack', rarity: 'epic' },
       { slot: 'pipeline', rarity: 'legendary' },
-      { slot: 'flare_stack', rarity: 'legendary' },
+      { slot: 'flare_stack', rarity: 'rare' },
     ],
   },
   {
-    id: 'showroom-mine',
+    id: 'showroom-cleanroom',
     type: 'mine',
     level: 7,
     isActive: true,
     components: [
       { slot: 'drill_bit', rarity: 'legendary' },
-      { slot: 'ore_cart', rarity: 'legendary' },
+      { slot: 'ore_cart', rarity: 'epic' },
       { slot: 'rail_track', rarity: 'legendary' },
-      { slot: 'elevator', rarity: 'legendary' },
+      { slot: 'elevator', rarity: 'rare' },
     ],
   },
 ];
 
-/**
- * Oil slicks pooled around the drilling pads. Water no longer sits inside the
- * sand — the compound is an island (the sea is the horizon, drawn separately) —
- * so what collects around working rigs is what would actually collect there:
- * crude. Placement is deterministic, clustered a few units off each pad site
- * rather than gridded across the map, weighted toward the oil-rig side.
- */
-const OIL_PUDDLES: Array<{ x: number; z: number; size: number; y: number }> = (() => {
-  let s = 0x9e3779b9 >>> 0;
-  const rnd = () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-  // Pad sites from nodePosition(): oil west at x=-13/-23, mines east at 9/19,
-  // rows every 12 in z. Oil pads seep 2 slicks each, mine pads only 1 — crude
-  // belongs to the drilling side.
-  const oilPads: Array<[number, number]> = [[-13, -12], [-23, -12], [-13, 0], [-23, 0]];
-  const minePads: Array<[number, number]> = [[9, -12], [19, 0]];
-  const puddles: Array<{ x: number; z: number; size: number; y: number }> = [];
-  const seep = (px: number, pz: number, count: number) => {
-    for (let i = 0; i < count; i += 1) {
-      const ang = rnd() * Math.PI * 2;
-      const dist = 5.5 + rnd() * 3.5; // clear of the pad, close enough to read as its runoff
-      puddles.push({
-        x: px + Math.cos(ang) * dist,
-        z: pz + Math.sin(ang) * dist,
-        size: 4.5 + rnd() * 4,
-        // Just above the flattened pad plane; puddles hug the pads, so the
-        // surrounding dunes never rise through them.
-        y: 0.015 + rnd() * 0.01,
-      });
-    }
-  };
-  oilPads.forEach(([x, z]) => seep(x, z, 2));
-  minePads.forEach(([x, z]) => seep(x, z, 1));
-  return puddles;
-})();
-
-/**
- * Stylised procedural water. All "texture" is generated in-shader — layered
- * value-noise ripples perturbing the normal, a drifting voronoi sparkle field,
- * a sun-glitter path and crest foam — so there are no texture assets and no
- * reflection render targets (mobile-safe). One shared material drives every
- * pool; the ripple/caustic fields are world-space, so adjacent pools stay
- * visually continuous.
- */
-const WATER_VERT = `
-uniform float uTime;
-varying vec2 vUv;
-varying vec3 vWorldPosition;
-varying float vWave;
-void main(){
-  vUv = uv;
-  vec3 p = position;
-  float broad = sin(p.x * 0.24 + uTime * 0.55) * 0.07 + cos(p.y * 0.19 + uTime * 0.42) * 0.06;
-  float mid = sin(p.x * 0.11 - p.y * 0.23 + uTime * 0.31) * 0.045;
-  float detail = sin((p.x + p.y) * 0.72 - uTime * 0.8) * 0.025;
-  float w = broad + mid + detail;
-  p.z += w;
-  vWave = w;
-  vWorldPosition = (modelMatrix * vec4(p, 1.0)).xyz;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-}`;
-
-const WATER_FRAG = `
-uniform vec3 uDeep;
-uniform vec3 uShallow;
-uniform vec3 uGlint;
-uniform float uTime;
-varying vec2 vUv;
-varying vec3 vWorldPosition;
-varying float vWave;
-
-float hash(vec2 p){
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
-  return fract(p.x * p.y);
-}
-float vnoise(vec2 p){
-  vec2 i = floor(p), f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-    u.y);
-}
-// Two scrolling octave pairs; the ripple "texture" of the surface.
-float ripple(vec2 q){
-  float h = 0.0;
-  h += vnoise(q * 0.55 + vec2(uTime * 0.10,  uTime * 0.06)) * 0.55;
-  h += vnoise(q * 1.35 - vec2(uTime * 0.14, -uTime * 0.05)) * 0.30;
-  h += vnoise(q * 3.10 + vec2(-uTime * 0.22, uTime * 0.16)) * 0.15;
-  return h;
-}
-// Animated cell field for the caustic-style shimmer web.
-float cells(vec2 p){
-  vec2 i = floor(p), f = fract(p);
-  float m = 1.5;
-  for (int y = -1; y <= 1; y++)
-  for (int x = -1; x <= 1; x++){
-    vec2 g = vec2(float(x), float(y));
-    vec2 o = vec2(hash(i + g), hash(i + g + 11.3));
-    o = 0.5 + 0.42 * sin(uTime * 0.55 + 6.2831 * o);
-    m = min(m, length(g + o - f));
-  }
-  return m;
-}
-
-void main(){
-  vec3 dx = dFdx(vWorldPosition);
-  vec3 dy = dFdy(vWorldPosition);
-  vec3 facet = normalize(cross(dx, dy));
-  if (!gl_FrontFacing) facet *= -1.0;
-
-  // Perturb the facet normal with the procedural ripple heightfield so the
-  // surface picks up fine detail the 80x80 grid cannot carry.
-  vec2 q = vWorldPosition.xz;
-  float e = 0.35;
-  float hC = ripple(q);
-  float hX = ripple(q + vec2(e, 0.0));
-  float hZ = ripple(q + vec2(0.0, e));
-  vec3 normal = normalize(facet + vec3(-(hX - hC), 0.0, -(hZ - hC)) * 2.8);
-
-  vec3 viewDir = normalize(cameraPosition - vWorldPosition);
-  vec3 sunDir = normalize(vec3(0.42, 0.78, -0.34));
-
-  float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.2);
-  vec3 reflDir = reflect(-sunDir, normal);
-  float specular = pow(max(dot(reflDir, viewDir), 0.0), 96.0);
-  // Broad glitter path under the sun: same reflection, looser exponent,
-  // broken up by the ripple field so it sparkles instead of smearing.
-  float glitter = pow(max(dot(reflDir, viewDir), 0.0), 18.0) * (0.35 + 0.65 * hC);
-
-  // Caustic web, faded with camera distance so the horizon stays calm.
-  float dist = length(cameraPosition - vWorldPosition);
-  float causticFade = 1.0 - smoothstep(26.0, 95.0, dist);
-  float web = pow(clamp(cells(q * 0.6), 0.0, 1.0), 2.4) * causticFade;
-
-  // Foam only on wave crests, broken by noise so it flecks rather than bands.
-  float crest = smoothstep(0.07, 0.13, vWave) * smoothstep(0.42, 0.72, vnoise(q * 2.2 + uTime * 0.12));
-
-  float depthMix = 0.18 + fresnel * 0.42 + (hC - 0.5) * 0.30;
-  vec3 water = mix(uDeep, uShallow, clamp(depthMix, 0.0, 1.0));
-  water += uShallow * web * 0.55;
-  water += uGlint * glitter * 0.45;
-  water += uGlint * specular * 0.60;
-  water = mix(water, vec3(0.92, 0.95, 0.94), crest * 0.35);
-
-  // The sea exists only OUTSIDE the island. Rounded-rectangle SDF around the
-  // playfield — negative inland (discarded), positive offshore — with a
-  // noise-wobbled coastline and a surf band so sand meets foam, not a line.
-  vec2 dRect = abs(q - vec2(-3.0, -8.0)) - vec2(38.0, 32.0);
-  float sdf = length(max(dRect, 0.0)) + min(max(dRect.x, dRect.y), 0.0) - 14.0;
-  sdf += (vnoise(q * 0.06) - 0.5) * 7.0;
-  if (sdf < 0.0) discard;
-  float shore = smoothstep(0.0, 5.0, sdf);
-  float surf = (1.0 - smoothstep(0.4, 4.5, sdf))
-             * smoothstep(0.35, 0.75, vnoise(q * 1.4 + uTime * 0.18));
-  water = mix(water, vec3(0.93, 0.96, 0.95), surf * 0.55);
-  gl_FragColor = vec4(water, 0.94 * max(shore, surf * 0.8));
-}`;
-
-/**
- * Crude, not water: a puddle has no swell, so there is no vertex displacement —
- * the surface is a glossy static film whose life comes from a slow-creeping
- * normal, a tight hot specular, and the thin-film petrol rainbow at glancing
- * angles. Blob outlines are wobbled by world-space noise so every puddle is
- * irregular while all of them share one material.
- */
-const OIL_VERT = `
-varying vec2 vUv;
-varying vec3 vWorldPosition;
-void main(){
-  vUv = uv;
-  vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`;
-
-const OIL_FRAG = `
-uniform float uTime;
-uniform vec3 uSheen;
-varying vec2 vUv;
-varying vec3 vWorldPosition;
-
-float hash(vec2 p){
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
-  return fract(p.x * p.y);
-}
-float vnoise(vec2 p){
-  vec2 i = floor(p), f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-    u.y);
-}
-float film(vec2 q, float t){
-  return vnoise(q * 1.1 + t * 0.016) * 0.6 + vnoise(q * 2.6 - t * 0.011) * 0.4;
-}
-
-void main(){
-  vec2 q = vWorldPosition.xz;
-
-  // Irregular blob mask: radial falloff warped by world-space noise, so each
-  // puddle's outline differs without per-puddle uniforms.
-  float edge = length(vUv - 0.5) * 2.0 + (vnoise(q * 0.55) - 0.5) * 0.5;
-  float mask = 1.0 - smoothstep(0.68, 0.95, edge);
-  if (mask < 0.01) discard;
-
-  // Barely-moving surface — oil creeps, it does not lap. Time factors are an
-  // order of magnitude below the sea's.
-  float e = 0.3;
-  float h  = film(q, uTime);
-  float hX = film(q + vec2(e, 0.0), uTime);
-  float hZ = film(q + vec2(0.0, e), uTime);
-  vec3 normal = normalize(vec3(-(hX - h) * 1.2, 1.0, -(hZ - h) * 1.2));
-
-  vec3 viewDir = normalize(cameraPosition - vWorldPosition);
-  vec3 sunDir = normalize(vec3(0.42, 0.78, -0.34));
-  float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 2.6);
-  vec3 reflDir = reflect(-sunDir, normal);
-  // Oil is far glossier than water — tight hot highlight.
-  float specular = pow(max(dot(reflDir, viewDir), 0.0), 180.0);
-
-  vec3 oil = mix(vec3(0.016, 0.012, 0.008), vec3(0.055, 0.038, 0.02), h * 0.6);
-  // Thin-film interference: hue cycles with height and viewing angle — the
-  // petrol-rainbow signature, kept subtle and mostly at glancing angles.
-  vec3 rainbow = 0.5 + 0.5 * cos(6.2831 * (h * 1.6 + fresnel * 2.1) + vec3(0.0, 2.1, 4.2));
-  oil += rainbow * uSheen * fresnel * 0.22;
-  oil += vec3(1.0, 0.96, 0.88) * specular * 0.85;
-  oil += vec3(0.35, 0.33, 0.30) * fresnel * 0.10; // sky sheen so the film reads wet
-
-  // Darker rim where the crude has soaked into the sand.
-  float rim = smoothstep(0.52, 0.9, edge);
-  oil = mix(oil, vec3(0.03, 0.022, 0.014), rim * 0.35);
-
-  gl_FragColor = vec4(oil, mask * 0.96);
-}`;
-
-/**
- * The sea, drawn as one large sheet whose fragment shader cuts out the island —
- * the compound reads as a drilling island with surf at its outskirts rather
- * than sand with lakes in it.
- */
-function Sea({ color = '#286b7f', glint = '#ffd194' }: { color?: string; glint?: string }) {
-  const material = useMemo(() => {
-    const deep = new THREE.Color(color);
-    return new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      uniforms: {
-        uTime: { value: 0 },
-        uDeep: { value: deep },
-        uShallow: { value: deep.clone().lerp(new THREE.Color('#2f7891'), 0.48) },
-        uGlint: { value: new THREE.Color(glint) },
-      },
-      vertexShader: WATER_VERT,
-      fragmentShader: WATER_FRAG,
-    });
-  }, [color, glint]);
-  useFrame(({ clock }) => {
-    material.uniforms.uTime.value = clock.elapsedTime;
-  });
+function FloorMark({ position, color, rotation = 0 }: { position: [number, number, number]; color: string; rotation?: number }) {
   return (
-    <mesh position={[-3, -0.42, -8]} rotation={[-Math.PI / 2, 0, 0]} material={material}>
-      <planeGeometry args={[640, 640, 128, 128]} />
+    <mesh position={position} rotation={[-Math.PI / 2, 0, rotation]} receiveShadow>
+      <planeGeometry args={[4.8, 0.16]} />
+      <meshBasicMaterial color={color} transparent opacity={0.74} toneMapped={false} />
     </mesh>
   );
 }
 
-function OilSlicks() {
-  // One shared static-film material (see OIL_FRAG): oil must not wave or glint
-  // like the sea, so it deliberately does NOT reuse the water shader.
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        uniforms: {
-          uTime: { value: 0 },
-          uSheen: { value: new THREE.Color('#6f5fd4') },
-        },
-        vertexShader: OIL_VERT,
-        fragmentShader: OIL_FRAG,
-      }),
-    []
-  );
-  useFrame(({ clock }) => {
-    material.uniforms.uTime.value = clock.elapsedTime;
-  });
+function CleanroomFloor({ preset }: { preset: LightingPreset }) {
+  const dark = preset === 'night' || preset === 'dusk';
+  // The apron is coarse poured concrete; the inner bay is poured epoxy. Giving
+  // them different roughness maps is what separates them visually at a glance,
+  // rather than relying on the two flat greys being noticeably different.
+  const apron = useMemo(() => concrete(26), []);
+  const bay = useMemo(() => epoxyFloor(22), []);
   return (
     <group>
-      {OIL_PUDDLES.map((puddle, i) => (
-        <mesh
-          key={i}
-          position={[puddle.x, puddle.y, puddle.z]}
-          rotation={[-Math.PI / 2, 0, i * 1.73]}
-          scale={[1, 0.62 + (i % 3) * 0.1, 1]}
-          material={material}
-        >
-          <planeGeometry args={[puddle.size, puddle.size]} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-/**
- * Every position a rig can ever occupy, derived from nodePosition() rather than
- * written out — so the keep-out zones cannot drift away from where rigs are
- * actually placed. Capacity tops out at 8 oil rigs and 12 shafts at compound
- * L10, so 12 indices per family covers a fully maxed compound.
- */
-const PAD_SITES: Array<readonly [number, number]> = (() => {
-  const sites: Array<readonly [number, number]> = [];
-  for (let i = 0; i < 12; i += 1) {
-    for (const family of ['oil', 'mine'] as const) {
-      const [x, , z] = nodePosition(i, family, 0);
-      sites.push([x, z] as const);
-    }
-  }
-  return sites;
-})();
-
-/**
- * Clearance kept around every pad. Rigs render at targetSize 9 and draw a
- * ground ring of radius 6.7, so this leaves the ring clear with margin for the
- * per-node z jitter — nothing scatters into a rig's footprint.
- */
-const PAD_CLEARANCE = 10;
-
-/**
- * Signed distance to the coastline, mirroring the SDF the sea shader uses so
- * land here means exactly what land means there. Negative inland.
- */
-function coastSdf(x: number, z: number): number {
-  const dx = Math.abs(x - -3) - 38;
-  const dz = Math.abs(z - -8) - 32;
-  const outside = Math.hypot(Math.max(dx, 0), Math.max(dz, 0));
-  return outside + Math.min(Math.max(dx, dz), 0) - 14;
-}
-
-/**
- * Rocks scattered procedurally across the island.
- *
- * Jittered grid rather than pure random, so they spread evenly without the
- * clumps and bald patches uniform sampling produces. Candidates are rejected
- * when they fall inside a pad's clearance, too near the waterline, or on the
- * road-width centre strip between the pad rows that the player's camera flies
- * through. Deterministic: the seeded RNG keeps the layout identical across
- * renders and reloads instead of reshuffling every mount.
- */
-const ROCKS: Array<{ x: number; z: number; size: number; rot: number; squash: number; tone: number }> =
-  (() => {
-    let s = 0x2f6e2b1 >>> 0;
-    const rnd = () => {
-      s = (s + 0x6d2b79f5) >>> 0;
-      let t = Math.imul(s ^ (s >>> 15), 1 | s);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-
-    const rocks: Array<{ x: number; z: number; size: number; rot: number; squash: number; tone: number }> = [];
-    const step = 7;
-    for (let gx = -54; gx <= 48; gx += step) {
-      for (let gz = -52; gz <= 36; gz += step) {
-        if (rnd() < 0.45) continue; // thin the field out; a rock per cell is too dense
-        const x = gx + (rnd() - 0.5) * step * 0.9;
-        const z = gz + (rnd() - 0.5) * step * 0.9;
-
-        // Keep the shoreline clear so rocks never float in surf.
-        if (coastSdf(x, z) > -5) continue;
-        // Never inside a rig footprint, whatever the player builds.
-        if (PAD_SITES.some(([px, pz]) => Math.hypot(x - px, z - pz) < PAD_CLEARANCE)) continue;
-        // Leave the central corridor between the two pad rows walkable.
-        if (Math.abs(x - -2) < 5) continue;
-
-        rocks.push({
-          x,
-          z,
-          size: 0.55 + rnd() * 1.15,
-          rot: rnd() * Math.PI * 2,
-          squash: 0.5 + rnd() * 0.45,
-          tone: rnd(),
-        });
-      }
-    }
-    return rocks;
-  })();
-
-/**
- * Everything on the island that is not a rig: rocks, and nothing else.
- *
- * Earlier passes added a tank farm, flare stack, pipe runs, power lines, roads,
- * dunes and a distant mountain range. They read as clutter rather than
- * environment and fought the rigs for attention, so the ground is bare stone
- * and sand — the rigs are the subject.
- */
-function WorldSetDressing({ preset }: { preset: LightingPreset }) {
-  const night = preset === 'night';
-  const tones = night
-    ? ['#2a2118', '#231d17', '#1d1913']
-    : ['#5a412e', '#4a3a2c', '#3c302a'];
-
-  return (
-    <group>
-      {ROCKS.map((rock, i) => (
-        <group key={i} position={[rock.x, 0, rock.z]}>
-          <mesh
-            position={[0, rock.size * 0.28, 0]}
-            scale={[1, rock.squash, 0.82 + (i % 3) * 0.12]}
-            rotation={[0.12 * (i % 5), rock.rot, 0.07 * (i % 3)]}
-            castShadow
-            receiveShadow
-          >
-            <dodecahedronGeometry args={[rock.size, 0]} />
-            <meshStandardMaterial
-              color={tones[Math.floor(rock.tone * tones.length) % tones.length]}
-              roughness={0.96}
-              flatShading
-            />
-          </mesh>
-          {/* A pebble at the foot of the larger stones so they sit in the sand
-              rather than looking dropped onto it. */}
-          {rock.size > 1.1 && (
-            <mesh
-              position={[rock.size * 0.85, rock.size * 0.09, rock.size * 0.35]}
-              rotation={[0, rock.rot * 1.7, 0]}
-              receiveShadow
-            >
-              <dodecahedronGeometry args={[rock.size * 0.26, 0]} />
-              <meshStandardMaterial color={tones[2]} roughness={1} flatShading />
-            </mesh>
-          )}
+      <mesh position={[0, -0.2, 6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[116, 92]} />
+        <meshStandardMaterial
+          color={dark ? '#14221d' : '#dce7e1'}
+          roughness={0.84}
+          metalness={0.03}
+          normalMap={apron.normalMap}
+          normalScale={apron.normalScale}
+          roughnessMap={apron.roughnessMap}
+        />
+      </mesh>
+      <mesh position={[0, -0.16, 6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[104, 80]} />
+        <meshStandardMaterial
+          color={dark ? '#1b2c25' : '#edf3ef'}
+          roughness={0.7}
+          metalness={0.05}
+          normalMap={bay.normalMap}
+          normalScale={bay.normalScale}
+          roughnessMap={bay.roughnessMap}
+        />
+      </mesh>
+      <gridHelper
+        args={[104, 52, dark ? '#355449' : '#b5c7be', dark ? '#263e35' : '#d0ddd6']}
+        position={[0, -0.12, 6]}
+        userData={{ role: 'floor-panel-seams' }}
+      />
+      <mesh position={[-8.8, -0.105, 6]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[16.2, 72]} />
+        <meshBasicMaterial color="#7ae86b" transparent opacity={dark ? 0.035 : 0.055} />
+      </mesh>
+      <mesh position={[8.8, -0.104, 6]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[16.2, 72]} />
+        <meshBasicMaterial color="#3d78ee" transparent opacity={dark ? 0.035 : 0.05} />
+      </mesh>
+      {Array.from({ length: 7 }, (_, i) => (
+        <group key={i}>
+          <FloorMark position={[-8.8, -0.09, -25 + i * 10]} color="#75d967" />
+          <FloorMark position={[8.8, -0.09, -25 + i * 10]} color="#3e77e8" />
         </group>
       ))}
     </group>
   );
 }
-/**
- * One copy of the delivered square OSR_sand.glb terrain, uniformly enlarged
- * to cover the entire compound while preserving its exact 1:1 proportions.
- */
-function Ground() {
-  const sand = useGLTF('/models/runtime/OSR_sand.glb', false, true) as unknown as { scene: THREE.Group };
-  const terrain = useMemo(() => {
-    const s = sand.scene.clone(true);
-    s.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      if (mesh.isMesh) {
-        mesh.receiveShadow = true;
-        mesh.castShadow = false;
-      }
-    });
-    return s;
-  }, [sand.scene]);
 
+function WaferMonument() {
+  const wafer = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => {
+    if (wafer.current) wafer.current.rotation.y = clock.elapsedTime * 0.18;
+  });
   return (
-    <primitive object={terrain} position={[-5, -0.55, 0]} scale={7} />
+    <group position={[0, 1.4, -18.5]} name="wafer-monument">
+      <RoundedBox args={[6.2, 0.55, 2.2]} radius={0.2} smoothness={3} position={[0, -0.86, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color="#18231f" metalness={0.6} roughness={0.32} />
+      </RoundedBox>
+      <mesh ref={wafer} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[1.75, 1.75, 0.16, 48]} />
+        <meshPhysicalMaterial color="#526dff" metalness={0.62} roughness={0.18} clearcoat={0.8} clearcoatRoughness={0.12} />
+      </mesh>
+      <mesh position={[0, 0, 0.11]} rotation={[0, 0, 0]}>
+        <ringGeometry args={[1.18, 1.27, 44]} />
+        <meshBasicMaterial color="#a8f678" transparent opacity={0.75} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
+function UtilityCable({ x, side }: { x: number; side: -1 | 1 }) {
+  const path = useMemo(
+    () => new THREE.CatmullRomCurve3([
+      new THREE.Vector3(x, 0.08, 1.23),
+      new THREE.Vector3(x, -0.32, 1.42),
+      new THREE.Vector3(x + side * 0.04, -0.78, 1.13),
+    ]),
+    [side, x]
+  );
+  return (
+    <mesh castShadow userData={{ attachment: 'embedded', parentSocket: side < 0 ? 'left-utility-bank' : 'right-utility-bank', gapTolerance: 0.01 }}>
+      <tubeGeometry args={[path, 12, 0.075, 10, false]} />
+      <meshStandardMaterial color="#222b35" metalness={0.34} roughness={0.5} />
+    </mesh>
+  );
+}
+
+/** Image-to-procedural reconstruction: EUV utility core reference. */
+export function EUVUtilityCore({ review = false }: { review?: boolean } = {}) {
+  const chamber = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (chamber.current) chamber.current.rotation.z = clock.elapsedTime * 0.12;
+  });
+  return (
+    <group
+      name="euv-utility-core"
+      position={review ? [0, 0.12, 0] : [-5.4, 0.12, -17.7]}
+      rotation={[0, 0.08, 0]}
+      scale={0.92}
+      userData={{
+        sculptId: 'euv-utility-core',
+        sourceReference: '/assets/fab/euv-utility-core-reference.png',
+        pivot: 'base',
+        collider: { type: 'compound-box', size: [5.8, 3.6, 2.9] },
+        destructionGroups: ['central-chamber', 'left-utility-bank', 'right-utility-bank'],
+        sockets: ['euv-beam-output', 'left-utility-bank', 'right-utility-bank', 'service-beacon'],
+      }}
+    >
+      <RoundedBox args={[5.9, 0.42, 2.85]} radius={0.2} smoothness={3} position={[0, 0.21, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color="#202936" metalness={0.52} roughness={0.36} />
+      </RoundedBox>
+      <group name="central-chamber" position={[0, 1.62, 0]} userData={{ pivot: 'center', socket: 'euv-beam-output' }}>
+        <mesh castShadow>
+          <cylinderGeometry args={[1.42, 1.42, 2.12, 36]} />
+          <meshPhysicalMaterial color="#eff3f7" roughness={0.44} clearcoat={0.2} clearcoatRoughness={0.5} />
+        </mesh>
+        <group ref={chamber} position={[0, 0, 1.52]}>
+          <mesh castShadow>
+            <torusGeometry args={[0.78, 0.24, 16, 40]} />
+            <meshPhysicalMaterial color="#f3f6f8" roughness={0.38} clearcoat={0.28} />
+          </mesh>
+          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.06]}>
+            <cylinderGeometry args={[0.68, 0.68, 0.14, 36]} />
+            <meshPhysicalMaterial color="#1978ee" emissive="#0b69ff" emissiveIntensity={0.75} roughness={0.12} metalness={0.2} />
+          </mesh>
+          <mesh position={[0, 0, 0.17]}>
+            <torusGeometry args={[0.47, 0.075, 12, 32]} />
+            <meshStandardMaterial color="#0c3d98" metalness={0.52} roughness={0.2} />
+          </mesh>
+          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.22]}>
+            <cylinderGeometry args={[0.22, 0.22, 0.24, 24]} />
+            <meshPhysicalMaterial color="#6de6ff" emissive="#22bfff" emissiveIntensity={1.15} roughness={0.1} />
+          </mesh>
+          {Array.from({ length: 6 }, (_, i) => {
+            const angle = (i / 6) * Math.PI * 2;
+            return <mesh key={`inner-${i}`} position={[Math.cos(angle) * 0.49, Math.sin(angle) * 0.49, 0.21]} rotation={[0, 0, angle]}><boxGeometry args={[0.18, 0.07, 0.07]} /><meshBasicMaterial color="#8bdcff" toneMapped={false} /></mesh>;
+          })}
+          {Array.from({ length: 8 }, (_, i) => {
+            const angle = (i / 8) * Math.PI * 2;
+            return <mesh key={i} position={[Math.cos(angle) * 0.8, Math.sin(angle) * 0.8, 0.18]} rotation={[0, 0, angle]}><boxGeometry args={[0.18, 0.1, 0.08]} /><meshBasicMaterial color="#91f45f" toneMapped={false} /></mesh>;
+          })}
+        </group>
+        <mesh position={[0, 1.18, 0]}>
+          <cylinderGeometry args={[0.74, 0.9, 0.25, 32]} />
+          <meshPhysicalMaterial color="#e9eff4" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 1.34, 0]}>
+          <cylinderGeometry args={[0.53, 0.53, 0.12, 32]} />
+          <meshPhysicalMaterial color="#2487f1" emissive="#1673de" emissiveIntensity={0.32} roughness={0.15} />
+        </mesh>
+      </group>
+      {([-1, 1] as const).map((side) => (
+        <group key={side} name={side < 0 ? 'left-utility-bank' : 'right-utility-bank'} position={[side * 2.08, 1.38, 0]} userData={{ pivot: 'base', socket: `${side < 0 ? 'left' : 'right'}-utility-bank` }}>
+          <RoundedBox args={[1.62, 2.42, 2.3]} radius={0.3} smoothness={3} castShadow>
+            <meshPhysicalMaterial color="#edf2f5" roughness={0.46} clearcoat={0.16} />
+          </RoundedBox>
+          {[-0.35, -0.12, 0.12, 0.35].map((y) => <mesh key={y} position={[0, y + 0.48, 1.19]}><boxGeometry args={[0.92, 0.1, 0.07]} /><meshBasicMaterial color="#176ce0" toneMapped={false} /></mesh>)}
+          {[-0.32, 0, 0.32].map((x) => <UtilityCable key={x} x={x} side={side} />)}
+        </group>
+      ))}
+      <group name="service-beacon" position={[2.52, 2.85, 0.22]} userData={{ pivot: 'base', socket: 'service-beacon' }}>
+        <mesh><cylinderGeometry args={[0.16, 0.18, 0.12, 18]} /><meshStandardMaterial color="#252c35" metalness={0.55} roughness={0.38} /></mesh>
+        <mesh position={[0, 0.16, 0]}><cylinderGeometry args={[0.12, 0.12, 0.24, 18]} /><meshPhysicalMaterial color="#ff8a25" emissive="#ff7916" emissiveIntensity={0.85} roughness={0.2} /></mesh>
+      </group>
+    </group>
+  );
+}
+
+/** Image-to-procedural reconstruction: accelerator validation rack reference. */
+export function AcceleratorTestRack({ review = false }: { review?: boolean } = {}) {
+  const arm = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (arm.current) arm.current.rotation.z = -0.28 + Math.sin(clock.elapsedTime * 0.72) * 0.15;
+  });
+  return (
+    <group
+      name="ai-accelerator-test-rack"
+      position={review ? [0, 0.12, 0] : [5.4, 0.12, -18.1]}
+      rotation={[0, -0.1, 0]}
+      scale={0.88}
+      userData={{
+        sculptId: 'ai-accelerator-test-rack',
+        sourceReference: '/assets/fab/ai-accelerator-test-rack-reference.png',
+        pivot: 'base',
+        collider: { type: 'box', size: [3.5, 4.4, 2.8] },
+        destructionGroups: ['rack-shell', 'accelerator-tray-system', 'probe-arm', 'cooling-manifold'],
+        sockets: ['tray-bay-1', 'tray-bay-2', 'tray-bay-3', 'tray-bay-4', 'probe-shoulder'],
+      }}
+    >
+      <RoundedBox args={[3.58, 0.45, 2.82]} radius={0.22} smoothness={3} position={[0, 0.23, 0]} castShadow receiveShadow><meshStandardMaterial color="#202936" metalness={0.5} roughness={0.36} /></RoundedBox>
+      <RoundedBox args={[3.16, 3.86, 2.55]} radius={0.38} smoothness={3} position={[0, 2.2, 0]} castShadow><meshPhysicalMaterial color="#eff3f7" roughness={0.44} clearcoat={0.2} /></RoundedBox>
+      <RoundedBox args={[1.72, 0.08, 1.12]} radius={0.12} smoothness={2} position={[0, 4.16, 0]}><meshStandardMaterial color="#1c63d5" metalness={0.3} roughness={0.32} /></RoundedBox>
+      {[-0.48, -0.24, 0, 0.24, 0.48].map((x) => <mesh key={x} position={[x, 4.22, 0]}><boxGeometry args={[0.08, 0.04, 0.78]} /><meshStandardMaterial color="#202936" metalness={0.62} roughness={0.3} /></mesh>)}
+      <RoundedBox args={[2.45, 2.92, 0.09]} radius={0.22} smoothness={3} position={[-0.2, 2.23, 1.32]}><meshStandardMaterial color="#0c2f72" roughness={0.3} metalness={0.2} /></RoundedBox>
+      {[0.95, 1.68, 2.41, 3.14].map((y, index) => (
+        <group key={y} name={`accelerator-tray-${index + 1}`} position={[-0.22, y, 1.4]} userData={{ pivot: 'linear-z', socket: `tray-bay-${index + 1}`, collider: { type: 'box', size: [2, 0.48, 0.32] } }}>
+          <RoundedBox args={[2.02, 0.48, 0.34]} radius={0.1} smoothness={2} castShadow><meshStandardMaterial color="#235cc6" metalness={0.28} roughness={0.34} /></RoundedBox>
+          <RoundedBox args={[0.72, 0.16, 0.04]} radius={0.04} smoothness={2} position={[0, 0, 0.2]}><meshBasicMaterial color="#38d9ef" toneMapped={false} /></RoundedBox>
+          <mesh position={[0.76, 0, 0.2]}><boxGeometry args={[0.09, 0.16, 0.04]} /><meshBasicMaterial color="#91f45f" toneMapped={false} /></mesh>
+        </group>
+      ))}
+      <group ref={arm} name="probe-arm" position={[1.63, 3.24, 0.3]} userData={{ pivot: 'hinge-z', socket: 'probe-shoulder', contactType: 'hinge' }}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.3, 0.3, 0.32, 24]} /><meshStandardMaterial color="#1761cf" metalness={0.46} roughness={0.28} /></mesh>
+        <RoundedBox args={[0.32, 1.1, 0.32]} radius={0.12} smoothness={3} position={[0.28, -0.46, 0]} rotation={[0, 0, -0.48]}><meshPhysicalMaterial color="#edf2f5" roughness={0.42} /></RoundedBox>
+        <group name="probe-elbow" position={[0.55, -0.94, 0]} userData={{ pivot: 'hinge-z' }}>
+          <mesh><sphereGeometry args={[0.24, 20, 14]} /><meshStandardMaterial color="#25303d" metalness={0.55} roughness={0.3} /></mesh>
+          <RoundedBox args={[0.28, 0.92, 0.28]} radius={0.1} smoothness={3} position={[-0.2, -0.4, 0]} rotation={[0, 0, 0.45]}><meshPhysicalMaterial color="#edf2f5" roughness={0.42} /></RoundedBox>
+        </group>
+      </group>
+      <group name="cooling-manifold" position={[1.25, 0.74, 1.05]} userData={{ pivot: 'base', socket: 'coolant-return' }}>
+        {[-0.34, 0, 0.34].map((x) => <mesh key={x} position={[x, 0, 0]}><torusGeometry args={[0.19, 0.065, 8, 18, Math.PI]} /><meshStandardMaterial color="#17488e" roughness={0.42} metalness={0.25} /></mesh>)}
+      </group>
+    </group>
+  );
+}
+
+function ServiceGantry({ preset }: { preset: LightingPreset }) {
+  const dark = preset === 'night' || preset === 'dusk';
+  return (
+    <group name="service-gantry" position={[0, 0, -14]}>
+      {[-22, 0, 22].map((x) => (
+        <group key={x} position={[x, 0, 0]}>
+          {[-1, 1].map((side) => (
+            <RoundedBox key={side} args={[0.6, 7.8, 0.7]} radius={0.12} smoothness={2} position={[side * 6.8, 3.7, 0]} castShadow>
+              <meshStandardMaterial color={dark ? '#273b34' : '#c7d5cd'} metalness={0.55} roughness={0.38} />
+            </RoundedBox>
+          ))}
+          <RoundedBox args={[14.2, 0.6, 0.72]} radius={0.13} smoothness={2} position={[0, 7.25, 0]} castShadow>
+            <meshStandardMaterial color={dark ? '#263a33' : '#d4e0d9'} metalness={0.52} roughness={0.38} />
+          </RoundedBox>
+          {[-4.8, 0, 4.8].map((lightX) => (
+            <mesh key={lightX} position={[lightX, 6.9, 0.36]}>
+              <boxGeometry args={[2.4, 0.08, 0.16]} />
+              <meshBasicMaterial color={dark ? '#89aaff' : '#eafff3'} toneMapped={false} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      <WaferMonument />
+    </group>
+  );
+}
+
+function RearCleanroomWall({ preset }: { preset: LightingPreset }) {
+  const dark = preset === 'night' || preset === 'dusk';
+  const panel = useMemo(() => paintedPanel(8), []);
+  return (
+    <group position={[0, 3.4, -24]}>
+      <mesh receiveShadow>
+        <boxGeometry args={[108, 7, 0.6]} />
+        <meshStandardMaterial
+          color={dark ? '#132720' : '#e8f0eb'}
+          roughness={0.66}
+          metalness={0.08}
+          normalMap={panel.normalMap}
+          normalScale={panel.normalScale}
+          roughnessMap={panel.roughnessMap}
+        />
+      </mesh>
+      {Array.from({ length: 12 }, (_, i) => {
+        const x = -49.5 + i * 9;
+        return (
+          <group key={i} position={[x, 0.1, 0.34]}>
+            <RoundedBox args={[6.7, 3.6, 0.14]} radius={0.16} smoothness={2}>
+              <meshPhysicalMaterial color={dark ? '#163652' : '#85bcec'} roughness={0.16} metalness={0.18} transmission={0.08} transparent opacity={0.82} />
+            </RoundedBox>
+            <mesh position={[0, -2.36, 0.08]}>
+              <boxGeometry args={[6.4, 0.12, 0.08]} />
+              <meshBasicMaterial color={i % 2 ? '#76e067' : '#4d7bf0'} toneMapped={false} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+function SelectionFixture() {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    ref.current.position.y = 0.34 + 0.08 * Math.sin(clock.elapsedTime * 3);
+  });
+  return (
+    <group ref={ref} position={[0, 0.34, 0]} name="inspection-selection-fixture">
+      {([-1, 1] as const).flatMap((x) => ([-1, 1] as const).map((z) => (
+        <group key={`${x}-${z}`} position={[x * 4.3, 0.45, z * 3.2]}>
+          <RoundedBox args={[0.18, 1.05, 0.18]} radius={0.05} smoothness={2}><meshBasicMaterial color="#b7ff4a" toneMapped={false} /></RoundedBox>
+          <pointLight color="#b7ff4a" intensity={0.55} distance={3.2} decay={2} position={[0, 0.54, 0]} />
+        </group>
+      )))}
+      <RoundedBox args={[2.7, 0.15, 0.22]} radius={0.06} smoothness={2} position={[0, 5.8, 0]}><meshBasicMaterial color="#b7ff4a" toneMapped={false} /></RoundedBox>
+    </group>
   );
 }
 
@@ -539,97 +394,57 @@ export function Compound({
   onSelect?: (id: string) => void;
 }) {
   const p = LIGHTING_PRESETS[preset];
-  const byFamily = useMemo(() => {
-    const deployedOil = nodes.filter((n) => n.type === 'oil');
-    const deployedMine = nodes.filter((n) => n.type !== 'oil');
-    return {
-      oil: deployedOil,
-      mine: deployedMine,
-    };
-  }, [nodes]);
+  const byFamily = useMemo(
+    () => ({
+      oil: nodes.filter((node) => node.type === 'oil'),
+      mine: nodes.filter((node) => node.type !== 'oil'),
+    }),
+    [nodes]
+  );
 
   return (
     <group>
-      {preset === 'night' && <color attach="background" args={[p.sky]} />}
-      <fog attach="fog" args={[p.fog, 70, 265]} />
-      <hemisphereLight
-        color={preset === 'night' ? '#273a66' : '#9cb8d2'}
-        groundColor={preset === 'night' ? '#070912' : '#72513a'}
-        intensity={p.ambient * 1.55}
-      />
-      <ambientLight intensity={p.ambient * 0.22} />
+      <color attach="background" args={[p.sky]} />
+      <fog attach="fog" args={[p.fog, 72, 210]} />
+      <hemisphereLight color={preset === 'night' ? '#526f9c' : '#d9f6e5'} groundColor={preset === 'night' ? '#07110e' : '#799386'} intensity={p.fill * 1.35} />
+      <ambientLight intensity={p.fill * 0.28} />
       <directionalLight
-        position={p.sun}
-        color={p.sunColor}
-        intensity={p.sunIntensity}
+        position={p.key}
+        color={p.keyColor}
+        intensity={p.keyIntensity}
         castShadow
         shadow-mapSize={[4096, 4096]}
-        shadow-intensity={0.68}
-        shadow-bias={-0.00012}
-        shadow-normalBias={0.025}
-        shadow-camera-left={-50}
-        shadow-camera-right={50}
-        shadow-camera-top={50}
-        shadow-camera-bottom={-50}
+        shadow-intensity={0.58}
+        shadow-bias={-0.0001}
+        shadow-normalBias={0.024}
+        shadow-camera-left={-48}
+        shadow-camera-right={48}
+        shadow-camera-top={48}
+        shadow-camera-bottom={-48}
         shadow-camera-near={1}
         shadow-camera-far={120}
       />
-      <directionalLight
-        position={[-35, 20, 35]}
-        color={preset === 'night' ? '#536fba' : '#93b9d6'}
-        intensity={p.ambient * 1.6}
-      />
-      {/* Delivered HDRI (cape_hill, downscaled to 1k) lights the scene and, outside night
-          mode, is the visible sky. Loaded defensively — see SafeEnvironment:
-          a failed environment fetch must not take the whole compound down. */}
-      <SafeEnvironment
-        files="/env/cape_hill_1k.hdr"
-        environmentIntensity={p.envIntensity}
-        background={preset !== 'night'}
-        backgroundBlurriness={0.04}
-        backgroundIntensity={preset === 'dusk' ? 0.35 : preset === 'sunset' ? 0.6 : 1}
-        fallbackSky={p.sky}
-      />
+      <directionalLight position={[-28, 20, 24]} color={preset === 'night' ? '#4467af' : '#8dd9ff'} intensity={p.fill * 1.25} />
+      <SafeEnvironment files="/env/cape_hill_1k.hdr" environmentIntensity={p.envIntensity} background={false} fallbackSky={p.sky} />
 
-      <Ground />
-      <WorldSetDressing preset={preset} />
-      <Sea
-        color={preset === 'night' ? '#16334a' : '#286b7f'}
-        glint={preset === 'night' ? '#9fc4e8' : '#ffd194'}
-      />
-      <OilSlicks />
+      <CleanroomFloor preset={preset} />
+      <RearCleanroomWall preset={preset} />
+      <ServiceGantry preset={preset} />
+      <EUVUtilityCore />
+      <AcceleratorTestRack />
 
-      {byFamily.oil.map((n, i) => (
-        <group key={n.id} position={nodePosition(i, 'oil', Number(n.id) || i)}>
-          <NodeRig node={n} targetSize={9} onClick={onSelect} />
-          {selectedNodeId === n.id && <SelectionRing />}
+      {byFamily.oil.map((node, index) => (
+        <group key={node.id} position={nodePosition(index, 'oil', Number(node.id) || index)}>
+          <NodeRig node={node} targetSize={8} onClick={onSelect} />
+          {selectedNodeId === node.id && <SelectionFixture />}
         </group>
       ))}
-      {byFamily.mine.map((n, i) => (
-        <group key={n.id} position={nodePosition(i, 'mine', Number(n.id) || i)}>
-          <NodeRig node={n} targetSize={9} onClick={onSelect} />
-          {selectedNodeId === n.id && <SelectionRing />}
+      {byFamily.mine.map((node, index) => (
+        <group key={node.id} position={nodePosition(index, 'mine', Number(node.id) || index)}>
+          <NodeRig node={node} targetSize={8} onClick={onSelect} />
+          {selectedNodeId === node.id && <SelectionFixture />}
         </group>
       ))}
     </group>
   );
 }
-
-function SelectionRing() {
-  const ref = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    if (ref.current) {
-      ref.current.rotation.z = clock.elapsedTime * 0.6;
-      const s = 1 + 0.03 * Math.sin(clock.elapsedTime * 3);
-      ref.current.scale.setScalar(s);
-    }
-  });
-  return (
-    <mesh ref={ref} position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[4.6, 4.9, 64]} />
-      <meshBasicMaterial color="#f59e0b" transparent opacity={0.7} side={THREE.DoubleSide} toneMapped={false} />
-    </mesh>
-  );
-}
-
-useGLTF.preload('/models/runtime/OSR_sand.glb', false, true);

@@ -5,7 +5,7 @@
 // Every sound is synthesised with the Web Audio API — no sample files, so there
 // is nothing to license, nothing to download, and the whole system adds a few
 // KB rather than the hundreds a sound pack would. It shares the trailer's
-// approach (design_polish/osr-sfx.js) so the game and its trailer sound alike.
+// approach so every fab-console interaction shares the same compact sonic vocabulary.
 //
 // Two rules the browser forces on us, both handled here:
 //   - Audio cannot start before a user gesture, so the context is created lazily

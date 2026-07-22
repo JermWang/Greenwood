@@ -73,7 +73,7 @@ export function createListing(
   priceOsr: number
 ): Listing {
   if (!Number.isFinite(priceOsr) || priceOsr <= 0) {
-    throw new GameError('price must be a positive number of OSR', 400);
+    throw new GameError('price must be a positive number of GPU', 400);
   }
   assertSellable(wallet, kind, itemId);
 
@@ -128,7 +128,7 @@ export function cancelListing(wallet: string, listingId: number) {
 /**
  * Move a sold item to its buyer and close the listing.
  *
- * Payment is handled by the caller — the buyer sends OSR to the seller on-chain
+ * Payment is handled by the caller — the buyer sends GPU to the seller on-chain
  * and this runs only once that transfer is verified. Ownership transfer and
  * listing closure happen in one transaction so a crash cannot leave an item
  * paid for but undelivered.

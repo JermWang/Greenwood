@@ -1,23 +1,30 @@
 'use client';
 
-// Uses the isolated previews rendered from the authored Blender slot models.
+// Uses the unified fab reference renders as readable inventory thumbnails.
 
 import { rarityHex, type Rarity } from '@/lib/rarity';
 
 export const SLOT_GLYPHS: Record<string, string> = {
-  derrick: '⛰',
-  pump_jack: '⚡',
-  pipeline: '⛓',
-  flare_stack: '🔥',
-  drill_bit: '⛏',
-  ore_cart: '🚲',
-  rail_track: '═',
-  elevator: '↕',
+  derrick: '◎',
+  pump_jack: '◫',
+  pipeline: '⌬',
+  flare_stack: 'ϟ',
+  drill_bit: '◉',
+  ore_cart: '◇',
+  rail_track: '⊞',
+  elevator: '≈',
 };
 
-export const SLOT_IMAGES: Record<string, string> = Object.fromEntries(
-  Object.keys(SLOT_GLYPHS).map((slot) => [slot, `/models/authored/previews/${slot}.png`])
-);
+export const SLOT_IMAGES: Record<string, string> = {
+  derrick: '/assets/fab/lithography-machine-reference.png',
+  pump_jack: '/assets/fab/wafer-stack-reference.png',
+  pipeline: '/assets/fab/lithography-machine-reference.png',
+  flare_stack: '/assets/fab/wafer-stack-reference.png',
+  drill_bit: '/assets/fab/dicing-saw-reference.png',
+  ore_cart: '/assets/fab/packaging-line-reference.png',
+  rail_track: '/assets/fab/dicing-saw-reference.png',
+  elevator: '/assets/fab/packaging-line-reference.png',
+};
 
 interface ComponentTileProps {
   slot: string;

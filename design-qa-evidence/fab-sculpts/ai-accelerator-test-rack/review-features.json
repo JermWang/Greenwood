@@ -1,0 +1,5 @@
+[
+  {"id":"ai-accelerator-test-rack-silhouette","score":0.80,"visible":true,"notes":"Tall rounded enclosure, recessed bay, plinth, vent, and side arm are recognizable."},
+  {"id":"ai-accelerator-test-rack-mechanism-system","score":0.76,"visible":true,"notes":"Four independent trays and the hinged two-segment probe arm are addressable and attached."},
+  {"id":"ai-accelerator-test-rack-material-system","score":0.74,"visible":true,"notes":"Pearl shell, cobalt tray bay, cyan screens, lime indicators, and charcoal base match the shared family."}
+]

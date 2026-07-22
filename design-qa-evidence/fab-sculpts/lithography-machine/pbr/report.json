@@ -1,0 +1,87 @@
+{
+  "ok": true,
+  "verdict": "pass",
+  "confidence": 0.86,
+  "estimatedFidelity": 0.86,
+  "targetThreshold": 0.7,
+  "materialId": "shell",
+  "sourceImage": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\public\\assets\\fab\\lithography-machine-reference.png",
+  "outDir": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\lithography-machine\\pbr",
+  "palette": [
+    "#CAE2FA",
+    "#213863",
+    "#F4F2F1",
+    "#BFC7D1",
+    "#779098"
+  ],
+  "maps": {
+    "albedo": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\lithography-machine\\pbr\\shell_albedo.png",
+      "url": "shell_albedo.png",
+      "channel": "albedo",
+      "source": "reference-pixel-extraction"
+    },
+    "roughness": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\lithography-machine\\pbr\\shell_roughness.png",
+      "url": "shell_roughness.png",
+      "channel": "roughness",
+      "source": "reference-pixel-extraction"
+    },
+    "height": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\lithography-machine\\pbr\\shell_height.png",
+      "url": "shell_height.png",
+      "channel": "height",
+      "source": "reference-pixel-extraction"
+    },
+    "normal": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\lithography-machine\\pbr\\shell_normal.png",
+      "url": "shell_normal.png",
+      "channel": "normal",
+      "source": "reference-pixel-extraction"
+    },
+    "ao": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\lithography-machine\\pbr\\shell_ao.png",
+      "url": "shell_ao.png",
+      "channel": "ao",
+      "source": "reference-pixel-extraction"
+    }
+  },
+  "diagnostics": {
+    "sourceWidth": 1536,
+    "sourceHeight": 1024,
+    "mapSize": 1024,
+    "cropBBoxPixels": {
+      "x": 0,
+      "y": 0,
+      "width": 1536,
+      "height": 1024
+    },
+    "mask": {
+      "backgroundColor": "#CBE3FB",
+      "backgroundNoise": 2.449,
+      "transparentPixelFraction": 0.0,
+      "foregroundCoverage": 0.9992
+    },
+    "mapStats": {
+      "valueRange": 0.8086,
+      "heightP90Gradient": 0.03513,
+      "roughnessBase": 0.682,
+      "roughnessVariation": 0.059,
+      "normalStrength": 0.197,
+      "blurRadius": 21
+    },
+    "palette": [
+      "#CAE2FA",
+      "#213863",
+      "#F4F2F1",
+      "#BFC7D1",
+      "#779098"
+    ]
+  },
+  "warnings": [
+    "image is not clearly isolated from background; using most pixels as material evidence",
+    "object/background separation is weak",
+    "single-image inverse rendering cannot prove true physical PBR; confidence is capped"
+  ],
+  "limitation": "single-image PBR extraction is an estimate; 70%+ extraction confidence still needs render screenshot review"
+}

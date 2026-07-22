@@ -29,9 +29,9 @@ export default function OpsPage() {
   }, [load]);
 
   return (
-    <PageShell title="My Operations" subtitle="Track active nodes, pending rewards, and compound performance." maxWidth="max-w-6xl">
+    <PageShell title="Fab Telemetry" subtitle="A diagnostic readout of every active line, yield buffer, and campus constraint." maxWidth="max-w-[1440px]">
       {!wallet ? (
-        <p className="text-sm text-steel-400">Connect a wallet from Command Center first.</p>
+        <p className="text-sm text-steel-400">Initialize an operator uplink from the Fab Floor first.</p>
       ) : loading && !op ? (
         <p className="text-sm text-steel-400">Loading…</p>
       ) : error ? (
@@ -42,32 +42,40 @@ export default function OpsPage() {
           </button>
         </div>
       ) : op ? (
-        <div className="space-y-6">
-          <section>
-            <h2 className="stat-label mb-3">Summary</h2>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <StatCard label="Nodes" value={`${op.nodes.length}/${op.maxNodes}`} />
-              <StatCard label="Max Level" value={String(op.level)} />
-              <StatCard label="Total Rate/s" value={op.productionRate.toFixed(6)} />
-              <StatCard label="Lifetime Produced" value={op.totalProduced.toFixed(4)} />
+        <div className="telemetry-layout">
+          <section className="telemetry-overview">
+            <div className="fab-console-heading"><span>CAMPUS DIAGNOSTIC</span><span>LIVE</span></div>
+            <div className="telemetry-gauges">
+              <StatCard label="Line occupancy" value={`${op.nodes.length}/${op.maxNodes}`} tone="lime" />
+              <StatCard label="Campus tier" value={`0${op.level}`} tone="cobalt" />
+              <StatCard label="GPU / second" value={op.productionRate.toFixed(4)} tone="cyan" />
+              <StatCard label="Lifetime output" value={op.totalProduced.toFixed(2)} tone="orange" />
             </div>
           </section>
 
-          <section>
-            <h2 className="stat-label mb-3">Pending Rewards</h2>
-            <div className="panel divide-y divide-ink-600 p-0">
-              {Object.entries(op.pending).length === 0 ? (
-                <p className="p-4 text-sm text-steel-400">No pending rewards</p>
-              ) : (
-                Object.entries(op.pending).map(([asset, amount]) => (
-                  <div key={asset} className="flex items-center justify-between px-4 py-3">
-                    <span className="font-mono text-xs uppercase tracking-widest text-steel-400">
-                      {asset}
-                    </span>
-                    <span className="font-mono text-sm text-white">{amount.toFixed(6)}</span>
+          <section className="fab-console-card">
+            <div className="fab-console-heading"><span>BUFFER ROUTING</span><span>{Object.keys(op.pending).length} ASSETS</span></div>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              {Object.entries(op.pending).length === 0 ? <p className="text-sm text-sky-100/45">All production buffers are clear.</p> : Object.entries(op.pending).map(([asset, amount]) => (
+                <div key={asset} className="telemetry-buffer"><span>{asset}</span><strong>{amount.toFixed(6)}</strong><small>Awaiting operator route</small></div>
+              ))}
+            </div>
+          </section>
+
+          <section className="fab-console-card telemetry-lines">
+            <div className="fab-console-heading"><span>LINE-BY-LINE STATUS</span><span>{op.nodes.length} ONLINE</span></div>
+            <div className="mt-4 space-y-2">
+              {op.nodes.length === 0 ? <p className="text-sm text-sky-100/45">No commissioned lines.</p> : op.nodes.map((node, index) => {
+                const storage = node.storageCap > 0 ? Math.min(100, (node.pendingOsr / node.storageCap) * 100) : 0;
+                return (
+                  <div key={node.id} className="telemetry-line-row">
+                    <span className="telemetry-line-number">{String(index + 1).padStart(2, '0')}</span>
+                    <span className="min-w-0"><strong>{node.type === 'oil' ? 'Wafer fabrication line' : 'Cleanroom packaging line'}</strong><small>L{node.level} · {node.componentMultiplier.toFixed(2)}× equipment multiplier</small></span>
+                    <span className="telemetry-line-flow"><span style={{ width: `${storage}%` }} /></span>
+                    <span className="text-right font-mono text-[9px] text-sky-100/55">{node.productionRate.toFixed(4)}<br /><span className="text-[7px] text-lime-300">GPU/S</span></span>
                   </div>
-                ))
-              )}
+                );
+              })}
             </div>
           </section>
         </div>
@@ -76,11 +84,12 @@ export default function OpsPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({ label, value, tone }: { label: string; value: string; tone: 'lime' | 'cobalt' | 'cyan' | 'orange' }) {
   return (
-    <div className="panel p-4">
+    <div className={`telemetry-gauge tone-${tone}`}>
+      <span className="telemetry-gauge-ring" />
       <p className="stat-label">{label}</p>
-      <p className="mt-1 font-mono text-lg text-white">{value}</p>
+      <p className="mt-2 font-mono text-[clamp(1.25rem,3vw,2rem)] font-bold text-white">{value}</p>
     </div>
   );
 }

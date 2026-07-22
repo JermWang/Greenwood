@@ -2,7 +2,7 @@
 //
 // Crates are found, not bought. Every node accrues a chance to turn one up as
 // it mines; the whole network shares a fixed daily budget, and a single wallet
-// can only take so much of it. Opening a crate is what costs OSR.
+// can only take so much of it. Opening a crate is what costs GPU.
 //
 // The budget is the point. Letting operators buy crates on demand made supply
 // infinite and the drop meaningless — the scarcity here is what makes a find

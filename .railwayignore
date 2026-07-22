@@ -19,6 +19,7 @@ out/
 .env*.local
 *.log
 .codex-*.log
+data/
 
 # Version control and editor noise
 .git/
@@ -28,4 +29,7 @@ out/
 
 # Source assets that are not served at runtime. The Blender/design working
 # files are large and only used to author what already lives in public/.
+# Being in .gitignore is not enough — the tarball ignores it, so list them here.
 design_polish/
+ORS MODELS/
+design-qa-evidence/

@@ -213,8 +213,19 @@ export async function settleSpend<T>(
     throw new GameError('quote expired — request a fresh one', 409);
   }
 
-  const receipt = await publicClient().getTransactionReceipt({ hash: txHash as Hex });
-  if (!receipt) throw new GameError('transaction not found', 404);
+  // viem THROWS TransactionReceiptNotFoundError when the tx is not yet visible
+  // to this RPC node. The client already waited for the receipt before calling
+  // settle, so this is propagation lag between RPC nodes, not a real failure —
+  // make it the same retryable 425 as the confirmations path, or the client
+  // (which only retries on "awaiting confirmations") gives up and the operator
+  // is charged on-chain for an action that never applied.
+  let receipt: Awaited<ReturnType<ReturnType<typeof publicClient>['getTransactionReceipt']>> | null;
+  try {
+    receipt = await publicClient().getTransactionReceipt({ hash: txHash as Hex });
+  } catch {
+    throw new GameError('awaiting confirmations (receipt not yet visible)', 425);
+  }
+  if (!receipt) throw new GameError('awaiting confirmations (receipt not yet visible)', 425);
   if (receipt.status !== 'success') throw new GameError('transaction reverted on-chain', 400);
 
   const head = await publicClient().getBlockNumber();
@@ -246,16 +257,52 @@ export async function settleSpend<T>(
     throw new GameError('transaction does not contain a matching payment to the treasury', 400);
   }
 
-  const result = apply(row);
+  // Claim the row BEFORE applying anything.
+  //
+  // The two awaits above are interleave points: concurrent settles for one nonce
+  // can each read status 'issued' at the top and then both reach this line. If
+  // the guard ran only after apply(), every one of them would already have
+  // mutated game state by the time the losers got their 409 — one payment, N
+  // applications. A single conditional UPDATE is what makes exactly one caller
+  // the winner, and it has to happen first.
+  let claimed;
+  try {
+    claimed = db
+      .prepare(
+        `UPDATE settlements SET status = 'settling', tx_hash = ?
+          WHERE nonce = ? AND status = 'issued'`
+      )
+      .run(txHash, nonce);
+  } catch {
+    // The partial unique index on tx_hash rejects a second settlement backed by
+    // the same transaction, which is the replay this check exists to stop.
+    throw new GameError('that transaction has already paid for another action', 409);
+  }
+  if (claimed.changes === 0) {
+    const current = db
+      .prepare('SELECT status, applied_result FROM settlements WHERE nonce = ?')
+      .get(nonce) as { status: string; applied_result: string | null } | undefined;
+    if (current?.status === 'settled') return JSON.parse(current.applied_result ?? 'null') as T;
+    throw new GameError('this settlement is already being applied', 409);
+  }
 
-  const updated = db
-    .prepare(
-      `UPDATE settlements
-          SET status = 'settled', tx_hash = ?, applied_result = ?, settled_at = ?
-        WHERE nonce = ? AND status = 'issued'`
-    )
-    .run(txHash, JSON.stringify(result ?? null), Date.now(), nonce);
-  if (updated.changes === 0) throw new GameError('settlement already applied', 409);
+  let result: T;
+  try {
+    result = apply(row);
+  } catch (e) {
+    // Release the claim. The operator has already paid on-chain, so a transient
+    // failure must leave the settlement retryable rather than stranded.
+    db.prepare(
+      `UPDATE settlements SET status = 'issued', tx_hash = NULL
+        WHERE nonce = ? AND status = 'settling'`
+    ).run(nonce);
+    throw e;
+  }
+
+  db.prepare(
+    `UPDATE settlements SET status = 'settled', applied_result = ?, settled_at = ?
+      WHERE nonce = ?`
+  ).run(JSON.stringify(result ?? null), Date.now(), nonce);
 
   return result;
 }

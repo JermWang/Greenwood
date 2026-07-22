@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  * Two jobs. It reports which build is serving, so a client that loaded an older
  * one can notice it is stale and reload itself. And it reports whether a deploy
  * is in flight, so the UI can stop players starting an action that would be cut
- * in half by the cutover — a spend sends OSR on-chain before the server applies
+ * in half by the cutover — a spend sends GPU on-chain before the server applies
  * anything, so losing the server in between costs the player real tokens and
  * leaves us owing a refund.
  */

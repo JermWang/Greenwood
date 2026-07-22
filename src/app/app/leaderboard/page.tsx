@@ -1,240 +1,95 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import PageShell from '@/components/ui/PageShell';
 import { api } from '@/lib/api-client';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
 
 type Metric = 'compound_level' | 'total_produced' | 'total_burned';
+interface Row { rank: number; wallet: string; displayName?: string | null; online?: boolean; compoundLevel?: number; maxLevel: number; sumLevel: number; totalProduced: number; totalBurned: number; }
 
-interface Row {
-  rank: number;
-  wallet: string;
-  displayName?: string | null;
-  online?: boolean;
-  compoundLevel?: number;
-  maxLevel: number;
-  sumLevel: number;
-  totalProduced: number;
-  totalBurned: number;
-}
-
-const METRICS: Array<{ key: Metric; label: string }> = [
-  { key: 'compound_level', label: 'Compound Level' },
-  { key: 'total_produced', label: 'Total Produced' },
-  { key: 'total_burned', label: 'OSR Burned' },
+const METRICS: Array<{ key: Metric; label: string; unit: string; description: string }> = [
+  { key: 'compound_level', label: 'Campus tier', unit: 'TIER', description: 'Warehouse progression and installed capacity' },
+  { key: 'total_produced', label: 'Silicon output', unit: 'GPU', description: 'Lifetime GPU routed through production lines' },
+  { key: 'total_burned', label: 'GPU retired', unit: 'GPU', description: 'Token permanently removed while expanding fabs' },
 ];
-
-function metricValue(row: Row, metric: Metric): number {
-  if (metric === 'total_produced') return row.totalProduced;
-  if (metric === 'total_burned') return row.totalBurned;
-  return row.compoundLevel ?? row.maxLevel;
-}
-
-const short = (w: string, head = 8) => `${w.slice(0, head)}…${w.slice(-4)}`;
+const valueFor = (row: Row, metric: Metric) => metric === 'total_produced' ? row.totalProduced : metric === 'total_burned' ? row.totalBurned : row.compoundLevel ?? row.maxLevel;
+const operatorName = (row: Row) => row.displayName?.trim() || `${row.wallet.slice(0, 7)}…${row.wallet.slice(-4)}`;
 
 export default function LeaderboardPage() {
   const [metric, setMetric] = useState<Metric>('compound_level');
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async (m: Metric) => {
-    setLoading(true);
-    setError(null);
-    try {
-      setRows((await api.leaderboard(m)) as Row[]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'API unreachable');
-    } finally {
-      setLoading(false);
-    }
+  const load = useCallback(async (nextMetric: Metric) => {
+    setLoading(true); setError(null);
+    try { setRows((await api.leaderboard(nextMetric)) as Row[]); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Race telemetry unavailable'); }
+    finally { setLoading(false); }
   }, []);
-
-  useEffect(() => {
-    void load(metric);
-  }, [metric, load]);
-
+  useEffect(() => { void load(metric); }, [metric, load]);
   useEffect(() => {
     const supabase = getBrowserSupabase();
-    if (!supabase) {
-      const timer = window.setInterval(() => void load(metric), 30_000);
-      return () => window.clearInterval(timer);
-    }
-    const channel = supabase
-      .channel('osr-global-leaderboard')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles' },
-        () => void load(metric)
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    if (!supabase) { const timer = window.setInterval(() => void load(metric), 30_000); return () => window.clearInterval(timer); }
+    const channel = supabase.channel('gpu-silicon-race').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void load(metric)).subscribe();
+    return () => { void supabase.removeChannel(channel); };
   }, [metric, load]);
 
-  const podium = rows.slice(0, 3);
-  const rest = rows.slice(3, 100);
+  const activeMetric = METRICS.find((item) => item.key === metric)!;
+  const topValue = Math.max(1, ...rows.map((row) => valueFor(row, metric)));
+  const podium = useMemo(() => [rows[1], rows[0], rows[2]].filter(Boolean) as Row[], [rows]);
 
   return (
-    <PageShell title="Leaderboard" subtitle="Global operator rankings · updates in real time." maxWidth="max-w-7xl">
-      <div className="space-y-6">
-        {/* Metric tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {METRICS.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setMetric(key)}
-              className={`shrink-0 rounded px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-widest transition ${
-                metric === key
-                  ? 'bg-amber-500 text-ink-900'
-                  : 'border border-steel-500/50 text-steel-300 hover:text-amber-500'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+    <PageShell title="Silicon Race" subtitle="A live circuit of the campuses turning capital, cleanroom capacity, and process equipment into network share." maxWidth="max-w-[1500px]">
+      <div className="race-console">
+        <section className="race-control-strip">
+          <div><span className="network-pulse" /><strong>RACE TELEMETRY LIVE</strong><small>{rows.length} CAMPUSES INDEXED</small></div>
+          <nav aria-label="Race metric">
+            {METRICS.map((item) => <button key={item.key} onClick={() => setMetric(item.key)} className={metric === item.key ? 'is-active' : ''}><span>{item.label}</span><small>{item.unit}</small></button>)}
+          </nav>
+        </section>
 
-        {error && (
-          <div className="panel border-red-500/40 p-4 text-sm text-red-400">{error}</div>
-        )}
+        <section className="race-hero">
+          <div className="race-hero-copy"><span className="fab-scene-kicker">ACTIVE CLASSIFICATION</span><h2>{activeMetric.label}</h2><p>{activeMetric.description}</p></div>
+          <div className="race-wafer-mark"><span /><b>01</b><small>POLE</small></div>
+        </section>
 
-        {loading && rows.length === 0 && !error ? (
-          <p className="text-sm text-steel-400">Loading…</p>
-        ) : (
+        {error && <div className="fab-system-alert is-error"><span>RACE</span><p>{error}</p></div>}
+        {loading && rows.length === 0 ? <div className="fab-loading-deck"><span className="fab-loading-scan" /><p>Calibrating race lanes…</p></div> : (
           <>
-            {/* Podium — mobile */}
             {podium.length > 0 && (
-              <div className="space-y-3 sm:hidden">
-                <div className="panel border-amber-500/60 p-5 text-center shadow-[0_0_24px_rgba(245,158,11,0.15)]">
-                  <p className="font-mono text-4xl font-bold text-amber-500">#{podium[0].rank}</p>
-                  <p className="mt-1 font-mono text-sm text-steel-200">{short(podium[0].wallet)}</p>
-                  <p className="mt-1 font-mono text-lg text-white">
-                    {metricValue(podium[0], metric).toLocaleString()}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {podium.slice(1).map((r) => (
-                    <div key={r.rank} className="panel p-4 text-center">
-                      <p className="font-mono text-2xl font-bold text-amber-500">#{r.rank}</p>
-                      <p className="mt-1 font-mono text-xs text-steel-300">{short(r.wallet, 6)}</p>
-                      <p className="mt-1 font-mono text-sm text-white">
-                        {metricValue(r, metric).toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Podium — desktop */}
-            {podium.length > 0 && (
-              <div className="hidden gap-3 sm:grid sm:grid-cols-3">
-                {podium.map((r) => (
-                  <div key={r.rank} className="panel p-5 text-center">
-                    <p className="font-mono text-3xl font-bold text-amber-500">#{r.rank}</p>
-                    <p className="mt-1 font-mono text-sm text-steel-300">{short(r.wallet)}</p>
-                    <p className="mt-1 font-mono text-lg text-white">
-                      {metricValue(r, metric).toLocaleString()}
-                    </p>
-                  </div>
+              <section className="race-podium-deck">
+                {podium.map((row) => (
+                  <article key={row.rank} className={`race-podium-block is-${row.rank}`}>
+                    <span className="race-podium-rank">{String(row.rank).padStart(2, '0')}</span>
+                    <div className="race-podium-avatar">{operatorName(row).slice(0, 1).toUpperCase()}<i className={row.online ? 'is-online' : ''} /></div>
+                    <strong>{operatorName(row)}</strong>
+                    <small>{row.wallet.slice(0, 6)}…{row.wallet.slice(-4)}</small>
+                    <b>{valueFor(row, metric).toLocaleString(undefined, { maximumFractionDigits: 2 })} <em>{activeMetric.unit}</em></b>
+                    <div className="race-podium-base"><span /></div>
+                  </article>
                 ))}
-              </div>
+              </section>
             )}
 
-            {/* Table — desktop */}
-            <div className="panel hidden overflow-hidden md:block">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-ink-600">
-                    <th className="stat-label px-4 py-3 font-normal">#</th>
-                    <th className="stat-label px-4 py-3 font-normal">Wallet</th>
-                    <th className="stat-label px-4 py-3 text-right font-normal">Max L</th>
-                    <th className="stat-label px-4 py-3 text-right font-normal">Σ L</th>
-                    <th className="stat-label px-4 py-3 text-right font-normal">Produced</th>
-                    <th className="stat-label px-4 py-3 text-right font-normal">Burned</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ink-600/60">
-                  {rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-6 text-center text-steel-400">
-                        No operators yet
-                      </td>
-                    </tr>
-                  ) : (
-                    rest.map((r) => (
-                      <tr key={r.rank}>
-                        <td className="px-4 py-2.5 font-mono text-steel-400">{r.rank}</td>
-                        <td className="px-4 py-2.5 font-mono text-xs text-steel-200">
-                          {short(r.wallet)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-white">{r.maxLevel}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-white">{r.sumLevel}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-white">
-                          {r.totalProduced.toFixed(2)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-white">
-                          {r.totalBurned.toLocaleString()}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Card list — mobile */}
-            <div className="space-y-2 md:hidden">
-              {rows.length === 0 ? (
-                <p className="panel p-4 text-center text-sm text-steel-400">No operators yet</p>
-              ) : (
-                rest.map((r) => (
-                  <div key={r.rank} className="panel p-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-bold text-amber-500">#{r.rank}</span>
-                      <span className="font-mono text-xs text-steel-300">{short(r.wallet)}</span>
-                    </div>
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      <MiniStat
-                        label="Compound"
-                        value={`L${r.compoundLevel ?? r.maxLevel}`}
-                        hot={metric === 'compound_level'}
-                      />
-                      <MiniStat
-                        label="Produced"
-                        value={r.totalProduced.toFixed(1)}
-                        hot={metric === 'total_produced'}
-                      />
-                      <MiniStat
-                        label="Burned"
-                        value={r.totalBurned.toLocaleString()}
-                        hot={metric === 'total_burned'}
-                      />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            <section className="race-lanes">
+              <div className="fab-console-heading"><span>NETWORK FIELD</span><span>TOP 100 / AUTO REFRESH</span></div>
+              {rows.length === 0 ? <div className="race-empty">No campus has entered this classification yet.</div> : rows.slice(3, 100).map((row) => {
+                const progress = Math.max(3, valueFor(row, metric) / topValue * 100);
+                return (
+                  <article key={row.rank} className="race-lane">
+                    <span className="race-lane-rank">{String(row.rank).padStart(2, '0')}</span>
+                    <div className="race-lane-operator"><i className={row.online ? 'is-online' : ''} /><strong>{operatorName(row)}</strong><small>MAX L{row.maxLevel} · TOTAL L{row.sumLevel}</small></div>
+                    <div className="race-lane-track"><span style={{ width: `${progress}%` }}><i /></span></div>
+                    <b>{valueFor(row, metric).toLocaleString(undefined, { maximumFractionDigits: 2 })}<small>{activeMetric.unit}</small></b>
+                    <div className="race-lane-matrix"><span>{row.totalProduced.toFixed(1)} output</span><span>{row.totalBurned.toLocaleString()} retired</span></div>
+                  </article>
+                );
+              })}
+            </section>
           </>
         )}
       </div>
     </PageShell>
-  );
-}
-
-function MiniStat({ label, value, hot }: { label: string; value: string; hot: boolean }) {
-  return (
-    <div
-      className={`rounded border px-2 py-1.5 text-center ${
-        hot ? 'border-amber-500/70 ring-1 ring-amber-500/40' : 'border-ink-600'
-      }`}
-    >
-      <p className="font-mono text-[9px] uppercase tracking-widest text-steel-500">{label}</p>
-      <p className="mt-0.5 truncate font-mono text-xs text-white">{value}</p>
-    </div>
   );
 }

@@ -35,13 +35,13 @@ beforeEach(() => {
   const db = getDb();
   db.exec('DELETE FROM listings; DELETE FROM crates; DELETE FROM components; DELETE FROM nodes;');
   db.exec("DELETE FROM protocol WHERE key LIKE 'crates_found_day_%'");
-  setOsrUsdPrice(0.001); // $0.001/OSR -> a $5 crate costs 5,000 OSR
+  setOsrUsdPrice(0.001); // $0.001/GPU -> a $5 crate costs 5,000 GPU
 });
 
 afterAll(() => vi.restoreAllMocks());
 
 describe('crate pricing', () => {
-  it('charges the flat OSR price', () => {
+  it('charges the flat GPU price', () => {
     expect(crateCostOsr(0.001)).toBe(CRATE_OPEN_OSR);
   });
 

@@ -1,0 +1,87 @@
+{
+  "ok": true,
+  "verdict": "pass",
+  "confidence": 0.86,
+  "estimatedFidelity": 0.86,
+  "targetThreshold": 0.7,
+  "materialId": "shell",
+  "sourceImage": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\public\\assets\\fab\\packaging-line-reference.png",
+  "outDir": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\packaging-line\\pbr",
+  "palette": [
+    "#C7E1F7",
+    "#1D3C6E",
+    "#E4E2E0",
+    "#7DA0CA",
+    "#8B8C60"
+  ],
+  "maps": {
+    "albedo": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\packaging-line\\pbr\\shell_albedo.png",
+      "url": "shell_albedo.png",
+      "channel": "albedo",
+      "source": "reference-pixel-extraction"
+    },
+    "roughness": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\packaging-line\\pbr\\shell_roughness.png",
+      "url": "shell_roughness.png",
+      "channel": "roughness",
+      "source": "reference-pixel-extraction"
+    },
+    "height": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\packaging-line\\pbr\\shell_height.png",
+      "url": "shell_height.png",
+      "channel": "height",
+      "source": "reference-pixel-extraction"
+    },
+    "normal": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\packaging-line\\pbr\\shell_normal.png",
+      "url": "shell_normal.png",
+      "channel": "normal",
+      "source": "reference-pixel-extraction"
+    },
+    "ao": {
+      "path": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\design-qa-evidence\\fab-sculpts\\packaging-line\\pbr\\shell_ao.png",
+      "url": "shell_ao.png",
+      "channel": "ao",
+      "source": "reference-pixel-extraction"
+    }
+  },
+  "diagnostics": {
+    "sourceWidth": 1536,
+    "sourceHeight": 1024,
+    "mapSize": 1024,
+    "cropBBoxPixels": {
+      "x": 0,
+      "y": 0,
+      "width": 1536,
+      "height": 1024
+    },
+    "mask": {
+      "backgroundColor": "#C7DFF8",
+      "backgroundNoise": 8.246,
+      "transparentPixelFraction": 0.0,
+      "foregroundCoverage": 0.9992
+    },
+    "mapStats": {
+      "valueRange": 0.7535,
+      "heightP90Gradient": 0.04689,
+      "roughnessBase": 0.683,
+      "roughnessVariation": 0.083,
+      "normalStrength": 0.211,
+      "blurRadius": 21
+    },
+    "palette": [
+      "#C7E1F7",
+      "#1D3C6E",
+      "#E4E2E0",
+      "#7DA0CA",
+      "#8B8C60"
+    ]
+  },
+  "warnings": [
+    "image is not clearly isolated from background; using most pixels as material evidence",
+    "object/background separation is weak",
+    "single-image inverse rendering cannot prove true physical PBR; confidence is capped"
+  ],
+  "limitation": "single-image PBR extraction is an estimate; 70%+ extraction confidence still needs render screenshot review"
+}

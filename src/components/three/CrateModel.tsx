@@ -2,7 +2,7 @@
 
 // Procedural supply crate.
 //
-// Ported from the trailer's build (design_polish/osr-3d.js) so the crate in the
+// Shared supply-pod factory used by inventory, exchange, and reveal sequences so the pod in the
 // game is the same object people saw in the video: gunmetal panels recessed
 // into a brass frame, hex bolts, a glowing seam under the lid line, and a
 // four-petal lid that bursts outward when it opens.

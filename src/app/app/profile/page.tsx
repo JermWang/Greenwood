@@ -14,7 +14,7 @@ const eventLabels: Record<string, string> = {
   node_upgraded: 'Node upgraded',
   crate_opened: 'Supply crate opened',
   rewards_claimed: 'Rewards claimed',
-  compound_upgraded: 'Compound upgraded',
+  compound_upgraded: 'Warehouse upgraded',
   component_equipped: 'Component equipped',
   component_unequipped: 'Component unequipped',
 };
@@ -94,7 +94,7 @@ export default function ProfilePage() {
     if (!supabase) return;
     const normalized = wallet.toLowerCase();
     const channel = supabase
-      .channel(`osr-profile-${normalized}`)
+      .channel(`gpu-operator-profile-${normalized}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'profiles', filter: `wallet=eq.${normalized}` },
@@ -117,7 +117,7 @@ export default function ProfilePage() {
   }, [wallet, load]);
 
   return (
-    <PageShell title="Operator Profile" subtitle="Your persistent identity, progression, and transaction history." maxWidth="max-w-6xl">
+    <PageShell title="Operator ID" subtitle="Your persistent fabrication identity, campus record, and network history." maxWidth="max-w-[1360px]">
       {!wallet ? (
         <div className="panel p-6 text-sm text-steel-300">
           Sign in with Privy or link an external wallet to load your persistent online profile.
@@ -131,9 +131,10 @@ export default function ProfilePage() {
       ) : loading && !profile ? (
         <p className="text-sm text-steel-400">Loading global profile…</p>
       ) : profile ? (
-        <div className="space-y-6">
-          <section className="panel overflow-hidden">
-            <div className="border-b border-ink-600 bg-gradient-to-r from-amber-500/15 to-transparent p-5">
+        <div className="operator-layout">
+          <section className="operator-pass">
+            <div className="operator-pass-head">
+              <span className="operator-pass-code">GPU / OPERATOR CREDENTIAL</span>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   {/* Avatar: uploaded image, or the wallet's aura-tinted initial. */}
@@ -222,10 +223,10 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-px bg-ink-600 sm:grid-cols-4">
-              <Stat label="Compound" value={`L${profile.compoundLevel}`} />
-              <Stat label="Nodes" value={String(profile.nodeCount)} />
-              <Stat label="Produced" value={`${displayNumber(profile.totalProduced)} OSR`} />
-              <Stat label="Sessions" value={displayNumber(profile.totalSessions, 0)} />
+              <Stat label="Campus tier" value={`L${profile.compoundLevel}`} />
+              <Stat label="Process lines" value={String(profile.nodeCount)} />
+              <Stat label="Silicon output" value={`${displayNumber(profile.totalProduced)} GPU`} />
+              <Stat label="Fab sessions" value={displayNumber(profile.totalSessions, 0)} />
             </div>
             <div className="grid grid-cols-1 gap-3 border-t border-ink-600 p-4 text-xs text-steel-400 sm:grid-cols-2">
               <p>
@@ -238,10 +239,10 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          <section>
+          <section className="operator-trace">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-mono text-sm font-bold uppercase tracking-widest text-white">
-                Global history
+                Operator trace
               </h2>
               <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400">
                 Live
@@ -259,7 +260,7 @@ export default function ProfilePage() {
                         {eventLabels[item.eventType] || item.eventType.replaceAll('_', ' ')}
                       </p>
                       <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-steel-500">
-                        {item.source === 'onchain' ? 'Verified on-chain' : 'OSR network'}{' '}
+                        {item.source === 'onchain' ? 'Verified on-chain' : 'GPU network'}{' '}
                         ·{' '}
                         {new Date(item.createdAt).toLocaleString()}
                       </p>
@@ -287,7 +288,7 @@ export default function ProfilePage() {
         </div>
       ) : (
         <div className="panel p-6 text-sm text-steel-300">
-          Your profile is being initialized. Return to the Command Center once, then refresh this page.
+          Your operator identity is being initialized. Visit the Fab Floor once, then refresh this page.
         </div>
       )}
     </PageShell>

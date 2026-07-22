@@ -5,7 +5,7 @@ import { EXPEDITE_FEE_ETH } from '@/lib/economy';
 export const dynamic = 'force-dynamic';
 
 /**
- * Expedite skips the compound cooldown. It costs ETH only — the OSR for the
+ * Expedite skips the compound cooldown. It costs ETH only — the GPU for the
  * upgrade itself was already settled by the upgrade action.
  */
 export async function POST(request: Request) {

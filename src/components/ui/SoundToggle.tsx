@@ -41,7 +41,7 @@ export default function SoundToggle() {
       aria-pressed={muted}
       aria-label={muted ? 'Unmute sound effects' : 'Mute sound effects'}
       title={muted ? 'Sound off' : 'Sound on'}
-      className="grid h-9 w-9 place-items-center rounded-[10px] border border-white/[.08] bg-ink-800 text-steel-400 transition hover:border-amber-500/40 hover:text-amber-300"
+      className="fab-icon-button !h-[42px] !w-[42px] hover:border-lime-300/30 hover:text-lime-300"
     >
       {muted ? <SpeakerSlash size={16} weight="duotone" /> : <SpeakerHigh size={16} weight="duotone" />}
     </button>

@@ -1,12 +1,9 @@
 'use client';
 
-// Market — player-to-player trading, plus the protocol signal strip that used
-// to be the whole page.
-//
-// Prices are set entirely by sellers. The protocol takes a fee and nothing
-// else: no floor, no ceiling, no listings of its own.
+// Chip Exchange — operator-to-operator routing for real campus assets.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import PageShell from '@/components/ui/PageShell';
 import ComponentTile from '@/components/ui/ComponentTile';
@@ -29,7 +26,7 @@ const KINDS: Array<{ key: MarketItemKind | 'all'; label: string }> = [
   { key: 'all', label: 'Everything' },
   { key: 'crate', label: 'Crates' },
   { key: 'component', label: 'Components' },
-  { key: 'node', label: 'Rigs & Shafts' },
+  { key: 'node', label: 'Fabs & Cleanrooms' },
 ];
 
 const fmtOsr = (n: number) => Math.round(n).toLocaleString();
@@ -113,27 +110,27 @@ export default function MarketPage() {
 
   return (
     <PageShell
-      title="Market"
-      subtitle="Trade crates, components and whole operations with other players."
-      maxWidth="max-w-6xl"
+      title="Chip Exchange"
+      subtitle="Route equipment, sealed supply pods, and complete fabrication campuses across the operator network."
+      maxWidth="max-w-[1500px]"
     >
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="exchange-layout">
+        <section className="exchange-hero">
+          <div><span className="fab-scene-kicker">OPERATOR-TO-OPERATOR / LIVE BOOK</span><h2>Route hardware.<br /><em>Reprice capacity.</em></h2><p>Every order is backed by a real campus asset: process equipment, sealed supply pods, or a complete production line.</p></div>
+          <div className="exchange-hero-stats"><span><small>OPEN LOTS</small><strong>{listings?.length ?? '—'}</strong></span><span><small>SETTLED</small><strong>{sales.length}</strong></span><span><small>FEE</small><strong>{(feeBps / 100).toFixed(2)}%</strong></span></div>
+        </section>
+        <div className="exchange-modebar">
           {(['browse', 'sell'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`rounded border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest transition ${
-                tab === t
-                  ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                  : 'border-ink-600 bg-ink-800 text-steel-400 hover:border-steel-500'
-              }`}
+              className={tab === t ? 'is-active' : ''}
             >
-              {t === 'browse' ? 'Browse' : 'Sell'}
+              {t === 'browse' ? 'Exchange book' : 'Route an asset'}
             </button>
           ))}
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-widest text-steel-500">
-            Protocol fee {(feeBps / 100).toFixed(2)}% · prices set by sellers
+          <span className="exchange-fee-note">
+            Seller-priced · {(feeBps / 100).toFixed(2)}% routing fee
           </span>
         </div>
 
@@ -153,16 +150,12 @@ export default function MarketPage() {
 
         {tab === 'browse' ? (
           <>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="exchange-filters">
               {KINDS.map((k) => (
                 <button
                   key={k.key}
                   onClick={() => setKind(k.key)}
-                  className={`rounded border px-2.5 py-1 text-[11px] transition ${
-                    kind === k.key
-                      ? 'border-amber-500/60 bg-amber-500/10 text-amber-300'
-                      : 'border-ink-600 bg-ink-800 text-steel-400 hover:border-steel-500'
-                  }`}
+                  className={kind === k.key ? 'is-active' : ''}
                 >
                   {k.label}
                 </button>
@@ -175,7 +168,7 @@ export default function MarketPage() {
               <div className="panel p-6 text-center">
                 <p className="text-sm font-semibold text-steel-200">Nothing listed yet</p>
                 <p className="mt-1 text-xs text-steel-500">
-                  The market is entirely player-supplied — when someone lists a crate or a rig, it
+                  The market is entirely player-supplied — when someone lists a crate or a fab, it
                   shows up here.
                 </p>
               </div>
@@ -184,7 +177,7 @@ export default function MarketPage() {
                 {mine.length > 0 && (
                   <section className="space-y-2">
                     <h2 className="stat-label">Your listings</h2>
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="exchange-lot-grid">
                       {mine.map((l) => (
                         <ListingCard
                           key={l.id}
@@ -203,7 +196,7 @@ export default function MarketPage() {
                   {others.length === 0 ? (
                     <p className="text-xs text-steel-500">No other listings right now.</p>
                   ) : (
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="exchange-lot-grid">
                       {others.map((l) => (
                         <ListingCard
                           key={l.id}
@@ -239,7 +232,7 @@ export default function MarketPage() {
                             {s.item_kind}
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-white">
-                            {fmtOsr(s.sold_price_osr)} OSR
+                            {fmtOsr(s.sold_price_osr)} GPU
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-[11px] text-steel-500">
                             {new Date(s.sold_at).toLocaleDateString()}
@@ -275,20 +268,19 @@ export default function MarketPage() {
           />
         )}
 
-        {/* Protocol signals — kept from the original Market Room. */}
         {overview && (
-          <section className="space-y-2 border-t border-ink-600 pt-5">
-            <h2 className="stat-label">Protocol signals</h2>
+          <section className="exchange-network-strip">
+            <h2 className="stat-label">Network depth</h2>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               <StatCard label="Total Nodes" value={String(overview.totalNodes)} />
-              <StatCard label="Oil Rigs" value={String(overview.totalOilRigs)} />
-              <StatCard label="Mining Shafts" value={String(overview.totalMiningShafts)} />
-              <StatCard label="Total OSR Burned" value={fmtOsr(overview.totalOsrBurned)} />
+              <StatCard label="Wafer Fabs" value={String(overview.totalOilRigs)} />
+              <StatCard label="Cleanrooms" value={String(overview.totalMiningShafts)} />
+              <StatCard label="Total GPU Burned" value={fmtOsr(overview.totalOsrBurned)} />
               <StatCard
                 label="Protocol ETH Revenue"
                 value={`${overview.totalCreatorRewardsProcessed.toFixed(4)} ETH`}
               />
-              <StatCard label="OSR Reserve" value={fmtOsr(overview.osrReserveBalance)} />
+              <StatCard label="GPU Reserve" value={fmtOsr(overview.osrReserveBalance)} />
             </div>
           </section>
         )}
@@ -321,7 +313,8 @@ function ListingCard({
   const net = listing.priceOsr - Math.floor((listing.priceOsr * feeBps) / 10_000);
 
   return (
-    <div className="panel flex flex-col gap-2 p-3" style={{ borderColor: `${accent}44` }}>
+    <article className="exchange-lot" style={{ '--lot-accent': accent } as CSSProperties}>
+      <span className="exchange-lot-scan" />
       <div className="flex items-center gap-2.5">
         {listing.itemKind === 'crate' ? (
           <CrateThumb size={44} rarity="legendary" />
@@ -332,7 +325,7 @@ function ListingCard({
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-xl"
             style={{ background: `${accent}18`, border: `1px solid ${accent}44` }}
           >
-            {item.family === 'mine' ? '⛏' : '⛽'}
+            <span className="font-mono text-[9px] font-black tracking-tight">{item.family === 'mine' ? 'CLN' : 'FAB'}</span>
           </div>
         )}
         <div className="min-w-0">
@@ -345,7 +338,7 @@ function ListingCard({
 
       <div className="mt-auto flex items-baseline justify-between">
         <span className="font-mono text-sm font-bold text-amber-400">
-          {fmtOsr(listing.priceOsr)} OSR
+          {fmtOsr(listing.priceOsr)} <small>GPU</small>
         </span>
         <span className="font-mono text-[10px] text-steel-500">seller nets {fmtOsr(net)}</span>
       </div>
@@ -354,22 +347,22 @@ function ListingCard({
         disabled={busy}
         onClick={onAction}
       >
-        {busy ? 'Working…' : action === 'buy' ? 'Buy' : 'Cancel listing'}
+        {busy ? 'Routing…' : action === 'buy' ? 'Acquire lot' : 'Withdraw lot'}
       </button>
       <div className="font-mono text-[9px] text-steel-600">
         {listing.seller.slice(0, 6)}…{listing.seller.slice(-4)}
       </div>
-    </div>
+    </article>
   );
 }
 
 function title(l: MarketListing): string {
   const item = (l.item ?? {}) as Record<string, string | number>;
   if (l.itemKind === 'crate') {
-    return item.crate_type === 'shaft_crate' ? 'Shaft Crate' : 'Rig Crate';
+    return item.crate_type === 'shaft_crate' ? 'Cleanroom Supply Pod' : 'Fab Supply Pod';
   }
   if (l.itemKind === 'component') return SLOT_LABELS[String(item.slot)] ?? String(item.slot);
-  return item.family === 'mine' ? 'Mining Shaft' : 'Oil Rig';
+  return item.family === 'mine' ? 'Cleanroom' : 'Wafer Fab';
 }
 
 function subtitle(l: MarketListing): string {
@@ -416,7 +409,7 @@ function SellPanel({
     );
   }
 
-  // Equipped gear is excluded: it has to come off the rig before it can be sold,
+  // Equipped gear is excluded: it has to come off the fab before it can be sold,
   // and offering it here would only produce a server rejection.
   const sellableComponents = (inventory ?? []).filter((i) => i.equippedNodeId == null);
   const priceNum = Number(price);
@@ -443,7 +436,7 @@ function SellPanel({
               >
                 <CrateThumb size={36} rarity="legendary" animate={false} />
                 <span className="text-[11px] text-steel-300">
-                  {c.crateType === 'rig_crate' ? 'Rig Crate' : 'Shaft Crate'}
+                  {c.crateType === 'rig_crate' ? 'Fab Supply Pod' : 'Cleanroom Supply Pod'}
                 </span>
               </button>
             ))}
@@ -457,7 +450,7 @@ function SellPanel({
           <p className="text-xs text-steel-500">Loading…</p>
         ) : sellableComponents.length === 0 ? (
           <p className="text-xs text-steel-500">
-            Nothing spare — unequip a component from a rig to sell it.
+            Nothing spare — unequip a component from a fab to sell it.
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -486,7 +479,7 @@ function SellPanel({
 
       <section className="panel space-y-2 p-4">
         <label className="stat-label" htmlFor="market-price">
-          Ask price (OSR)
+          Ask price (GPU)
         </label>
         <input
           id="market-price"
@@ -502,7 +495,7 @@ function SellPanel({
           {valid && (
             <>
               {' '}
-              You would receive <span className="font-mono text-amber-400">{fmtOsr(net)} OSR</span>.
+              You would receive <span className="font-mono text-amber-400">{fmtOsr(net)} GPU</span>.
             </>
           )}
         </p>

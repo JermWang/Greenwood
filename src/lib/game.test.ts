@@ -50,7 +50,7 @@ afterAll(() => {
 });
 
 describe('new wallet bootstrap', () => {
-  test('starter grant covers the first Oil Rig', () => {
+  test('starter grant covers the first Wafer Fab', () => {
     const w = wallet(1);
     const user = getOrCreateUser(w);
     expect(user.osr_balance).toBe(STARTER_OSR_GRANT);
@@ -212,7 +212,7 @@ describe('full game cycle', () => {
     const w = wallet(50);
     getOrCreateUser(w);
     fund(w, 0);
-    expect(() => mintNode(w, 'oil_rig')).toThrow(/Not enough OSR/);
+    expect(() => mintNode(w, 'oil_rig')).toThrow(/Not enough GPU/);
   });
 
   test('claim cooldown is enforced', () => {

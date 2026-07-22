@@ -326,6 +326,36 @@ async function runAction<T>(
   return settleWithRetry<T>(path, wallet, quote.payment.nonce, txHash, params);
 }
 
+/**
+ * Fab floor types.
+ *
+ * Declared here rather than imported from lib/floor, which reaches for
+ * node:sqlite the moment it is loaded and would drag the database into the
+ * browser bundle. These mirror the server's shapes; the server is authoritative
+ * and returns the normalised layout on every write, so drift shows up
+ * immediately as a floor that snaps back rather than as silent disagreement.
+ */
+export interface FloorMachine {
+  id: string;
+  x: number;
+  z: number;
+  rotation: number;
+}
+
+export interface FloorEffect {
+  key: 'coolant' | 'packaging' | 'spine' | 'crowding';
+  label: string;
+  delta: number;
+  lines: number;
+}
+
+export interface FloorBonus {
+  multiplier: number;
+  placed: number;
+  lines: number;
+  effects: FloorEffect[];
+}
+
 export const api = {
   privySession: (wallet: string) =>
     request<{ authenticated: boolean; userId: string; wallet: string; walletType: string }>(
@@ -356,6 +386,15 @@ export const api = {
     ),
   compound: (wallet: string) => request<CompoundInfo>(`/compound/${wallet}`),
   inventory: (wallet: string) => request<{ items: InventoryItem[] }>(`/user/${wallet}/inventory`),
+  floor: (wallet: string) =>
+    request<{ layout: FloorMachine[]; bonus: FloorBonus; kinds: Record<string, string> }>(
+      `/floor/${wallet}`
+    ),
+  saveFloor: (wallet: string, layout: FloorMachine[]) =>
+    request<{ layout: FloorMachine[]; bonus: FloorBonus }>('/floor/save', {
+      method: 'POST',
+      body: JSON.stringify({ wallet, layout }),
+    }),
   profile: (wallet: string) =>
     request<{ configured: boolean; profile: GlobalProfile | null; history: ActivityItem[] }>(
       `/profiles/${wallet}`
@@ -382,7 +421,7 @@ export const api = {
 
   /**
    * The protocol pays the operator, so there is nothing for them to sign — one
-   * request, and the server transfers OSR from the protocol wallet.
+   * request, and the server transfers GPU from the protocol wallet.
    */
   claim: async (
     wallet: string,
@@ -398,7 +437,7 @@ export const api = {
       settled: boolean;
       result: Claims;
       txHash?: string;
-      /** OSR withheld to cover the gas of the payout transaction. */
+      /** GPU withheld to cover the gas of the payout transaction. */
       gasOsr?: number;
     }>('/rewards/claim', {
       wallet,

@@ -1,0 +1,301 @@
+{
+  "targetName": "Wafer Stack",
+  "sourceImage": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\public\\assets\\fab\\wafer-stack-reference.png",
+  "preSpecAssessment": {
+    "objectClass": {
+      "primaryType": "stylized semiconductor fabrication equipment",
+      "primaryDomain": "object",
+      "formLanguage": [
+        "hard-surface",
+        "mechanical",
+        "rounded toy-like industrial"
+      ],
+      "structureKind": [
+        "compound object",
+        "layered shell",
+        "articulated assembly",
+        "repeated modules"
+      ],
+      "motionPotential": [
+        "static prop",
+        "articulated",
+        "effect-emitter"
+      ],
+      "materialFamilies": [
+        "molded plastic",
+        "painted metal",
+        "glass-like",
+        "silicon wafer"
+      ],
+      "notes": "Single-view stylized reconstruction; hidden faces inferred by symmetry. Real-time browser game prop, not manufacturing geometry."
+    },
+    "complexity": {
+      "tier": "moderate",
+      "scores": {
+        "silhouetteComplexity": 1,
+        "componentCount": 2,
+        "hierarchyDepth": 2,
+        "repetitionDensity": 2,
+        "materialLayerCount": 2,
+        "localDetailDensity": 2,
+        "occlusionRisk": 1,
+        "actionReadinessNeed": 2
+      },
+      "estimatedCounts": {
+        "macroComponents": 2,
+        "mesoComponents": 3,
+        "microFeatureGroups": 2,
+        "materialLayers": 4,
+        "repetitionSystems": 1
+      },
+      "reasoning": [
+        "Wafer Stack has a rounded compound shell, three recognizable subsystems, repeated detail, and four visible material families."
+      ]
+    },
+    "specDepthDecision": {
+      "requiredDepth": "moderate",
+      "minimumComponentLevels": [
+        "macro",
+        "meso",
+        "micro"
+      ],
+      "needsRepetitionSystems": true,
+      "needsMaterialLocalOverrides": true,
+      "needsMultipleReviewViews": true,
+      "needsActionReadyHierarchy": true,
+      "rationale": "Identity depends on shell proportions, a visible active mechanism, repeated production detail, and color-coded controls."
+    },
+    "unknownsToResolveBeforeImplementation": [],
+    "detailInventory": {
+      "scanMethod": "grid-3x3",
+      "targetMinDetails": 6,
+      "details": [
+        {
+          "id": "wafer-stack-detail-1",
+          "kind": "bevel",
+          "description": "rounded cabinet bevel",
+          "region": {
+            "x": 0,
+            "y": 0,
+            "width": 0.3333,
+            "height": 0.3333,
+            "units": "normalized"
+          },
+          "scale": "meso",
+          "affects": "geometry and local material response",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "rounded-cabinet-bevel"
+          },
+          "evidenceRef": "zones/zone-r0c0.png",
+          "confidence": 0.86
+        },
+        {
+          "id": "wafer-stack-detail-2",
+          "kind": "gloss",
+          "description": "three wafer shelves",
+          "region": {
+            "x": 0.3333333333333333,
+            "y": 0,
+            "width": 0.3333,
+            "height": 0.3333,
+            "units": "normalized"
+          },
+          "scale": "meso",
+          "affects": "roughness and clearcoat",
+          "mapsTo": {
+            "type": "material.localOverrides",
+            "ref": "window/window-edge-response"
+          },
+          "evidenceRef": "zones/zone-r0c1.png",
+          "confidence": 0.86
+        },
+        {
+          "id": "wafer-stack-detail-3",
+          "kind": "linework",
+          "description": "orange hinged gripper",
+          "region": {
+            "x": 0.6666666666666666,
+            "y": 0,
+            "width": 0.3333,
+            "height": 0.3333,
+            "units": "normalized"
+          },
+          "scale": "micro",
+          "affects": "geometry and local material response",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "orange-hinged-gripper"
+          },
+          "evidenceRef": "zones/zone-r0c2.png",
+          "confidence": 0.86
+        },
+        {
+          "id": "wafer-stack-detail-4",
+          "kind": "emissive",
+          "description": "lime status strips",
+          "region": {
+            "x": 0,
+            "y": 0.3333333333333333,
+            "width": 0.3333,
+            "height": 0.3333,
+            "units": "normalized"
+          },
+          "scale": "micro",
+          "affects": "emissive response",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "lime-status-strips"
+          },
+          "evidenceRef": "zones/zone-r1c0.png",
+          "confidence": 0.86
+        },
+        {
+          "id": "wafer-stack-detail-5",
+          "kind": "seam",
+          "description": "glossy wafer rims",
+          "region": {
+            "x": 0.3333333333333333,
+            "y": 0.3333333333333333,
+            "width": 0.3333,
+            "height": 0.3333,
+            "units": "normalized"
+          },
+          "scale": "micro",
+          "affects": "geometry and local material response",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "glossy-wafer-rims"
+          },
+          "evidenceRef": "zones/zone-r1c1.png",
+          "confidence": 0.86
+        },
+        {
+          "id": "wafer-stack-detail-6",
+          "kind": "fastener",
+          "description": "charcoal foot pads",
+          "region": {
+            "x": 0.6666666666666666,
+            "y": 0.3333333333333333,
+            "width": 0.3333,
+            "height": 0.3333,
+            "units": "normalized"
+          },
+          "scale": "micro",
+          "affects": "geometry and local material response",
+          "mapsTo": {
+            "type": "component.localFeatures",
+            "ref": "charcoal-foot-pads"
+          },
+          "evidenceRef": "zones/zone-r1c2.png",
+          "confidence": 0.86
+        }
+      ]
+    },
+    "anatomy": {
+      "applies": false,
+      "styleHeads": 0,
+      "proportions": {
+        "headUnit": 0,
+        "torso": 0,
+        "legs": 0,
+        "shoulderWidth": 0,
+        "hipWidth": 0
+      },
+      "pose": {
+        "type": "unassessed",
+        "jointAngles": {}
+      },
+      "faceLandmarks": {
+        "eyeLine": 0,
+        "eyeSpacing": 0,
+        "noseBase": 0,
+        "mouthLine": 0,
+        "hairline": 0
+      },
+      "features": [],
+      "confidence": 0,
+      "note": "Only meaningful when objectClass.primaryDomain is character or hybrid. Set applies=true and fill from forge/stage1_intake/extract_landmarks.py. See grimoire/character/reconstruction.md and grimoire/character/likeness_maximization.md."
+    },
+    "sourceImage": "C:\\Users\\jerms\\Desktop\\CODING\\WEB 3\\GPU\\public\\assets\\fab\\lithography-machine-reference.png"
+  },
+  "qualityContract": {
+    "qualityBar": "moderate",
+    "definitionOfDone": [
+      "Wafer Stack is immediately recognizable from the reference silhouette, rounded enclosure, active mechanism, color zones, and six identity-defining details at real-time game scale."
+    ],
+    "minimumSpecDepth": {
+      "macroComponents": 2,
+      "mesoComponents": 3,
+      "microFeatureGroups": 2,
+      "materialLayers": 4,
+      "repetitionSystems": 1,
+      "reviewViewpoints": 3
+    },
+    "featureGroups": [
+      {
+        "id": "wafer-stack-enclosure",
+        "name": "Rounded enclosure silhouette",
+        "required": true,
+        "qualityCriteria": [
+          "Reference width/height/depth ratio and large-radius bevels remain readable."
+        ],
+        "evidenceRefs": [
+          "full-object"
+        ],
+        "failureModes": [
+          "generic cube silhouette",
+          "sharp unstyled edges"
+        ]
+      },
+      {
+        "id": "wafer-stack-mechanism",
+        "name": "Active production mechanism",
+        "required": true,
+        "qualityCriteria": [
+          "wafer-carousel, three-shelf-system, robot-gripper-arm are separated into named pivot groups."
+        ],
+        "evidenceRefs": [
+          "full-object"
+        ],
+        "failureModes": [
+          "mechanism merged into shell",
+          "floating attachment"
+        ]
+      },
+      {
+        "id": "wafer-stack-lookdev",
+        "name": "Cleanroom palette and surface response",
+        "required": true,
+        "qualityCriteria": [
+          "White shell, cobalt window, charcoal base, lime status, and orange safety accents match the shared family."
+        ],
+        "evidenceRefs": [
+          "full-object"
+        ],
+        "failureModes": [
+          "flat color",
+          "missing roughness separation"
+        ]
+      }
+    ],
+    "visualDeltaChecks": [
+      "silhouette and negative-space delta",
+      "component hierarchy depth delta",
+      "repetition density and distribution delta",
+      "material albedo/roughness/normal response delta",
+      "local feature placement and scale delta"
+    ],
+    "antiShallowSpecRules": [
+      "Do not proceed to code if qualityContract.qualityBar is unassessed.",
+      "Do not proceed to code if the spec only contains a root component for a moderate or complex object.",
+      "Do not proceed to code if required featureGroups are not represented by componentTree, materials, or repetitionSystems.",
+      "Do not proceed to code if visible local features are described only in prose and not attached to components/materials/evidenceRefs.",
+      "Do not proceed past structural-pass if attached child parts lack attachment.parentSocket, localStart, localEnd, embedDepth/overlap, and gapTolerance.",
+      "Do not pass material look-dev when albedo is reused as roughness, height, normal, or AO.",
+      "Do not pass material look-dev without macro, meso, and micro surface frequency bands for close-up materials.",
+      "Do not pass reference-fidelity material look-dev from a source image without usable referencePbr maps or an explicit documented limitation.",
+      "Do not patch a spec with extracted PBR maps when extraction confidence is below the target threshold unless the user explicitly accepts lower fidelity."
+    ]
+  }
+}

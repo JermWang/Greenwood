@@ -1,6 +1,6 @@
-// OSR price discovery.
+// GPU price discovery.
 //
-// Crates are priced in dollars, so the engine needs to know what OSR is worth.
+// Crates are priced in dollars, so the engine needs to know what GPU is worth.
 // There is no oracle on Robinhood Chain, and inventing a price is worse than
 // having none: too high and every operator is overcharged, too low and crates
 // are effectively free. So this module reports a price or reports nothing, and
@@ -9,9 +9,9 @@
 import { getProtocolValue, setProtocolValue } from './db';
 
 /**
- * Manual price override, in USD per OSR.
+ * Manual price override, in USD per GPU.
  *
- * Until OSR trades there is no market to read, and after it lists there is no
+ * Until GPU trades there is no market to read, and after it lists there is no
  * oracle on this chain — so the operator sets this and the protocol trusts it.
  * Kept in the protocol table rather than an env var so it can be updated
  * without a redeploy while the token finds its price.
@@ -22,7 +22,7 @@ const PRICE_SET_AT_KEY = 'osr_usd_price_set_at';
 /**
  * How long a manually-set price stays trusted.
  *
- * A stale price is a real hazard: if OSR 10x'd a week ago and nobody updated
+ * A stale price is a real hazard: if GPU 10x'd a week ago and nobody updated
  * this, crates would be selling for a tenth of their intended cost. Expiring
  * forces the number to be maintained rather than silently rotting.
  */

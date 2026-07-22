@@ -45,7 +45,7 @@ interface FamilyEcon {
 const FLOW_COL = 24;
 const FLOW_BOX = 29;
 
-const REWARD_FLOW = `Launch: ${SUPPLY_LABEL} OSR minted by Flap to the bonding curve
+const REWARD_FLOW = `Launch: ${SUPPLY_LABEL} GPU minted by Flap to the bonding curve
         (fixed supply — the token contract has no mint function)
                 │
        ┌────────┴────────┐
@@ -54,8 +54,8 @@ const REWARD_FLOW = `Launch: ${SUPPLY_LABEL} OSR minted by Flap to the bonding c
  ${`(${FLOAT_PCT_LABEL}, trades freely)`.padEnd(FLOW_COL)}(${RESERVE_PCT_LABEL}, funds all rewards)
                                  │
   ┌─────────────────────────────┐│
-  │${'   OSR Emission Reserve'.padEnd(FLOW_BOX)}│◀┘
-  │${`   ${EMISSION_RESERVE_LABEL} OSR`.padEnd(FLOW_BOX)}│◀── reserve split on in-game
+  │${'   GPU Emission Reserve'.padEnd(FLOW_BOX)}│◀┘
+  │${`   ${EMISSION_RESERVE_LABEL} GPU`.padEnd(FLOW_BOX)}│◀── reserve split on in-game
   └──────────────┬──────────────┘     spends tops the pool back up
                  │  halving curve E(t) = ${GENESIS_RATE_PER_SEC.toFixed(1)} × 0.5^(t/${HALVING_PERIOD_DAYS}d)
                  ▼
@@ -64,8 +64,8 @@ const REWARD_FLOW = `Launch: ${SUPPLY_LABEL} OSR minted by Flap to the bonding c
                  │
                  ▼
   ┌─────────────────────────┐       ┌──────────────────────────┐
-  │  Oil Rig claims         │       │  Mining Shaft claims     │
-  │  pay OSR                │       │  pay OSR (compoundable)  │
+  │  Wafer Fab claims         │       │  Cleanroom claims     │
+  │  pay GPU                │       │  pay GPU (compoundable)  │
   └─────────────────────────┘       └──────────────────────────┘
 
   Separately: Protocol ETH revenue (ERC-20 tax 2% + LP 2%) → treasury ops
@@ -115,49 +115,49 @@ export default function TokenomicsPage() {
 
   return (
     <PageShell
-      title="Tokenomics"
-      subtitle="Live economic model for OSR, Oil Rigs, and Mining Shafts"
+      title="GPU Network Model"
+      subtitle="The live emission, burn, treasury, and production logic behind the silicon economy."
     >
       <div className="space-y-10">
         {/* 1. The Economic Loop */}
-        <Section title="1. The Economic Loop">
+        <Section title="01 / Silicon Flywheel">
           <ol className="list-decimal space-y-3 pl-5 text-sm leading-relaxed text-steel-300">
             <li>
-              Users burn OSR + pay an ETH fee to deploy virtual nodes (Oil Rigs or Mining Shafts).
+              Users burn GPU + pay an ETH fee to deploy virtual nodes (Wafer Fabs or Cleanrooms).
             </li>
             <li>
-              Every mint burns <strong className="text-white">70%</strong> of the OSR cost to the
+              Every mint burns <strong className="text-white">70%</strong> of the GPU cost to the
               burn wallet, routing the other <strong className="text-white">30%</strong> into the
-              treasury wallet. Compound upgrades and crates split their OSR cost{' '}
+              treasury wallet. Compound upgrades and crates split their GPU cost{' '}
               <strong className="text-white">50/30/20</strong> burn / reserve / treasury.
             </li>
             <li>
-              A halving emission curve (E₀ = {GENESIS_RATE_PER_SEC.toFixed(1)} OSR/sec, halves
-              every {HALVING_PERIOD_LABEL}) distributes OSR from the{' '}
+              A halving emission curve (E₀ = {GENESIS_RATE_PER_SEC.toFixed(1)} GPU/sec, halves
+              every {HALVING_PERIOD_LABEL}) distributes GPU from the{' '}
               <strong className="text-white">{EMISSION_RESERVE_LABEL} reserve</strong>. The rate is
               derived from the reserve rather than fixed, so the schedule spends it exactly and can
-              never promise OSR the protocol does not hold. Each user earns a share proportional to
+              never promise GPU the protocol does not hold. Each user earns a share proportional to
               their grow-power, capped at 30% per user to prevent lottery-in-thin-network wins.
             </li>
             <li>
-              Under v2 accrual, both <strong className="text-white">Oil Rigs</strong> and{' '}
-              <strong className="text-white">Mining Shafts</strong> accrue{' '}
-              <strong className="text-white">$OSR</strong> per second out of that reserve.
-              Progression is wallet-wide: <strong className="text-white">compound upgrades</strong>{' '}
-              (OSR + {COMPOUND_FEE_ETH} ETH, 12h cooldown) raise your Compound Level, unlocking
+              Under v2 accrual, both <strong className="text-white">Wafer Fabs</strong> and{' '}
+              <strong className="text-white">Cleanrooms</strong> accrue{' '}
+              <strong className="text-white">$GPU</strong> per second out of that reserve.
+              Progression is wallet-wide: <strong className="text-white">warehouse upgrades</strong>{' '}
+              (GPU + {COMPOUND_FEE_ETH} ETH, 12h cooldown) raise your Warehouse Level, unlocking
               more node slots,
-              more daily crates, and higher rarity pools. Mining Shafts add bonus node slots at L5+.
+              more daily crates, and higher rarity pools. Cleanrooms add bonus node slots at L5+.
             </li>
             <li>
               Protocol ETH revenue (ERC-20 transfer tax (2%) + DEX LP fees (2%)) flows to the
               treasury ops budget — it funds infrastructure, not user rewards. User accrual is
-              OSR-only from the halving reserve.
+              GPU-only from the halving reserve.
             </li>
           </ol>
         </Section>
 
         {/* 2. Node Family Economics */}
-        <Section title="2. Node Family Economics">
+        <Section title="02 / Production-Line Economics">
           {!families ? (
             <p className="text-sm text-steel-400">Loading…</p>
           ) : (
@@ -169,19 +169,19 @@ export default function TokenomicsPage() {
                   </h3>
                   <p className="mt-1 text-xs text-steel-400">{f.description}</p>
                   <dl className="mt-3 space-y-1.5 text-sm">
-                    <Row k="Mint cost" v={`${f.burnCostOsr.toLocaleString()} OSR`} />
+                    <Row k="Mint cost" v={`${f.burnCostOsr.toLocaleString()} GPU`} />
                     <Row
                       k="→ burned (70%)"
-                      v={`${((f.burnCostOsr * f.burnShareBps) / 10000).toLocaleString()} OSR`}
+                      v={`${((f.burnCostOsr * f.burnShareBps) / 10000).toLocaleString()} GPU`}
                       dim
                     />
                     <Row
                       k="→ treasury (30%)"
-                      v={`${((f.burnCostOsr * f.treasuryShareBps) / 10000).toLocaleString()} OSR`}
+                      v={`${((f.burnCostOsr * f.treasuryShareBps) / 10000).toLocaleString()} GPU`}
                       dim
                     />
                     <Row k="ETH mint fee" v={`${f.mintFeeEth} ETH`} />
-                    <Row k="Reward asset" v="OSR (halving share)" />
+                    <Row k="Reward asset" v="GPU (halving share)" />
                     <Row k="Share formula" v="min(userGp / totalGp, 30%) × E(t) × welcomeBoost" />
                     <Row
                       k="Family perk"
@@ -199,10 +199,10 @@ export default function TokenomicsPage() {
         </Section>
 
         {/* 3. Fees */}
-        <Section title="3. Fees">
+        <Section title="03 / Network Routing Costs">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <FeeCard label="Mint burn" value="70%" caption="of OSR cost" />
-            <FeeCard label="Mint treasury" value="30%" caption="of OSR cost" />
+            <FeeCard label="Mint burn" value="70%" caption="of GPU cost" />
+            <FeeCard label="Mint treasury" value="30%" caption="of GPU cost" />
             <FeeCard label="Mint ETH fee" value={`${mintEthFee} ETH`} caption="flat, per mint" />
             <FeeCard
               label="Claim fee"
@@ -210,8 +210,8 @@ export default function TokenomicsPage() {
               caption="on gross claim · 1h cooldown"
             />
             <FeeCard
-              label="Compound upgrade"
-              value="500 → 60k OSR"
+              label="Warehouse upgrade"
+              value="500 → 60k GPU"
               caption={`L2→L10 ladder · +${COMPOUND_FEE_ETH} ETH · 12h cooldown`}
             />
             <FeeCard
@@ -221,7 +221,7 @@ export default function TokenomicsPage() {
             />
             <FeeCard
               label="Crate cost"
-              value={`$${CRATE_OPEN_USD} of OSR`}
+              value={`$${CRATE_OPEN_USD} of GPU`}
               caption={`priced in USD, so it does not drift with the token · +${CRATE_FEE_ETH} ETH fee`}
             />
             <FeeCard
@@ -233,24 +233,26 @@ export default function TokenomicsPage() {
         </Section>
 
         {/* 4. Reward Flow */}
-        <Section title="4. Reward Flow">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/OSR-reward-flow-graph.png"
-            alt="OSR reward flow"
-            className="mb-4 w-full rounded-lg border border-ink-600"
-          />
+        <Section title="04 / Yield Routing Diagram">
+          <div className="mb-4 grid gap-2 md:grid-cols-4">
+            {['Acquire GPU', 'Build facilities', 'Farm emissions', 'Compound & upgrade'].map((label, index) => (
+              <div key={label} className="panel relative px-3 py-4 text-center font-mono text-[11px] uppercase tracking-wider text-amber-300">
+                <span className="mb-2 block text-lg text-white">0{index + 1}</span>
+                {label}
+              </div>
+            ))}
+          </div>
           <div className="panel overflow-x-auto p-4">
             <pre className="font-mono text-[11px] leading-relaxed text-steel-300">{REWARD_FLOW}</pre>
           </div>
         </Section>
 
         {/* 5. Halving Emission Model */}
-        <Section title="5. Halving Emission Model">
+        <Section title="05 / GPU Emission Clock">
           <p className="text-sm leading-relaxed text-steel-300">
-            Global OSR emission follows a Bitcoin-style halving curve. Starting at{' '}
+            Global GPU emission follows a Bitcoin-style halving curve. Starting at{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
-              E₀ = {GENESIS_RATE_PER_SEC.toFixed(1)} OSR/sec
+              E₀ = {GENESIS_RATE_PER_SEC.toFixed(1)} GPU/sec
             </code>{' '}
             at genesis, the rate halves every{' '}
             <strong className="text-white">{HALVING_PERIOD_LABEL}</strong> until
@@ -263,11 +265,11 @@ export default function TokenomicsPage() {
           </div>
           <p className="mt-3 text-sm leading-relaxed text-steel-300">
             Lifetime emission ={' '}
-            <strong className="text-white">{LIFETIME_EMISSION_LABEL} OSR</strong> — exactly the{' '}
+            <strong className="text-white">{LIFETIME_EMISSION_LABEL} GPU</strong> — exactly the{' '}
             {RESERVE_PCT_LABEL} of the {SUPPLY_LABEL} supply held in the Emission Reserve. The
             remaining <strong className="text-white">{PUBLIC_FLOAT_LABEL}</strong> ({FLOAT_PCT_LABEL}
             ) is public float that trades on the Flap curve. Supply is fixed at launch — the token
-            contract has no mint function, so no new OSR can ever be created.
+            contract has no mint function, so no new GPU can ever be created.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-steel-300">
             Each user earns a proportional share of each second&rsquo;s emission:
@@ -282,7 +284,7 @@ export default function TokenomicsPage() {
         </Section>
 
         {/* 5b. Welcome Boost */}
-        <Section title="5b. Welcome Boost">
+        <Section title="05B / New-Fab Accelerator">
           <p className="text-sm leading-relaxed text-steel-300">
             New users receive an <strong className="text-white">8× share multiplier</strong> that
             linearly decays to 1× over their first 72 hours. This is critical for latecomers joining
@@ -296,40 +298,39 @@ export default function TokenomicsPage() {
           <p className="mt-3 text-sm leading-relaxed text-steel-300">
             The boost applies from your first mint. Separately, the one-time{' '}
             <strong className="text-white">welcome stipend</strong> unlocks only after reaching
-            Compound L4 — that gate is what stops $100 × 10 alt-wallets from draining the welcome
+            Warehouse L4 — that gate is what stops $100 × 10 alt-wallets from draining the welcome
             allocation.
           </p>
         </Section>
 
         {/* 5c. Emission Throttle */}
-        <Section title="5c. Emission Throttle (safety layer)">
+        <Section title="05C / Reserve Safety Interlock">
           <p className="text-sm leading-relaxed text-steel-300">
             Orthogonal to the halving, a runway-based throttle factor{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
               f ∈ [0, 1]
             </code>{' '}
-            protects against pathological drain on legacy flat-rate families (not used for OSR under
+            protects against pathological drain on legacy flat-rate families (not used for GPU under
             the halving model, but retained for any future secondary-asset families):
           </p>
           <div className="panel mt-3 overflow-x-auto p-4">
             <pre className="font-mono text-[11px] leading-relaxed text-steel-300">{THROTTLE}</pre>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-steel-300">
-            Under the halving model for OSR, the emission reserve is pre-minted and cannot deplete
+            Under the halving model for GPU, the emission reserve is pre-minted and cannot deplete
             beyond lifetime emission, so{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">f = 1.0</code>{' '}
             effectively always. When paused by admin, f is forced to 0 across all families.
           </p>
         </Section>
 
-        {/* 6. Compound Levels */}
-        <Section title="6. Compound Levels">
+        {/* 6. Warehouse Levels */}
+        <Section title="06 / Campus Expansion Tiers">
           <p className="text-sm leading-relaxed text-steel-300">
-            Progression is wallet-wide. Each compound level unlocks more node slots per family, a
-            higher daily crate limit, and pricier crates. Upgrades cost OSR (split 50/30/20 burn /
+            Progression is wallet-wide. Each warehouse level unlocks more node slots per family, a
+            higher daily crate limit, and pricier crates. Upgrades cost GPU (split 50/30/20 burn /
             reserve / treasury) + {COMPOUND_FEE_ETH} ETH, on a 12h cooldown ({EXPEDITE_FEE_ETH} ETH
-            expedite skips it). Mining
-            Shafts get bonus node slots on top: +2 at L5, +3 at L7, +4 at L9. Rarity pools unlock by
+            expedite skips it). Cleanrooms get bonus facility slots on top: +2 at L5, +3 at L7, +4 at L9. Rarity pools unlock by
             level too — Legendary at L4, Mythic at L6, Divine at L8.
           </p>
           <div className="panel mt-3 overflow-x-auto">
@@ -338,8 +339,8 @@ export default function TokenomicsPage() {
                 <tr className="border-b border-ink-600">
                   <th className="stat-label px-4 py-3 font-normal">Level</th>
                   <th className="stat-label px-4 py-3 text-right font-normal">Upgrade cost</th>
-                  <th className="stat-label px-4 py-3 text-right font-normal">Max nodes / family</th>
-                  <th className="stat-label px-4 py-3 text-right font-normal">Shaft bonus</th>
+                  <th className="stat-label px-4 py-3 text-right font-normal">Max facilities / wing</th>
+                  <th className="stat-label px-4 py-3 text-right font-normal">Cleanroom bonus</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-600/60">
@@ -350,11 +351,11 @@ export default function TokenomicsPage() {
                     <tr key={lvl}>
                       <td className="px-4 py-2.5 font-mono text-amber-500">L{lvl}</td>
                       <td className="px-4 py-2.5 text-right font-mono text-white">
-                        {lvl === 1 ? '—' : `${row.osrUpgradeCost.toLocaleString()} OSR`}
+                        {lvl === 1 ? '—' : `${row.osrUpgradeCost.toLocaleString()} GPU`}
                       </td>
                       <td className="px-4 py-2.5 text-right font-mono text-white">{row.maxNodes}</td>
                       <td className="px-4 py-2.5 text-right font-mono text-steel-300">
-                        {bonus > 0 ? `+${bonus} shafts` : '—'}
+                        {bonus > 0 ? `+${bonus} cleanrooms` : '—'}
                       </td>
                     </tr>
                   );
@@ -365,7 +366,7 @@ export default function TokenomicsPage() {
         </Section>
 
         {/* 7. Aura Tier Palette */}
-        <Section title="7. Aura Tier Palette">
+        <Section title="07 / Process Aura Spectrum">
           <p className="text-sm leading-relaxed text-steel-300">
             Each node&rsquo;s emissive material color shifts with its level, making progression
             visible at a glance in the 3D scene.
@@ -392,20 +393,20 @@ export default function TokenomicsPage() {
         </Section>
 
         {/* 8. Live Protocol State */}
-        <Section title="8. Live Protocol State">
+        <Section title="08 / Live Network Telemetry">
           {!overview ? (
             <p className="text-sm text-steel-400">Loading live state…</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               <LiveCard
-                label="OSR Burned"
+                label="GPU Burned"
                 value={overview.totalOsrBurned.toLocaleString()}
-                suffix="OSR"
+                suffix="GPU"
               />
               <LiveCard
                 label="Nodes Deployed"
                 value={String(overview.totalNodes)}
-                suffix={`${overview.totalOilRigs} oil · ${overview.totalMiningShafts} mine`}
+                suffix={`${overview.totalOilRigs} fabs · ${overview.totalMiningShafts} cleanrooms`}
               />
               <LiveCard
                 label="Protocol ETH Revenue"
@@ -429,9 +430,9 @@ export default function TokenomicsPage() {
                 color="#c8e0f0"
               />
               <LiveCard
-                label="OSR Reserve"
+                label="GPU Reserve"
                 value={overview.osrReserveBalance.toLocaleString()}
-                suffix="OSR"
+                suffix="GPU"
                 color="#ffd24d"
               />
             </div>
@@ -439,26 +440,26 @@ export default function TokenomicsPage() {
           <p className="mt-3 text-xs text-steel-400">
             See{' '}
             <Link href="/app/vault" className="text-amber-500 hover:underline">
-              <strong>Reserve Vault</strong>
+              <strong>Treasury Core</strong>
             </Link>{' '}
             for the full event feed and{' '}
             <Link href="/app/market" className="text-amber-500 hover:underline">
-              <strong>Market Room</strong>
+              <strong>Chip Exchange</strong>
             </Link>{' '}
             for aggregated metrics.
           </p>
         </Section>
 
         {/* 9. Source of Truth */}
-        <Section title="9. Source of Truth">
+        <Section title="09 / Protocol Source Matrix">
           <p className="text-sm leading-relaxed text-steel-300">
             All constants on this page are imported from{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
-              @osr/types
+              @gpu-fab/protocol
             </code>{' '}
             and{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
-              @osr/game-core
+              @gpu-fab/silicon-engine
             </code>
             , and the live family config comes from{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">

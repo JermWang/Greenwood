@@ -1,7 +1,6 @@
 'use client';
 
-// Aura particle/ring stack — ground glow, light beams, motes, and the tiered
-// RarityAura composition (rings → orbits → runes → halo → divine beam).
+// Tiered machine atmosphere: light beams, motes, orbitals, runes, and halos.
 
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -10,55 +9,25 @@ import { Sparkles } from '@react-three/drei';
 import { RARITY_ORDER, RARITY_COLOR, rarityTier } from './fx';
 import type { Rarity } from '@/lib/rarity';
 
-/**
- * Flat 2D highlight circle under each rig — a game-style selection/range ring.
- * A single bold ring on the ground with a faint interior wash (to read as a
- * "radius"), a thin outer ring, and slowly rotating dash segments for a digital
- * feel. No torus, no 3D geometry: it is a flat decal that always faces up.
- */
-export function GroundGlow({ color, radius, opacity = 0.85 }: { color: string; radius: number; opacity?: number }) {
-  const mat = useRef<THREE.ShaderMaterial>(null);
-  useFrame(({ clock }) => {
-    if (mat.current) mat.current.uniforms.uTime.value = clock.elapsedTime;
-  });
-  const uniforms = useMemo(
-    () => ({ uColor: { value: new THREE.Color(color) }, uOpacity: { value: opacity }, uTime: { value: 0 } }),
-    [color, opacity]
-  );
+/** Physical status rails built into a machine bay. */
+export function BayStatusLights({ color, radius, opacity = 0.85 }: { color: string; radius: number; opacity?: number }) {
+  const half = radius * 0.62;
+  const rail = radius * 0.72;
   return (
-    <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
-      <planeGeometry args={[radius * 2, radius * 2]} />
-      <shaderMaterial
-        ref={mat}
-        transparent
-        depthWrite={false}
-        toneMapped={false}
-        uniforms={uniforms}
-        vertexShader={`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`}
-        fragmentShader={`uniform vec3 uColor; uniform float uOpacity; uniform float uTime; varying vec2 vUv;
-void main(){
-  vec2 p = (vUv - 0.5) * 2.0;
-  float d = length(p);
-  if (d > 1.0) discard;
-  float aa = fwidth(d) * 1.5;
-
-  // Faint interior wash so the circle reads as a covered radius.
-  float fill = (1.0 - smoothstep(0.86 - aa, 0.86, d)) * 0.09;
-  // The bold main highlight ring.
-  float ring = smoothstep(0.030 + aa, 0.030, abs(d - 0.86));
-  // Thin outer perimeter ring.
-  float outer = smoothstep(0.012 + aa, 0.012, abs(d - 0.965)) * 0.55;
-  // Rotating dash segments sitting on the main ring — the "digital" read.
-  float ang = atan(p.y, p.x) + uTime * 0.5;
-  float dash = step(0.5, fract(ang / 6.28318 * 40.0));
-  float dashes = smoothstep(0.055 + aa, 0.055, abs(d - 0.86)) * dash * 0.5;
-
-  float glow = fill + ring + outer + dashes;
-  float pulse = 0.9 + 0.1 * sin(uTime * 1.6);
-  gl_FragColor = vec4(uColor, clamp(glow * pulse * uOpacity, 0.0, 0.9));
-}`}
-      />
-    </mesh>
+    <group name="machine-bay-status-rails" position={[0, 0.11, 0]}>
+      {([-1, 1] as const).map((side) => (
+        <group key={`x-${side}`} position={[side * half, 0, 0]}>
+          <mesh><boxGeometry args={[0.11, 0.13, rail]} /><meshBasicMaterial color={color} transparent opacity={opacity} toneMapped={false} /></mesh>
+          <pointLight color={color} intensity={opacity * 0.22} distance={radius * 0.8} decay={2} />
+        </group>
+      ))}
+      {([-1, 1] as const).map((side) => (
+        <mesh key={`z-${side}`} position={[0, 0, side * half]}><boxGeometry args={[rail, 0.13, 0.11]} /><meshBasicMaterial color={color} transparent opacity={opacity} toneMapped={false} /></mesh>
+      ))}
+      {([-1, 1] as const).flatMap((x) => ([-1, 1] as const).map((z) => (
+        <mesh key={`${x}-${z}`} position={[x * half, 0.22, z * half]}><cylinderGeometry args={[0.09, 0.12, 0.42, 12]} /><meshBasicMaterial color={color} transparent opacity={opacity} toneMapped={false} /></mesh>
+      )))}
+    </group>
   );
 }
 
@@ -194,10 +163,8 @@ export function RarityAura({
   const color = RARITY_COLOR[rarity];
   const d = lowPerf ? Math.floor((10 + 10 * tier) / 2) : 10 + 12 * tier;
 
-  // No ground rings here — the flat highlight circle (GroundGlow) is the only
-  // ring under a rig now. RarityAura contributes rarity flair *above* the rig
-  // (drifting sparkles, and a light column / beam at the top tiers) so higher
-  // rarities still feel special without stacking 3D rings on the base.
+  // Ground-level state is expressed by physical bay rails on the rig itself;
+  // rarity flair stays above the machine so the floor remains architectural.
   return (
     <group>
       {tier >= 3 && isActive && (

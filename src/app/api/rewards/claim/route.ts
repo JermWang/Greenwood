@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 /**
  * Claiming runs the opposite way to the priced actions: the protocol pays the
  * operator, so there is nothing for them to send and no two-phase quote. The
- * server settles the accrual and transfers OSR from the protocol wallet.
+ * server settles the accrual and transfers GPU from the protocol wallet.
  *
  * Order matters. The accrual is consumed BEFORE the transfer is sent: if it
  * were sent first and the state write then failed, the same rewards could be
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     const gross = eligible.reduce((sum, n) => sum + n.pendingOsr, 0);
     if (gross <= 0) {
       throw new GameError(
-        mode === 'compound' ? 'nothing to compound on a mining shaft yet' : 'nothing to claim yet'
+        mode === 'compound' ? 'nothing to compound in this cleanroom yet' : 'nothing to claim yet'
       );
     }
     const feeBps = mode === 'compound' ? COMPOUND_REINVEST_FEE_BPS : CLAIM_FEE_BPS;
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       recordPayout(wallet, net, null, { error: String(payoutError), result });
       console.error('[claim] payout failed after accrual was consumed', payoutError);
       throw new GameError(
-        `Rewards were settled but the transfer did not go through. ${Math.round(net).toLocaleString()} OSR is recorded as owed to you.`,
+        `Rewards were settled but the transfer did not go through. ${Math.round(net).toLocaleString()} GPU is recorded as owed to you.`,
         502
       );
     }

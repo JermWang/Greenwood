@@ -1,17 +1,25 @@
-# OSR — Oil Strategic Reserve
+# GPU — Graphics Processing Utility
 
-An idle-mining strategy game on Robinhood Chain — an EVM L2 settling on
-Ethereum (mainnet, chain ID 4663, gas token ETH). Deploy oil rigs and mining
-shafts, equip rarity-tiered components, open crates, compound your operation,
-and climb the leaderboard.
+A DeFi farming and fab-management game on Robinhood Chain — an EVM L2 settling
+on Ethereum (mainnet, chain ID 4663, gas token ETH). Start with a wafer fab,
+expand into cleanrooms, equip rarity-tiered silicon machinery, open supply pods,
+route GPU yield, upgrade the campus, and compete in the Silicon Race.
 
-This repo is a ground-up rebuild ("v2") of the original deployment at
-`devnet.osr.finance/app`, migrated to Robinhood Chain and upgraded with:
+GPU presents the protocol as a complete semiconductor-fab operating system. The
+public experience is built around cleanroom production, silicon throughput,
+equipment routing, reserve telemetry, and a playful industrial campus. Existing
+settlement and economic compatibility stays behind that product boundary:
 
-- **Original Blender models** — deployed nodes use byte-for-byte copies of the
-  authoritative full-size `OSR_oil_rig.glb` and `OSR_mining_shaft.glb` source
-  exports. The matching `OSR_sand.glb` remains the compound terrain. Rarity
-  changes materials and effects without replacing or fabricating geometry.
+- **Procedural Three.js fab equipment** — Lithography Machine, Wafer Stack,
+  Dicing Saw, Packaging Line, EUV Utility Core, and AI Accelerator Test Rack
+  models are reconstructed in code from a unified
+  Wii-like 3D reference set. Named pivots, sockets, colliders, and destruction
+  groups keep the equipment animation-ready and diffable.
+- **GPU-native fab OS** — a left operations rail, route-specific command
+  surfaces, mobile module dock, live digital twin, component staging bay, chip
+  exchange, treasury reactor, network model, and race circuit replace the old
+  product hierarchy. Historical database keys stay private to the compatibility
+  layer so existing state and integrations continue to work.
 - **Privy embedded wallets** — email, Google, or wallet login provisions a
   persistent embedded EVM hot wallet for every player. MetaMask, Rabby, and
   Robinhood Wallet can still be linked. Every server-side write verifies both
@@ -19,7 +27,7 @@ This repo is a ground-up rebuild ("v2") of the original deployment at
 - **No pretend settlement** — generated guest wallets, starter credits,
   simulated network participation, fabricated reserve addresses, and local
   transaction signatures are removed. Financial mutation
-  routes remain locked until audited OSR token, game, vault, and treasury
+  routes remain locked until audited GPU token, game, vault, and treasury
   deployments are configured.
 - **Mainnet safety lock** — the legacy local mutation escape path is removed.
   Financial routes remain unavailable until audited mainnet contracts and
@@ -27,7 +35,10 @@ This repo is a ground-up rebuild ("v2") of the original deployment at
 - **Global player network** — Supabase stores persistent wallet-keyed profiles,
   session and game activity history, online presence, and the shared leaderboard.
   Public clients have read-only access; all writes use server-only credentials,
-  row-level security, idempotency keys, and rate-limited session heartbeats.
+  row-level security, and idempotency keys. The session heartbeat only opens a
+  new session row after 30 idle minutes, so polling cannot flood history.
+  Server-side request rate limiting is still outstanding and should be in place
+  before the game is opened to the public.
 
 The default Privy integration is an embedded user-wallet flow, not regulated
 third-party custody. Privy custodial wallets currently require its Enterprise
@@ -73,7 +84,9 @@ npm run build
 - `src/app` — Next.js App Router pages + API route handlers (the game backend)
 - `src/lib` — game rules: rarity system, economy constants, DB
 - `src/components` — UI (tabs, HUD) and the Three.js scene
-- `public/models/authored` — exact authored hero rigs and individually exported parts
+- `public/assets/fab` — generated reference images for the procedural fab assets
+- `design-qa-evidence/fab-sculpts` — img2threejs intake and reconstruction evidence
+- `public/models/authored` — retained legacy source models (not used by the new facility scene)
 - `public/models/crates` — the retained v2 crate models
 - `public/models/original` — the original Blender-exported sand/source GLBs
 - `public/models/runtime` — derived Meshopt/WebP copies used by the live scene

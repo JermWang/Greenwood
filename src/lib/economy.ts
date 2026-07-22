@@ -1,4 +1,4 @@
-// OSR economy constants — matched to the original deployment's reverse-
+// GPU economy constants — matched to the original deployment's reverse-
 // engineered tables (see README + guide page for the player-facing versions).
 
 import type { Rarity } from './rarity';
@@ -49,12 +49,12 @@ export const PITY = {
   divine: { soft: null as number | null, hard: 1500, rampMax: 1 },
 };
 
-/** Compound level -> capacity + upgrade cost (cost = OSR to REACH this level). */
+/** Compound level -> capacity + upgrade cost (cost = GPU to REACH this level). */
 export const COMPOUND_LEVELS: Record<
   number,
   { maxNodes: number; cratesPerDay: number; osrUpgradeCost: number; feeEth: number }
 > = {
-  // Costs doubled across the board so the first upgrade lands at 1,000 OSR.
+  // Costs doubled across the board so the first upgrade lands at 1,000 GPU.
   // Scaling the whole curve rather than only raising the floor keeps the
   // progression intact — bumping L2 alone to 1,000 would have made it cost the
   // same as L3, so the second upgrade would have been free progress.
@@ -71,7 +71,7 @@ export const COMPOUND_LEVELS: Record<
 };
 export const MAX_COMPOUND_LEVEL = 10;
 
-/** Mining Shafts add bonus node slots at higher compound levels. */
+/** Cleanrooms add bonus facility slots at higher compound levels. */
 export function getShaftBonusSlots(level: number): number {
   if (level >= 9) return 4;
   if (level >= 7) return 3;
@@ -79,14 +79,14 @@ export function getShaftBonusSlots(level: number): number {
   return 0;
 }
 
-/** Flat OSR cost to open a mined crate. */
+/** Flat GPU cost to open a mined crate. */
 export const CRATE_OPEN_OSR = Number(process.env.NEXT_PUBLIC_OSR_CRATE_OSR ?? 10_000);
 
 /**
- * Optional dollar peg for crate opening. Zero (the default) means the flat OSR
+ * Optional dollar peg for crate opening. Zero (the default) means the flat GPU
  * price above is used.
  *
- * The peg exists because a flat token price drifts with the market — 500 OSR
+ * The peg exists because a flat token price drifts with the market — 500 GPU
  * was $0.50 at a $1M cap and $25 at a $50M cap. It is off for now because
  * pegging needs a maintained price feed, and a flat figure that always works
  * beats a pegged one that locks crates whenever the feed goes stale.
@@ -94,7 +94,7 @@ export const CRATE_OPEN_OSR = Number(process.env.NEXT_PUBLIC_OSR_CRATE_OSR ?? 10
 export const CRATE_OPEN_USD = Number(process.env.NEXT_PUBLIC_OSR_CRATE_USD ?? 0);
 
 /**
- * What opening a crate costs, in OSR.
+ * What opening a crate costs, in GPU.
  *
  * Uses the dollar peg only when one is configured AND a live price is known;
  * otherwise the flat price. Never returns null, so crates cannot become
@@ -145,10 +145,10 @@ export const MINT_FEE_ETH = 0.0002;
 export const CRATE_FEE_ETH = 0.00002;
 export const COMPOUND_FEE_ETH = 0.00001;
 export const EXPEDITE_FEE_ETH = 0.005;
-/** Mint OSR split. */
+/** Mint GPU split. */
 export const MINT_BURN_BPS = 7000;
 export const MINT_TREASURY_BPS = 3000;
-/** Upgrade & crate OSR split: burn / reserve / treasury. */
+/** Upgrade & crate GPU split: burn / reserve / treasury. */
 export const SPLIT_BURN_BPS = 5000;
 export const SPLIT_RESERVE_BPS = 3000;
 export const SPLIT_TREASURY_BPS = 2000;
@@ -168,8 +168,8 @@ export interface NodeFamilyDef {
 export const NODE_FAMILIES: NodeFamilyDef[] = [
   {
     key: 'oil_rig',
-    name: 'Oil Rig',
-    description: 'Offshore platform on the water quadrant. Earns OSR, claim-only in v1 · unlocks xStock dividends at compound L5+.',
+    name: 'Wafer Fab',
+    description: 'Front-end silicon production wing. Farms GPU and unlocks the strategic xStock bonus pool at Warehouse L5+.',
     family: 'oil',
     burnCostOsr: 1000,
     burnShareBps: MINT_BURN_BPS,
@@ -178,8 +178,8 @@ export const NODE_FAMILIES: NodeFamilyDef[] = [
   },
   {
     key: 'mine_shaft',
-    name: 'Mining Shaft',
-    description: 'Underground operation on the land quadrant. Earns OSR, compoundable at a reduced 0.75% fee · bonus node slots at L5/L7/L9.',
+    name: 'Cleanroom',
+    description: 'Back-end dicing and packaging wing. Farms GPU, compounds at a reduced 0.75% fee, and adds bonus facility slots at L5/L7/L9.',
     family: 'mine',
     burnCostOsr: 750,
     burnShareBps: MINT_BURN_BPS,
@@ -190,7 +190,7 @@ export const NODE_FAMILIES: NodeFamilyDef[] = [
 
 // Emission — Bitcoin-style halving curve.
 /**
- * Total OSR supply.
+ * Total GPU supply.
  *
  * Flap mints every launch at its default max supply of 1e9 with 18 decimals,
  * so that is the figure the app must agree with. Overridable because the true
@@ -199,7 +199,7 @@ export const NODE_FAMILIES: NodeFamilyDef[] = [
  * constant becomes a fallback for the pre-launch period only.
  *
  * Emission is sized from this rather than hardcoded, so the schedule can never
- * promise more OSR than the reserve holds. See EMISSION_RESERVE below.
+ * promise more GPU than the reserve holds. See EMISSION_RESERVE below.
  */
 export const TOTAL_SUPPLY = Number(
   process.env.NEXT_PUBLIC_OSR_TOTAL_SUPPLY ?? 1_000_000_000
@@ -233,7 +233,7 @@ export const EMISSION_RESERVE_PCT = Number(
   process.env.NEXT_PUBLIC_OSR_EMISSION_RESERVE_PCT ?? 0.05
 );
 
-/** OSR set aside at genesis to fund every reward the protocol will ever pay. */
+/** GPU set aside at genesis to fund every reward the protocol will ever pay. */
 export const EMISSION_RESERVE = TOTAL_SUPPLY * EMISSION_RESERVE_PCT;
 
 /**
@@ -242,7 +242,7 @@ export const EMISSION_RESERVE = TOTAL_SUPPLY * EMISSION_RESERVE_PCT;
  *
  * A halving schedule's lifetime sum is rate * period * 2, so inverting it gives
  * the only rate that makes lifetime emission equal the reserve. Hardcoding the
- * rate instead is how the previous 262 OSR/sec ended up promising 316.9M
+ * rate instead is how the previous 262 GPU/sec ended up promising 316.9M
  * against a 229M supply — 38% more than could ever exist.
  */
 export const GENESIS_RATE_PER_SEC = EMISSION_RESERVE / ((HALVING_PERIOD_MS / 1000) * 2);
@@ -255,7 +255,7 @@ export function compactOsr(n: number): string {
 }
 
 /**
- * Total OSR ever paid out as rewards, across every halving cycle.
+ * Total GPU ever paid out as rewards, across every halving cycle.
  *
  * Equal to EMISSION_RESERVE by construction, since the genesis rate is derived
  * from it. Kept as its own name because the docs need to talk about the
@@ -294,7 +294,7 @@ export const HALVING_SCHEDULE_TEXT = [0, 1, 2, 3]
     const rate = GENESIS_RATE_PER_SEC / Math.pow(2, cycle);
     const emittedPct = Math.round((1 - Math.pow(0.5, cycle)) * 100);
     const tail = cycle === 0 ? '' : `, ${emittedPct}% of lifetime emitted`;
-    return `Day ${String(day).padStart(3)} : ${rate.toFixed(1).padStart(6)} OSR/sec  (${compactOsr(rate * 86400)}/day${tail})`;
+    return `Day ${String(day).padStart(3)} : ${rate.toFixed(1).padStart(6)} GPU/sec  (${compactOsr(rate * 86400)}/day${tail})`;
   })
   .join('\n');
 
@@ -338,10 +338,10 @@ export function welcomeBoostFactor(joinedAtMs: number | null, nowMs: number): nu
 }
 
 /**
- * One-time OSR credited to a wallet on first sight so a new operator can afford
- * their first node (an Oil Rig burns 1,000 OSR). Without this a fresh wallet has
+ * One-time GPU credited to a wallet on first sight so a new operator can afford
+ * their first node (a Wafer Fab burns 1,000 GPU). Without this a fresh wallet has
  * no route to its first node: no nodes means no production means nothing to
- * claim, and crates also cost OSR. Tracked via users.dripped so it grants once.
+ * claim, and crates also cost GPU. Tracked via users.dripped so it grants once.
  */
 export const STARTER_OSR_GRANT = 1_000;
 

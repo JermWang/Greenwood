@@ -33,8 +33,8 @@ export default function CopyContract() {
     <button
       type="button"
       onClick={copy}
-      title={`Copy the OSR contract address on ${CHAIN.name}`}
-      aria-label={`Copy OSR contract address ${OSR_TOKEN_ADDRESS}`}
+      title={`Copy the GPU contract address on ${CHAIN.name}`}
+      aria-label={`Copy GPU contract address ${OSR_TOKEN_ADDRESS}`}
       className="glass-control pointer-events-auto flex items-center gap-2 rounded-full border-amber-400/30 px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em] text-amber-100/80 transition hover:border-amber-400/60 hover:text-amber-200"
     >
       <span className="text-amber-100/55">CA</span>

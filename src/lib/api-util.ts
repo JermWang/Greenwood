@@ -28,11 +28,18 @@ export function requireWallet(w: unknown): string {
   return w.toLowerCase();
 }
 
+/**
+ * Resolve the caller's wallet and prove they own it.
+ *
+ * Verification is unconditional. Gating it on the Privy app id being present
+ * would fail open: a deploy that lost that one variable would keep serving every
+ * mutating route with no authentication at all, and the only symptom would be
+ * that anyone could act as any wallet. verifyPrivyWalletOwner answers an
+ * unconfigured server with a 503, which is the safe direction to fail.
+ */
 export async function requireAuthenticatedWallet(request: Request, value: unknown): Promise<string> {
   const wallet = requireWallet(value);
-  if (process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
-    await verifyPrivyWalletOwner(request, wallet);
-  }
+  await verifyPrivyWalletOwner(request, wallet);
   return wallet;
 }
 
