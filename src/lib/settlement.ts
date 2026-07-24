@@ -190,6 +190,23 @@ export async function quoteSpend(wallet: string, quote: Quote): Promise<PaymentR
   };
 }
 
+/**
+ * Whether a failure inside apply() can ever succeed on a retry.
+ *
+ * The distinction decides what happens to an operator's money. A transient
+ * failure should leave the settlement retryable so the same payment can be used
+ * again. A permanent one — the listing sold, the crate already opened, the node
+ * capacity filled — will fail identically forever, so retrying just hides the
+ * fact that the treasury is holding tokens the operator got nothing for.
+ *
+ * Client errors from the game engine are the permanent ones; anything else
+ * (a thrown TypeError, a database fault) is treated as transient, because
+ * guessing "permanent" wrongly is what strands a payment.
+ */
+function isTerminalApplyFailure(e: unknown): boolean {
+  return e instanceof GameError && [400, 403, 404, 409].includes(e.status);
+}
+
 interface SettlementRow {
   nonce: string;
   wallet: string;
@@ -234,6 +251,14 @@ export async function settleSpend<T>(
   if (row.status === 'settled') {
     // Idempotent replay: hand back what was already applied.
     return JSON.parse(row.applied_result ?? 'null') as T;
+  }
+  if (row.status === 'owed') {
+    // Paid for, but the action could not be applied and never will be. Retrying
+    // cannot help; the row exists so a human can reconcile it.
+    throw new GameError(
+      'this payment is recorded as owed to you and will be settled by hand',
+      409
+    );
   }
   if (row.deadline < Math.floor(Date.now() / 1000)) {
     throw new GameError('quote expired — request a fresh one', 409);
@@ -322,8 +347,24 @@ export async function settleSpend<T>(
   try {
     result = apply(row);
   } catch (e) {
-    // Release the claim. The operator has already paid on-chain, so a transient
-    // failure must leave the settlement retryable rather than stranded.
+    if (isTerminalApplyFailure(e)) {
+      // The action can never succeed, so releasing the claim would strand the
+      // payment: every retry fails identically and nothing records that the
+      // operator is owed. Two buyers racing one listing is the ordinary case —
+      // both pay, one gets the item, and the loser's GPU is already in the
+      // treasury. Mark the row owed so there is something to reconcile against.
+      db.prepare(
+        `UPDATE settlements SET status = 'owed', applied_result = ?, settled_at = ?
+          WHERE nonce = ? AND status = 'settling'`
+      ).run(JSON.stringify({ error: String(e) }), Date.now(), nonce);
+      throw new GameError(
+        `${e instanceof GameError ? e.message : 'that action could no longer be applied'} — ` +
+          'your payment is recorded as owed and will be settled by hand.',
+        409
+      );
+    }
+    // Transient: release the claim so the operator can retry with the same
+    // payment rather than paying twice.
     db.prepare(
       `UPDATE settlements SET status = 'issued', tx_hash = NULL
         WHERE nonce = ? AND status = 'settling'`
