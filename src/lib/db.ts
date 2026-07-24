@@ -10,9 +10,43 @@ import os from 'os';
 
 let db: DatabaseSync | null = null;
 
-/** Resolve the SQLite directory. Explicit override wins so tests can isolate. */
+/**
+ * Resolve the SQLite directory. Explicit override wins so tests can isolate.
+ *
+ * Every balance, node, crate, stake and settlement in the game lives in the one
+ * file under this directory. On Railway that has to be the mounted volume: the
+ * container filesystem is replaced on every deploy, so resolving anywhere else
+ * means the app quietly starts from an empty database and every operator's
+ * holdings are gone, with nothing in the logs to say so. The old fallback chain
+ * would do exactly that if OSR_DATA_DIR were ever dropped from the service
+ * config — a one-variable mistake with no way back.
+ *
+ * So on Railway this refuses to guess. Failing to boot is recoverable in a way
+ * that silently writing to disposable storage is not, and a failed boot cannot
+ * pass the healthcheck, so a deploy that got this wrong never takes traffic.
+ */
 export function resolveDataDir(): string {
-  if (process.env.OSR_DATA_DIR) return process.env.OSR_DATA_DIR;
+  const explicit = process.env.OSR_DATA_DIR;
+  const volume = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+
+  if (process.env.RAILWAY_ENVIRONMENT) {
+    if (!explicit) {
+      throw new Error(
+        'OSR_DATA_DIR is not set. On Railway the game database must live on the ' +
+          'mounted volume — without it the app would start from an empty database ' +
+          'on container storage and lose every operator on the next deploy.'
+      );
+    }
+    if (volume && !path.resolve(explicit).startsWith(path.resolve(volume))) {
+      throw new Error(
+        `OSR_DATA_DIR (${explicit}) is outside the mounted volume (${volume}). ` +
+          'The game database would be written to container storage and lost on the next deploy.'
+      );
+    }
+    return explicit;
+  }
+
+  if (explicit) return explicit;
   // Vercel functions run from a read-only /var/task bundle. NOTE: os.tmpdir()
   // there is per-invocation and ephemeral — fine while writes are locked and
   // this is only an empty compatibility read, but it is NOT durable storage.
