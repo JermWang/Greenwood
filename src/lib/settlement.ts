@@ -42,8 +42,16 @@ const TREASURY_WALLET_ID = (process.env.OSR_TREASURY_WALLET_ID ?? '').trim();
 const PRIVY_APP_ID = (process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? '').trim();
 const PRIVY_APP_SECRET = (process.env.PRIVY_APP_SECRET ?? '').trim();
 
-/** Confirmations required before a spend is credited. */
+/** Confirmations required before a spend is credited, or a payout is trusted. */
 export const MIN_CONFIRMATIONS = Number(process.env.OSR_MIN_CONFIRMATIONS ?? 2);
+/**
+ * How long to wait for a payout receipt before handing the decision back.
+ *
+ * Long enough to cover normal L2 inclusion, short enough that a stuck payout
+ * does not hold a request open indefinitely — the process is single-threaded, so
+ * a hung await occupies a slot every other player is queuing behind.
+ */
+const PAYOUT_RECEIPT_TIMEOUT_MS = 60_000;
 /** How long a quote stays payable. Short, so a stale price cannot be settled. */
 const QUOTE_TTL_SECONDS = 15 * 60;
 
@@ -448,6 +456,34 @@ export async function payoutOsr(toWallet: string, osrAmount: number): Promise<Pa
   const payload = (json.data ?? json) as Record<string, unknown>;
   const hash = (payload.hash ?? payload.transaction_hash ?? payload.transactionHash) as string | undefined;
   if (!hash) throw new GameError('payout did not return a transaction hash', 502);
+
+  // A submitted transaction is not a completed one. Returning here treated a
+  // reverted payout as a successful one: the accrual is already consumed, the
+  // stake already closed, and recordPayout would write status='settled' for
+  // tokens that never left the treasury — indistinguishable afterwards from a
+  // payout that worked. An underfunded treasury fails exactly this way, and
+  // every spend already waits for confirmations, so payouts should too.
+  //
+  // A timeout here is not proof of failure: the transaction may still confirm.
+  // It is reported as its own case so the caller records the debt for a human to
+  // reconcile against the hash rather than assuming either outcome.
+  let receipt;
+  try {
+    receipt = await publicClient().waitForTransactionReceipt({
+      hash: hash as Hex,
+      confirmations: MIN_CONFIRMATIONS,
+      timeout: PAYOUT_RECEIPT_TIMEOUT_MS,
+    });
+  } catch {
+    throw new GameError(
+      `payout ${hash} was submitted but not confirmed in time — verify it on-chain before retrying`,
+      502
+    );
+  }
+  if (receipt.status !== 'success') {
+    throw new GameError(`payout ${hash} reverted on-chain`, 502);
+  }
+
   return { hash, sentOsr, gasOsr };
 }
 

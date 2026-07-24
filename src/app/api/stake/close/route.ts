@@ -40,7 +40,10 @@ export async function POST(request: Request) {
     try {
       payout = await payoutOsr(wallet, result.payout);
     } catch (payoutError) {
-      if (payoutError instanceof GameError && payoutError.status === 400) throw payoutError;
+      // Every failure past closeStake owes the operator: the contract is already
+      // closed and the principal already left their position. That includes the
+      // 400 payoutOsr raises when gas has grown to swallow the payout, which
+      // used to rethrow untouched and leave no record of the debt at all.
       recordPayout(wallet, result.payout, null, { stakeId, error: String(payoutError), result });
       console.error('[stake/close] payout failed after the contract was closed', payoutError);
       throw new GameError(
