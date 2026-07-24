@@ -33,3 +33,6 @@ data/
 design_polish/
 ORS MODELS/
 design-qa-evidence/
+
+# Blender project files — dev tooling, not served at runtime
+blender/
