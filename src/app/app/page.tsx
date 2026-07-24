@@ -21,6 +21,7 @@ import { RARITY_MULT, WELCOME_BOOST_WINDOW_S } from '@/lib/economy';
 import { type LightingPreset } from '@/components/three/Compound';
 import type { RigNodeData } from '@/components/three/NodeRig';
 import { CHAIN, TOKEN_LIVE } from '@/lib/config';
+import NextStep from '@/components/ui/NextStep';
 
 /** Operator-facing wording for each stage of an on-chain settlement. */
 const SETTLEMENT_STEP_LABEL: Record<SettlementStep, string> = {
@@ -299,6 +300,14 @@ export default function CommandPage() {
         {error && <div className="fab-system-alert is-error"><span>ERR</span><p>{/^\d{3}\b|auth|privy|token|unauthor/i.test(error) ? `Operator uplink verification failed (${error}) · retrying` : `Fab API unreachable (${error}) · retrying`}</p></div>}
       </div>
 
+      <NextStep
+        op={op}
+        wallet={wallet!}
+        onMint={() => setDeployOpen(true)}
+        onClaim={claimAll}
+        onOpenPod={() => setCrateOpen(true)}
+      />
+
       <div className="fab-command-grid">
         <section className="fab-digital-twin" aria-label="Interactive fab digital twin">
           <div className="fab-scene-head">
@@ -353,7 +362,7 @@ export default function CommandPage() {
             {boostActive && <div className="fab-boost-chip">WELCOME ACCELERATOR · {op.welcomeBoostFactor.toFixed(2)}× · {Math.round(boostPct * 100)}% WINDOW</div>}
           </section>
 
-          <section className="fab-console-card">
+          <section className="fab-console-card" id="production-lines">
             <div className="fab-console-heading"><span>PRODUCTION LINES</span><span>{nodes.length}/{totalCapacity}</span></div>
             <div className="mt-3 space-y-2">
               {nodes.length === 0 && <button className="fab-empty-line" onClick={() => setDeployOpen(true)}><span>+</span><strong>Commission your first wafer fab</strong><small>Start silicon production</small></button>}
@@ -371,7 +380,7 @@ export default function CommandPage() {
       </div>
 
       <div className="fab-lower-grid">
-        <CompoundPanel busy={busy} run={run} />
+        <div id="compound-panel" className="contents"><CompoundPanel busy={busy} run={run} /></div>
         {selected ? <NodeDetail node={selected} busy={busy} run={run} onOpenCrate={() => setCrateOpen(true)} /> : (
           <section className="fab-console-card fab-inspector-empty"><div className="fab-console-heading"><span>LINE INSPECTOR</span><span>STANDBY</span></div><div className="mt-7"><strong>Select a line in the digital twin.</strong><p>Inspect fitted equipment, storage saturation, production rate, and calibration options without leaving the fab floor.</p></div></section>
         )}

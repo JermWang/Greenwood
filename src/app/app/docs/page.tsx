@@ -22,6 +22,7 @@ import { AURA_TIERS } from '@/lib/aura';
 import {
   COMPOUND_FEE_ETH,
   CRATE_FEE_ETH,
+  CRATE_OPEN_OSR,
   EXPEDITE_FEE_ETH,
   MINT_FEE_ETH,
   RARITY_MULT,
@@ -358,8 +359,9 @@ export default function DocsPage() {
         <Section id="components" title="5. Components & Supply Pods">
           <p>
             Each node has <strong className="text-white">4 component slots</strong>. Components are
-            earned by opening <strong className="text-white">Supply Pods</strong> — 500 $GPU at L1
-            scaling to 1,625 $GPU at L10 (split 50/30/20 burn / reserve / treasury), plus a flat{' '}
+            earned by opening <strong className="text-white">Supply Pods</strong> —{' '}
+            <strong className="text-white">{CRATE_OPEN_OSR.toLocaleString()} $GPU</strong> each (split
+            burn / reserve / treasury), plus a flat{' '}
             {CRATE_FEE_ETH} ETH protocol fee. Your daily crate limit scales with Warehouse Level — from 3/day
             at L1 up to 20/day at L10, per node type. Every drop has a rarity tier that multiplies
             the node&rsquo;s output:
@@ -527,8 +529,8 @@ export default function DocsPage() {
           <p>
             Your <strong className="text-white">Warehouse Level</strong> (L1 → L10) is your
             wallet-wide progression track. Each upgrade costs $GPU — from{' '}
-            <strong className="text-white">500 GPU</strong> for L2 up to{' '}
-            <strong className="text-white">60,000 GPU</strong> for L10, split 50/30/20 burn /
+            <strong className="text-white">1,000 GPU</strong> for L2 up to{' '}
+            <strong className="text-white">120,000 GPU</strong> for L10, split 50/30/20 burn /
             reserve / treasury — plus a flat {COMPOUND_FEE_ETH} ETH fee. Each level unlocks:
           </p>
           <ul className="list-disc space-y-1 pl-5">
@@ -568,7 +570,7 @@ export default function DocsPage() {
             <FeeCard label="Claim fee" value="2%" caption="retained in reserve · 1h cooldown" />
             <FeeCard
               label="Warehouse upgrade"
-              value="500 → 60k GPU"
+              value="1k → 120k GPU"
               caption={`L2→L10 · +${COMPOUND_FEE_ETH} ETH · 12h cooldown`}
             />
             <FeeCard
@@ -578,8 +580,8 @@ export default function DocsPage() {
             />
             <FeeCard
               label="Crate cost"
-              value="500 → 1625 GPU"
-              caption={`by warehouse level · +${CRATE_FEE_ETH} ETH fee`}
+              value={`${CRATE_OPEN_OSR.toLocaleString()} GPU`}
+              caption={`flat, per pod · +${CRATE_FEE_ETH} ETH fee`}
             />
             <FeeCard
               label="Upgrade & crate split"

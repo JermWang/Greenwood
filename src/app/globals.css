@@ -217,11 +217,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .gpu-page-header::after { position: absolute; inset: auto 0 0; height: 3px; content: ''; background: linear-gradient(90deg, var(--fab-lime), var(--fab-cyan), var(--fab-cobalt), transparent 86%); opacity: .8; }
 .gpu-page-content { padding-top: clamp(18px, 2.4vw, 30px); }
-.gpu-page-wafer { position: absolute; right: clamp(-90px, 2vw, 38px); top: 50%; width: 250px; height: 250px; transform: translateY(-50%); border: 1px solid rgba(85, 223, 255, .12); border-radius: 50%; background: repeating-radial-gradient(circle, transparent 0 15px, rgba(85, 223, 255, .04) 16px 17px), conic-gradient(from 20deg, rgba(91, 108, 255, .25), rgba(85, 223, 255, .05), rgba(183, 255, 74, .16), rgba(91, 108, 255, .25)); box-shadow: 0 0 80px rgba(91, 108, 255, .18), inset 0 0 70px rgba(5, 11, 25, .8); opacity: .86; }
-.gpu-page-wafer-core { position: absolute; inset: 39%; border: 1px solid rgba(183, 255, 74, .4); border-radius: 9px; background: var(--fab-lime); box-shadow: 0 0 32px rgba(183, 255, 74, .42); }
-.gpu-page-wafer-trace { position: absolute; height: 1px; background: linear-gradient(90deg, transparent, var(--fab-cyan), transparent); transform-origin: right; }
-.gpu-page-wafer-trace.trace-a { width: 120px; right: 48%; top: 35%; transform: rotate(18deg); }
-.gpu-page-wafer-trace.trace-b { width: 96px; right: 49%; top: 66%; transform: rotate(-22deg); }
+.gpu-page-wafer { position: absolute; right: clamp(-90px, 2vw, 38px); top: 50%; width: 250px; height: 250px; overflow: hidden; transform: translateY(-50%); border: 1px solid rgba(85, 223, 255, .12); border-radius: 50%; background: repeating-radial-gradient(circle, transparent 0 15px, rgba(85, 223, 255, .04) 16px 17px), radial-gradient(circle, rgba(91, 108, 255, .13), rgba(5, 11, 25, .28) 70%); box-shadow: 0 0 80px rgba(91, 108, 255, .18), inset 0 0 70px rgba(5, 11, 25, .8); opacity: .86; isolation: isolate; }
+.gpu-page-wafer::before { position: absolute; inset: -1px; border-radius: 50%; content: ''; background: conic-gradient(from 0deg, transparent 0 77%, rgba(85, 223, 255, .04) 82%, rgba(85, 223, 255, .42) 98%, rgba(183, 255, 74, .65) 100%); animation: gpu-radar-sweep 4.8s linear infinite; will-change: transform; }
+.gpu-page-wafer::after { position: absolute; inset: 10%; border: 1px solid rgba(85, 223, 255, .11); border-radius: 50%; content: ''; box-shadow: 0 0 0 22px rgba(85, 223, 255, .025), 0 0 0 45px rgba(85, 223, 255, .018); animation: gpu-radar-pulse 2.4s ease-in-out infinite; }
+.gpu-page-wafer-core { position: absolute; inset: 39%; border: 1px solid rgba(183, 255, 74, .4); border-radius: 9px; background: var(--fab-lime); box-shadow: 0 0 32px rgba(183, 255, 74, .42); animation: gpu-radar-core 2.4s ease-in-out infinite; }
+@keyframes gpu-radar-sweep { to { transform: rotate(1turn); } }
+@keyframes gpu-radar-pulse { 0%, 100% { opacity: .45; transform: scale(.96); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes gpu-radar-core { 0%, 100% { filter: brightness(.86); } 50% { filter: brightness(1.18); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .gpu-page-wafer::before,
+  .gpu-page-wafer::after,
+  .gpu-page-wafer-core { animation: none; }
+}
 
 .panel {
   border: 1px solid rgba(151, 190, 255, .14);
@@ -276,6 +284,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .fab-flow-track { height: 8px; margin-top: 18px; overflow: hidden; border: 1px solid rgba(151, 190, 255, .1); border-radius: 999px; padding: 2px; background: rgba(0, 0, 0, .18); }
 .fab-flow-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--fab-cobalt), var(--fab-cyan), var(--fab-lime)); box-shadow: 0 0 14px rgba(85, 223, 255, .5); }
 .fab-boost-chip { margin-top: 14px; border: 1px solid rgba(169, 148, 255, .2); border-radius: 10px; padding: 8px 10px; color: #cfc3ff; background: rgba(169, 148, 255, .07); font-family: var(--font-mono), monospace; font-size: 7.5px; font-weight: 700; letter-spacing: .12em; }
+/* "What do I do next" guide — the one action that matters most, up top. */
+.gpu-nextstep { margin: 0 0 18px; border-radius: 16px; border: 1px solid rgba(183, 255, 74, .28); background: linear-gradient(120deg, rgba(12, 26, 20, .9), rgba(7, 18, 36, .82)); padding: 18px 20px; box-shadow: 0 20px 50px -30px #000; }
+.gpu-nextstep.is-wait { border-color: rgba(134, 192, 244, .22); background: linear-gradient(120deg, rgba(7, 18, 36, .85), rgba(9, 20, 40, .8)); }
+.gpu-nextstep-head { display: flex; align-items: center; gap: 7px; font: 700 9px var(--font-mono), monospace; letter-spacing: .2em; text-transform: uppercase; color: #b7ff4a; }
+.gpu-nextstep.is-wait .gpu-nextstep-head { color: #8fb4d0; }
+.gpu-nextstep h3 { margin: 8px 0 0; font-size: clamp(1.1rem, 2.4vw, 1.5rem); font-weight: 600; letter-spacing: -.02em; color: #fff; }
+.gpu-nextstep p { margin: 6px 0 0; max-width: 62ch; font-size: 12.5px; line-height: 1.55; color: rgba(219, 238, 255, .6); }
+.gpu-nextstep-cta { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; border-radius: 999px; border: 1px solid rgba(183, 255, 74, .5); background: rgba(183, 255, 74, .14); padding: 9px 18px; font: 700 11px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: #d7ffa8; transition: .18s ease; cursor: pointer; }
+.gpu-nextstep-cta:hover { background: rgba(183, 255, 74, .24); border-color: rgba(183, 255, 74, .8); color: #eaffce; }
+.gpu-nextstep.is-wait .gpu-nextstep-cta { border-color: rgba(134, 192, 244, .4); background: rgba(90, 150, 230, .14); color: #bcd8ff; }
+.gpu-nextstep.is-wait .gpu-nextstep-cta:hover { background: rgba(90, 150, 230, .24); border-color: rgba(134, 192, 244, .7); }
+
 .fab-line-row { display: flex; width: 100%; align-items: center; gap: 10px; border: 1px solid rgba(151, 190, 255, .1); border-radius: 15px; padding: 10px; color: rgba(222, 238, 253, .74); background: rgba(255, 255, 255, .022); transition: .16s ease; }
 .fab-line-row:hover, .fab-line-row.is-active { border-color: rgba(183, 255, 74, .25); color: white; background: rgba(183, 255, 74, .06); transform: translateX(2px); }
 .fab-line-row strong { display: block; font-size: 11px; }
