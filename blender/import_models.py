@@ -42,6 +42,19 @@ CRATE_ORDER = [
     "divine",
 ]
 
+# Fab equipment, baked from the game's procedural react-three-fiber components by
+# scripts/export-fab-glb.tsx. Laid out in a second row behind the crates.
+FAB_ORDER = [
+    "euv-utility-core",
+    "ai-accelerator-test-rack",
+    "liquid-cooling-array",
+    "chiplet-packaging-line",
+]
+
+# How far behind the crate row (in -Y) the fab row sits. The fab models are much
+# larger than the crates, so they get their own line rather than sharing one.
+FAB_ROW_Y = -8.0
+
 # Gap between models, added on top of each model's own width so nothing overlaps
 # regardless of scale.
 SPACING_GAP = 0.6
@@ -65,6 +78,20 @@ def resolve_crates_dir():
 
 
 CRATES_DIR = resolve_crates_dir()
+
+
+def resolve_fab_dir():
+    try:
+        here = os.path.dirname(os.path.abspath(__file__))
+        candidate = os.path.join(here, "fab-glb")
+        if os.path.isdir(candidate):
+            return candidate
+    except NameError:
+        pass
+    return r"C:\Users\jerms\Desktop\CODING\WEB 3\GPU\blender\fab-glb"
+
+
+FAB_DIR = resolve_fab_dir()
 
 
 # --- helpers -----------------------------------------------------------------
@@ -106,28 +133,23 @@ def world_bounds(objs):
 
 # --- import ------------------------------------------------------------------
 
-def main():
-    if not os.path.isdir(CRATES_DIR):
-        raise RuntimeError(
-            "Could not find the crates directory at:\n  %s\n"
-            "Edit CRATES_DIR at the top of this script to the absolute path of "
-            "public/models/crates on this machine." % CRATES_DIR
-        )
+def import_row(directory, filename_for, names, group_for, row_y):
+    """Import a row of GLBs, each into its own named collection, lined up on x.
 
-    if CLEAR_SCENE:
-        clear_scene()
-
+    Returns how many were placed. `filename_for(name)` -> the GLB basename,
+    `group_for(name)` -> the collection name. All sit on the floor (z=0) at the
+    given y, spaced by their real widths so different sizes never overlap.
+    """
     cursor_x = 0.0
     placed = 0
-
-    for rarity in CRATE_ORDER:
-        path = os.path.join(CRATES_DIR, "crate_%s.glb" % rarity)
+    for name in names:
+        path = os.path.join(directory, filename_for(name))
         if not os.path.isfile(path):
             print("skip: %s not found" % path)
             continue
 
-        # Import. Whatever it brings in is left selected, which is how we know
-        # which objects belong to this crate.
+        # Whatever the import brings in, diffed against what existed before, is
+        # this model's set of objects.
         before = set(bpy.data.objects)
         bpy.ops.import_scene.gltf(filepath=path)
         imported = [o for o in bpy.data.objects if o not in before]
@@ -135,8 +157,7 @@ def main():
             print("skip: %s imported nothing" % path)
             continue
 
-        name = "crate_%s" % rarity
-        col = named_collection(name)
+        col = named_collection(group_for(name))
         for obj in imported:
             move_to_collection(obj, col)
 
@@ -148,21 +169,51 @@ def main():
         imported_set = set(imported)
         roots = [o for o in imported if o.parent not in imported_set]
 
-        # Sit the group on the floor (z = 0) and line them up along x by their
-        # actual width, so differently sized crates still get clean gaps.
         mins, maxs = world_bounds(imported)
         width = maxs.x - mins.x
         offset_x = cursor_x - mins.x
-        offset_z = -mins.z
         for obj in roots:
             obj.location.x += offset_x
-            obj.location.z += offset_z
+            obj.location.y += row_y - (mins.y + maxs.y) / 2
+            obj.location.z += -mins.z
 
         cursor_x += width + SPACING_GAP
         placed += 1
-        print("placed %-16s (%d object%s)" % (name, len(imported), "" if len(imported) == 1 else "s"))
+        print("placed %-24s (%d object%s)" % (group_for(name), len(imported), "" if len(imported) == 1 else "s"))
+    return placed
 
-    # Frame everything so the whole row is visible the moment the script ends.
+
+def main():
+    if not os.path.isdir(CRATES_DIR):
+        raise RuntimeError(
+            "Could not find the crates directory at:\n  %s\n"
+            "Edit CRATES_DIR at the top of this script to the absolute path of "
+            "public/models/crates on this machine." % CRATES_DIR
+        )
+
+    if CLEAR_SCENE:
+        clear_scene()
+
+    placed = import_row(
+        CRATES_DIR,
+        lambda r: "crate_%s.glb" % r,
+        CRATE_ORDER,
+        lambda r: "crate_%s" % r,
+        row_y=0.0,
+    )
+
+    if os.path.isdir(FAB_DIR):
+        placed += import_row(
+            FAB_DIR,
+            lambda s: "%s.glb" % s,
+            FAB_ORDER,
+            lambda s: s,
+            row_y=FAB_ROW_Y,
+        )
+    else:
+        print("note: fab GLB dir not found (%s); run scripts/export-fab-glb.tsx to create it" % FAB_DIR)
+
+    # Frame everything so the whole layout is visible the moment the script ends.
     if placed:
         for area in bpy.context.screen.areas:
             if area.type == "VIEW_3D":
