@@ -61,6 +61,12 @@ export function getDb(): DatabaseSync {
   fs.mkdirSync(dir, { recursive: true });
   db = new DatabaseSync(path.join(dir, 'osr.db'));
   db.exec('PRAGMA journal_mode = WAL;');
+  // SQLite defaults foreign keys OFF, per connection. Without this the six
+  // references declared below — nodes, components, crates, listings, stakes and
+  // floor_layouts all pointing at users — are documentation rather than
+  // constraints, and nothing stops a row outliving the wallet that owns it.
+  // Enforcement applies to new writes, so existing rows are unaffected.
+  db.exec('PRAGMA foreign_keys = ON;');
   migrate(db);
   return db;
 }

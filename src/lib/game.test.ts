@@ -258,6 +258,19 @@ describe('full game cycle', () => {
     expect(total(second)).toBeLessThan(1);
   });
 
+  test('foreign keys are enforced, not just declared', () => {
+    // SQLite defaults them OFF per connection, so the six references in the
+    // schema did nothing at all until the pragma was set. Without this a node,
+    // crate or stake could outlive the wallet that owns it.
+    expect(() =>
+      getDb()
+        .prepare(
+          'INSERT INTO nodes (wallet, family, level, created_at, last_claim_at, accrued, accrued_updated_at) VALUES (?,?,1,?,?,0,?)'
+        )
+        .run('0xnot-a-registered-wallet', 'oil', Date.now(), Date.now(), Date.now())
+    ).toThrow(/FOREIGN KEY/i);
+  });
+
   test('reading an unknown wallet never creates it', () => {
     // These are the paths behind the unauthenticated GET routes. Each used to
     // run getOrCreateUser, so a curl loop over random addresses inserted a row
