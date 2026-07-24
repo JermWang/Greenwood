@@ -22,7 +22,7 @@ process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET = `0x${'22'.repeat(20)}`;
 process.env.OSR_TREASURY_WALLET_ID = 'test-wallet-id';
 process.env.PRIVY_APP_SECRET = 'test-app-secret';
 
-const { settleSpend } = await import('./settlement');
+const { settleSpend, quoteSpend } = await import('./settlement');
 const { getDb } = await import('./db');
 
 const WALLET = `0x${'ab'.repeat(20)}`;
@@ -106,5 +106,36 @@ describe('settleSpend action binding', () => {
     await expect(
       settleSpend(WALLET, 'OpenCrate', 'nonce-does-not-exist', TX, () => 'applied')
     ).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('non-payable settlements', () => {
+  // Both guards sit ahead of the receipt lookup, so an unpayable row costs no
+  // RPC calls and these tests need no chain.
+  test('quoteSpend refuses a zero amount', async () => {
+    await expect(
+      quoteSpend(WALLET, { action: 'ExpediteCompound', detail: '0x00', osrAmount: 0 })
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  test('quoteSpend refuses a negative amount', async () => {
+    await expect(
+      quoteSpend(WALLET, { action: 'MintNode', detail: '0x00', osrAmount: -5 })
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  test('quoteSpend refuses a non-finite amount', async () => {
+    await expect(
+      quoteSpend(WALLET, { action: 'MintNode', detail: '0x00', osrAmount: Number.NaN })
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  test('a zero row already in the table cannot be settled', async () => {
+    // The state a pre-fix expedite quote left behind: any transfer, including a
+    // 0-value one, clears an owed of zero.
+    issueRow('nonce-zero-owed', 'ExpediteCompound', '0');
+    await expect(
+      settleSpend(WALLET, 'ExpediteCompound', 'nonce-zero-owed', TX, () => 'applied')
+    ).rejects.toMatchObject({ status: 409 });
   });
 });

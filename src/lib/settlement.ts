@@ -145,8 +145,18 @@ export interface PaymentRequest {
 /** Price an action, record it as pending, and return payment instructions. */
 export async function quoteSpend(wallet: string, quote: Quote): Promise<PaymentRequest> {
   requireSettlement();
+  // A free action must never reach the settlement rail. settleSpend proves a
+  // payment by checking a Transfer to the treasury of at least the owed amount,
+  // and every transfer clears an owed of zero — so a zero quote turns the whole
+  // verification into a formality that a 0-value transfer satisfies.
+  if (!Number.isFinite(quote.osrAmount) || quote.osrAmount <= 0) {
+    throw new GameError('refusing to quote a non-positive amount', 400);
+  }
   const decimals = await tokenDecimals();
   const amount = toUnits(quote.osrAmount, decimals);
+  // Guards the same hole from the other side: an amount small enough to round
+  // down to zero base units is not payable either.
+  if (amount <= 0n) throw new GameError('quoted amount rounds to zero', 400);
   const nonce = randomNonce();
   const deadline = Math.floor(Date.now() / 1000) + QUOTE_TTL_SECONDS;
 
@@ -221,6 +231,13 @@ export async function settleSpend<T>(
     throw new GameError('quote expired — request a fresh one', 409);
   }
 
+  // Rows quoted before quoteSpend refused non-positive amounts are still in the
+  // table, and each is a free action waiting to be settled by a 0-value transfer:
+  // the payment loop below accepts any Transfer of at least `owed`. Checked here
+  // rather than beside that loop so an unpayable row costs no RPC calls.
+  const owed = BigInt(row.osr_amount);
+  if (owed <= 0n) throw new GameError('settlement has no payable amount', 409);
+
   // viem THROWS TransactionReceiptNotFoundError when the tx is not yet visible
   // to this RPC node. The client already waited for the receipt before calling
   // settle, so this is propagation lag between RPC nodes, not a real failure —
@@ -245,7 +262,6 @@ export async function settleSpend<T>(
   // Find an OSR Transfer in this tx that pays the treasury at least the quote.
   const token = OSR_TOKEN_ADDRESS.toLowerCase();
   const treasury = TREASURY.toLowerCase();
-  const owed = BigInt(row.osr_amount);
   let paid = false;
   for (const log of receipt.logs) {
     if (log.address.toLowerCase() !== token) continue;
