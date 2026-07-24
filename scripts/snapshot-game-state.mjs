@@ -21,7 +21,7 @@ function flag(name, fallback = null) {
 
 const base = (flag('base') ?? '').replace(/\/$/, '');
 if (!base) {
-  console.error('--base <url> is required, e.g. --base https://oilstrategicreserve.xyz');
+  console.error('--base <url> is required, e.g. --base https://playgpu.fun');
   process.exit(1);
 }
 

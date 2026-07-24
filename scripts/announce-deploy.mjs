@@ -32,7 +32,7 @@ function loadEnv() {
 }
 loadEnv();
 
-const SITE = process.env.OSR_SITE_URL ?? 'https://www.oilstrategicreserve.xyz';
+const SITE = process.env.OSR_SITE_URL ?? 'https://playgpu.fun';
 const TOKEN = (process.env.OSR_ADMIN_TOKEN ?? '').trim();
 const minutes = Number(process.argv[2] ?? 5);
 

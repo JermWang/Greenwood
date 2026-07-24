@@ -27,7 +27,7 @@ function tryRead(p) {
   }
 }
 
-const SITE = process.env.OSR_SITE_URL ?? 'https://www.oilstrategicreserve.xyz';
+const SITE = process.env.OSR_SITE_URL ?? 'https://playgpu.fun';
 const TOKEN = (process.env.OSR_ADMIN_TOKEN ?? '').trim();
 const DO_WIPE = process.argv.includes('--wipe');
 
