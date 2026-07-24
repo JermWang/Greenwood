@@ -44,7 +44,6 @@ if (typeof (globalThis as any).FileReader === 'undefined') {
 import * as React from 'react';
 import * as THREE from 'three';
 import { RoundedBox } from '@react-three/drei';
-// @ts-expect-error — test-renderer has no bundled types export we need here
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
