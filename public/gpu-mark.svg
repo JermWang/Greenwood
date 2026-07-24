@@ -9,5 +9,4 @@
   <path d="M95 39c-8-10-18-15-32-15-24 0-42 18-42 41s18 40 43 40c15 0 27-5 36-15V63H65v17h16v6c-5 3-10 4-16 4-14 0-24-10-24-25s10-25 24-25c8 0 14 3 19 9z" fill="#eff8f1"/>
   <circle cx="65" cy="64" r="15" fill="url(#wafer)" stroke="#d9ffad" stroke-width="3"/>
   <path d="M65 51v26M52 64h26M55.5 55.5l19 19M74.5 55.5l-19 19" stroke="#193d31" stroke-opacity=".38" stroke-width="1.6"/>
-  <rect x="84" y="64" width="23" height="16" rx="5" fill="#79e85f"/>
 </svg>

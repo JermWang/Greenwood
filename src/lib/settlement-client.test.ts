@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import { validatePaymentRequest, type PaymentRequest } from './settlement-client';
+import {
+  validatePaymentRequest,
+  validateWalletContext,
+  type PaymentRequest,
+} from './settlement-client';
 
 const TOKEN = '0x1111111111111111111111111111111111111111';
 const TREASURY = '0x2222222222222222222222222222222222222222';
@@ -38,5 +42,19 @@ describe('payment quote safety', () => {
 
   test('rejects a display amount that does not match calldata base units', () => {
     expect(() => validatePaymentRequest(payment({ osrAmount: 12.5 }), NOW, TOKEN, TREASURY)).toThrow(/base units/i);
+  });
+});
+
+describe('wallet prediction context', () => {
+  test('accepts the same account on the expected chain', () => {
+    expect(() => validateWalletContext(TOKEN, TOKEN, 4663)).not.toThrow();
+  });
+
+  test('rejects an account changed while the preview is open', () => {
+    expect(() => validateWalletContext(TOKEN, TREASURY, 4663)).toThrow(/account changed/i);
+  });
+
+  test('rejects a chain changed while the preview is open', () => {
+    expect(() => validateWalletContext(TOKEN, TOKEN, 1)).toThrow(/network changed/i);
   });
 });

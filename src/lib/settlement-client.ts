@@ -51,6 +51,24 @@ export interface ValidatedPayment {
 }
 
 /**
+ * The account and chain are part of the simulated transaction context. If
+ * either changes while the in-app review is open, the old prediction no longer
+ * describes the wallet request and must not be submitted.
+ */
+export function validateWalletContext(
+  simulatedAccount: Address,
+  currentAccount: Address | undefined,
+  currentChainId: number
+): void {
+  if (!currentAccount || getAddress(currentAccount) !== getAddress(simulatedAccount)) {
+    throw new Error('Wallet account changed during review; request a fresh transaction preview');
+  }
+  if (currentChainId !== CHAIN.id) {
+    throw new Error('Wallet network changed during review; request a fresh transaction preview');
+  }
+}
+
+/**
  * Treat every server quote as hostile until it matches the locally configured
  * protocol invariants. This stops a compromised response, proxy, or stale
  * deployment from changing the token, recipient, chain, amount, or deadline
@@ -122,7 +140,7 @@ export async function submitPayment(
   // viem recommends simulation before writeContract. Passing its returned
   // request straight into the wallet ensures the exact simulated calldata is
   // the calldata that gets signed.
-  const { request } = await pub.simulateContract({
+  await pub.simulateContract({
     account,
     address: validated.token,
     abi: erc20Abi,
@@ -145,13 +163,28 @@ export async function submitPayment(
   });
   if (!approved) throw new Error('Transaction cancelled before opening the wallet');
 
-  // Re-check immediately before opening the wallet. A chainChanged event can
-  // fire while the review sheet is open.
-  const chainHex = await provider.request({ method: 'eth_chainId' }) as string;
-  if (Number.parseInt(chainHex, 16) !== CHAIN.id) throw new Error('Wallet network changed during review');
+  // Re-check immediately before opening the wallet. An accountsChanged or
+  // chainChanged event can fire while the review sheet is open, invalidating
+  // the account-bound prediction above.
+  const [currentAccounts, chainHex] = await Promise.all([
+    wallet.getAddresses(),
+    provider.request({ method: 'eth_chainId' }) as Promise<string>,
+  ]);
+  validateWalletContext(account, currentAccounts[0], Number.parseInt(chainHex, 16));
+
+  // Simulation freshness matters to wallet prediction. Run it again after the
+  // human review and pass this newly simulated request straight to the wallet,
+  // so sender, calldata, recipient, amount, and current chain state all align.
+  const { request: freshRequest } = await pub.simulateContract({
+    account,
+    address: validated.token,
+    abi: erc20Abi,
+    functionName: 'transfer',
+    args: [validated.treasury, validated.amount],
+  });
 
   onStep?.('submitting');
-  const hash = await wallet.writeContract(request);
+  const hash = await wallet.writeContract(freshRequest);
 
   onStep?.('confirming');
   const receipt = await pub.waitForTransactionReceipt({ hash });
