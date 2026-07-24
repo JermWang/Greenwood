@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuthenticatedWallet } from '@/lib/api-util';
+import { requireNoActiveDeploy } from '@/lib/deploy-guard';
 import { GameError, getOrCreateUser } from '@/lib/game';
 import { getDb } from '@/lib/db';
 import { decodeDetail } from '@/lib/settle-route';
@@ -108,6 +109,10 @@ export async function POST(request: Request) {
         },
       });
     }
+
+    // Past the settle branch above, everything left is a start — a pre-token
+    // buy or a fresh quote — so hold it while a deploy is rolling out.
+    requireNoActiveDeploy();
 
     const listingId = Number(body.listingId);
     if (!Number.isInteger(listingId) || listingId <= 0) {

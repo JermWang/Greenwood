@@ -13,6 +13,7 @@
 import { NextResponse } from 'next/server';
 import { GameError, type SpendOpts } from './game';
 import { requireAuthenticatedWallet } from './api-util';
+import { requireNoActiveDeploy } from './deploy-guard';
 import {
   SETTLEMENT_CONFIGURED,
   encodeDetail,
@@ -65,6 +66,9 @@ export async function handleSettlementRoute<P>(
     // same action to quote -> ERC-20 transfer -> receipt verification. No other
     // code has to change to make that switch.
     if (!SETTLEMENT_CONFIGURED) {
+      // Pre-token this both prices and applies in one call, so it is a "start"
+      // and must wait out a deploy window like any other.
+      requireNoActiveDeploy();
       const params = spec.parse(body, wallet);
       return NextResponse.json({ settled: true, result: spec.apply(wallet, params, {}) });
     }
@@ -73,6 +77,8 @@ export async function handleSettlementRoute<P>(
     const txHash = typeof body.txHash === 'string' ? body.txHash : null;
 
     // Phase 2 — settle: verify the operator's payment landed, then apply.
+    // Deliberately allowed during a deploy window: the operator has already paid
+    // on-chain, so completing is what rescues their tokens, not what risks them.
     if (nonce && txHash) {
       const result = await settleSpend(wallet, spec.action, nonce, txHash, (row) =>
         spec.apply(wallet, spec.decode(decodeDetail(row.detail)), { settledOnChain: true })
@@ -83,7 +89,9 @@ export async function handleSettlementRoute<P>(
       throw new GameError('both nonce and txHash are required to settle', 400);
     }
 
-    // Phase 1 — quote: price it and return payment instructions.
+    // Phase 1 — quote: hands back payment instructions the operator is about to
+    // act on, so refuse to open one while a cutover is imminent.
+    requireNoActiveDeploy();
     const params = spec.parse(body, wallet);
     const priced = spec.price(wallet, params);
     const payment = await quoteSpend(wallet, {

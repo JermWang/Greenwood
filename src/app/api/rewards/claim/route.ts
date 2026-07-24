@@ -8,6 +8,7 @@ import {
   recordPayout,
 } from '@/lib/settlement';
 import { CLAIM_FEE_BPS, COMPOUND_REINVEST_FEE_BPS } from '@/lib/economy';
+import { requireNoActiveDeploy } from '@/lib/deploy-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,9 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const wallet = await requireAuthenticatedWallet(request, body.wallet);
+    // A claim consumes accrual and pays out in one call, so a cutover mid-claim
+    // is exactly the loss the deploy window exists to prevent.
+    requireNoActiveDeploy();
 
     const mode = body.mode === 'compound' ? 'compound' : 'claim';
     const nodeId = body.nodeId == null ? undefined : Number(body.nodeId);

@@ -3,6 +3,7 @@ import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { GameError } from '@/lib/game';
 import { SETTLEMENT_CONFIGURED, payoutOsr, recordPayout } from '@/lib/settlement';
 import { closeStake, stakePositions } from '@/lib/stake';
+import { requireNoActiveDeploy } from '@/lib/deploy-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,9 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const wallet = await requireAuthenticatedWallet(request, body.wallet);
+    // Closing pays principal + interest out of the treasury — a start, not a
+    // completion, so hold it until the deploy window clears.
+    requireNoActiveDeploy();
 
     const stakeId = Number(body.stakeId);
     if (!Number.isInteger(stakeId) || stakeId <= 0) {
