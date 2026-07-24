@@ -254,6 +254,19 @@ describe('full game cycle', () => {
     expect(total(second)).toBeLessThan(1);
   });
 
+  test('a node upgrade refuses to apply a quote taken at a different level', () => {
+    // Upgrade cost climbs with level, so a batch of quotes taken at L1 must not
+    // settle in sequence to reach L11 at L1's price.
+    const w = wallet(62);
+    getOrCreateUser(w);
+    fund(w, 10_000_000);
+    const nodeId = mintNode(w, 'oil_rig').node.id;
+
+    expect(upgradeNode(w, nodeId, undefined, 1).level).toBe(2);
+    expect(() => upgradeNode(w, nodeId, undefined, 1)).toThrow(/level moved/i);
+    expect(upgradeNode(w, nodeId, undefined, 2).level).toBe(3);
+  });
+
   test('a compound upgrade refuses to apply a quote taken at a different level', () => {
     // Quotes are free and unlimited, so several can be taken while the operator
     // is still at L1 and then settled in sequence. Each must be honoured only at

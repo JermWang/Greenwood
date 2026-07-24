@@ -864,11 +864,22 @@ export function nodeUpgradeCost(level: number): number {
   return Math.round(250 * Math.pow(1.6, level - 1));
 }
 
-export function upgradeNode(wallet: string, nodeId: number, opts?: SpendOpts) {
+export function upgradeNode(
+  wallet: string,
+  nodeId: number,
+  opts?: SpendOpts,
+  expectFromLevel?: number
+) {
   const db = getDb();
   const { user, nodes } = settleUser(wallet);
   const node = nodes.find((n) => n.row.id === nodeId);
   if (!node) throw new GameError('Node not found', 404);
+  // Upgrade cost climbs with level, and quotes are free and unlimited, so ten
+  // taken while the node sits at L1 must not settle in sequence to reach L11 at
+  // L1's price — 2,500 GPU against a true cost near 45,000.
+  if (expectFromLevel != null && expectFromLevel !== node.row.level) {
+    throw new GameError('node level moved since the quote — request a fresh one', 409);
+  }
   const cost = nodeUpgradeCost(node.row.level);
   const debit = offChainDebit(user, cost, opts, (have) =>
     `Not enough GPU to level up: need ${cost.toLocaleString()} GPU (you have ${have}).`
