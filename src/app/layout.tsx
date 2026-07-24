@@ -30,8 +30,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@PlayGPU_RH',
-    creator: '@PlayGPU_RH',
+    site: '@GPU_RH',
+    creator: '@GPU_RH',
     title: 'GPU — Graphics Processing Utility',
     description: DESCRIPTION,
     images: ['/social/BANNER.png'],

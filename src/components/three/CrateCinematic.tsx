@@ -8,9 +8,10 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Sparkles, useGLTF } from '@react-three/drei';
+import { Sparkles } from '@react-three/drei';
 import { EffectComposer, Bloom, ChromaticAberration, Vignette } from '@react-three/postprocessing';
-import { cratePath, RARITIES, SLOT_LABELS, type Rarity } from '@/lib/rarity';
+import { RARITIES, SLOT_LABELS, type Rarity } from '@/lib/rarity';
+import SupplyPod from './CrateModel';
 import { RARITY_COLOR, rarityTier } from './fx';
 import { COMPONENT_RARITIES } from '@/lib/rarity';
 import { RARITY_MULT } from '@/lib/economy';
@@ -66,93 +67,29 @@ function playTone(freq: number, dur: number, type: OscillatorType = 'sine', gain
   }
 }
 
-const LID_ROT: Record<string, [number, number, number]> = {
-  lid_q1: [1.5, 0.4, -1.1],
-  lid_q2: [1.5, -0.4, 1.1],
-  lid_q3: [-1.5, 0.4, 1.1],
-  lid_q4: [-1.5, -0.4, -1.1],
-};
-
 function CrateModel({ rarity, phase, phaseT }: { rarity: Rarity; phase: Phase; phaseT: number }) {
-  const gltf = useGLTF(cratePath(rarity)) as unknown as { scene: THREE.Group };
-  const color = RARITY_COLOR[rarity];
-  const scene = useMemo(() => {
-    const clone = gltf.scene.clone(true);
-    clone.rotation.x = Math.PI / 2;
-    return clone;
-  }, [gltf.scene]);
-
-  const parts = useMemo(() => {
-    const lids: Array<{
-      object: THREE.Object3D;
-      home: THREE.Vector3;
-      direction: THREE.Vector3;
-      rotation: [number, number, number];
-    }> = [];
-    const seams: THREE.MeshStandardMaterial[] = [];
-    const ownedMaterials = new Set<THREE.Material>();
-
-    scene.traverse((object) => {
-      if (/^lid_q[1-4]$/.test(object.name)) {
-        const home = object.position.clone();
-        // v2 is Z-up: X/Y point outward and -Z points upward after rotation.
-        const direction = new THREE.Vector3(
-          Math.sign(home.x || 0.5),
-          Math.sign(home.y || 0.5),
-          -0.9
-        ).normalize();
-        lids.push({
-          object,
-          home,
-          direction,
-          rotation: LID_ROT[object.name] ?? [1.5, 0.4, -1.1],
-        });
-      }
-
-      const mesh = object as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      const source = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      const materials = source.map((material) => {
-        const cloned = (material as THREE.MeshStandardMaterial).clone();
-        if (/^seam_|accent/i.test(`${object.name} ${cloned.name}`)) {
-          cloned.color = new THREE.Color(color);
-          cloned.emissive = new THREE.Color(color);
-          cloned.toneMapped = false;
-          seams.push(cloned);
-        }
-        ownedMaterials.add(cloned);
-        return cloned;
-      });
-      mesh.material = Array.isArray(mesh.material) ? materials : materials[0];
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-    });
-
-    return { lids, seams, ownedMaterials };
-  }, [scene, color]);
-
+  // The reveal drives the shared procedural supply pod rather than a GLB, so the
+  // crate people open is the same fab-styled object as everywhere else. This
+  // group carries the suspend/shake/reveal motion; the pod carries the seam glow
+  // and the four-petal burst, fed by the glow and open values below.
   const group = useRef<THREE.Group>(null);
-
-  useEffect(() => {
-    return () => parts.ownedMaterials.forEach((material) => material.dispose());
-  }, [parts]);
+  const podOpen = useRef(0);
+  const podGlow = useRef(1.8);
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    // Seam glow ramp: 1.8 (intro) → 5 (rumble) → 6.5 (peak/freeze) → 12 (detonate+)
+
+    // Seam glow ramp: 1.8 (intro) → 5 (rumble) → 6.5 (peak/freeze) → 12 (detonate+),
+    // expressed as the pod's glow units (roughly a fifth of the old intensity).
     const seamI =
       phase === 'intro' ? 1.8
       : phase === 'rumble' ? 1.8 + 3.2 * phaseT
       : phase === 'peak' || phase === 'freeze' ? 6.5
       : 12;
-    const pulse = seamI * (0.9 + 0.1 * Math.sin(t * 14));
-    parts.seams.forEach((material) => {
-      material.emissiveIntensity = pulse;
-    });
+    podGlow.current = (seamI * (0.9 + 0.1 * Math.sin(t * 14))) / 5;
 
-    // The crate starts suspended, tightens into a pressure shake, then eases
-    // back through the reveal. Keeping the motion on the authored asset gives
-    // every rarity the same readable silhouette.
+    // The crate starts suspended, tightens into a pressure shake, then eases back
+    // through the reveal — one readable silhouette for every rarity.
     if (group.current) {
       const introLift = phase === 'intro' ? 0.32 * (1 - easeOutCubic(phaseT)) : 0;
       const revealFloat = phase === 'decel' || phase === 'reveal' ? 0.08 * Math.sin(t * 1.8) : 0;
@@ -177,30 +114,42 @@ function CrateModel({ rarity, phase, phaseT }: { rarity: Rarity; phase: Phase; p
       group.current.scale.setScalar(scale);
     }
 
-    const explode =
+    podOpen.current =
       phase === 'detonate' ? easeOutCubic(phaseT)
       : phase === 'decel' || phase === 'reveal' ? 1 + 0.15 * phaseT
       : 0;
-    parts.lids.forEach((lid) => {
-      const d = explode * 1.55;
-      lid.object.position.set(
-        lid.home.x + lid.direction.x * d,
-        lid.home.y + lid.direction.y * d,
-        lid.home.z + lid.direction.z * d * 1.2
-      );
-      lid.object.rotation.set(
-        lid.rotation[0] * explode,
-        lid.rotation[1] * explode,
-        lid.rotation[2] * explode
-      );
-    });
   });
 
   return (
     <group ref={group}>
-      <primitive object={scene} />
+      <PodDriver rarity={rarity} openRef={podOpen} glowRef={podGlow} />
     </group>
   );
+}
+
+/**
+ * Bridges the phase refs into the shared pod. The pod reads open/glow from props,
+ * so this re-renders it only when the driven values change enough to matter,
+ * while the parent group is transformed every frame for free.
+ */
+function PodDriver({
+  rarity,
+  openRef,
+  glowRef,
+}: {
+  rarity: Rarity;
+  openRef: React.MutableRefObject<number>;
+  glowRef: React.MutableRefObject<number>;
+}) {
+  const [state, setState] = useState({ open: 0, glow: 1.8 / 5 });
+  useFrame(() => {
+    const open = openRef.current;
+    const glow = glowRef.current;
+    if (Math.abs(open - state.open) > 0.005 || Math.abs(glow - state.glow) > 0.02) {
+      setState({ open, glow });
+    }
+  });
+  return <SupplyPod rarity={rarity} open={state.open} glow={state.glow} animate={false} scale={1.1} />;
 }
 
 function easeOutCubic(x: number) {
@@ -488,4 +437,4 @@ export default function CrateCinematic({
   );
 }
 
-RARITIES.forEach((rarity) => useGLTF.preload(cratePath(rarity)));
+// The crate is procedural now — nothing to preload.

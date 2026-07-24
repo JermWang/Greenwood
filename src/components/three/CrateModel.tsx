@@ -1,22 +1,24 @@
 'use client';
 
-// Procedural supply crate.
+// Procedural supply pod.
 //
-// Shared supply-pod factory used by inventory, exchange, and reveal sequences so the pod in the
-// game is the same object people saw in the video: gunmetal panels recessed
-// into a brass frame, hex bolts, a glowing seam under the lid line, and a
-// four-petal lid that bursts outward when it opens.
+// Shared crate used by inventory thumbnails and the reveal cinematic, built in
+// the fab equipment's visual language so a crate reads as part of the same
+// facility: a dark metal plinth, a white clearcoat shell, a cobalt viewing
+// window, an orange safety latch and a lime status strip. A four-petal lid
+// bursts outward along the corner diagonals when it opens.
 //
 // Built in code rather than loaded as a GLB because every rarity needs its own
-// colourway — the seam, the glow and the inner key light all take the rarity's
-// colour, so one mesh covers all seven tiers instead of seven exported files.
+// colourway — the lid seam, the window core, the glow and the inner key light
+// all take the rarity's tint, so one component covers all seven tiers.
 
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
+import { RoundedBox } from '@react-three/drei';
 import { rarityHex, type Rarity } from '@/lib/rarity';
 
-/** Corner offsets shared by the frame, caps and lid petals. */
+/** Corner offsets shared by the plinth feet and the lid petals. */
 const CORNERS: Array<[number, number]> = [
   [1, 1],
   [1, -1],
@@ -28,15 +30,20 @@ const BODY = 2.2;
 const HEIGHT = 2.0;
 const HB = BODY / 2;
 const HH = HEIGHT / 2;
-const BW = 0.14;
-const LID_PLATE = (BODY / 2) * 0.94;
-const LID_H = 0.18;
+const LID_PLATE = (BODY / 2) * 0.96;
+const LID_H = 0.2;
 
 export interface CrateModelProps {
   rarity?: Rarity;
-  /** 0 = shut, 1 = fully burst open. */
+  /** 0 = shut, 1 = fully burst open. Values above 1 push the petals further. */
   open?: number;
-  /** Idle spin + hover. Off for static thumbnails. */
+  /**
+   * Seam/core glow, 0..~2, independent of the petal burst. Lets the reveal
+   * charge the glow up during the rumble before anything opens. Defaults to
+   * `open`, so thumbnails and simple callers get a glow that tracks the lid.
+   */
+  glow?: number;
+  /** Idle spin + hover. Off for static thumbnails and when a parent drives motion. */
   animate?: boolean;
   scale?: number;
 }
@@ -44,6 +51,7 @@ export interface CrateModelProps {
 export default function CrateModel({
   rarity = 'legendary',
   open = 0,
+  glow,
   animate = true,
   scale = 1,
 }: CrateModelProps) {
@@ -51,13 +59,15 @@ export default function CrateModel({
   const petals = useRef<Array<THREE.Group | null>>([null, null, null, null]);
   const colour = useMemo(() => new THREE.Color(rarityHex(rarity)), [rarity]);
 
-  // Materials are memoised per rarity: they carry the emissive colour, and
-  // rebuilding them every frame would leak GPU resources.
+  // Materials are memoised per rarity: the accent-carrying ones hold the
+  // emissive colour, and rebuilding them every frame would leak GPU resources.
   const mats = useMemo(() => {
-    const steel = new THREE.MeshStandardMaterial({ color: 0x3a3b42, metalness: 0.72, roughness: 0.34 });
-    const steelDark = new THREE.MeshStandardMaterial({ color: 0x22232a, metalness: 0.6, roughness: 0.56 });
-    const brass = new THREE.MeshStandardMaterial({ color: 0xc79a2e, metalness: 0.96, roughness: 0.26 });
-    const brassLite = new THREE.MeshStandardMaterial({ color: 0xe1bb50, metalness: 0.96, roughness: 0.22 });
+    const shell = new THREE.MeshPhysicalMaterial({ color: 0xeff3f7, roughness: 0.44, clearcoat: 0.22, clearcoatRoughness: 0.5 });
+    const plinth = new THREE.MeshStandardMaterial({ color: 0x202936, metalness: 0.52, roughness: 0.36 });
+    const frame = new THREE.MeshStandardMaterial({ color: 0x2a3442, metalness: 0.6, roughness: 0.3 });
+    const cobalt = new THREE.MeshPhysicalMaterial({ color: 0x0c3d98, metalness: 0.35, roughness: 0.18, clearcoat: 0.5 });
+    const lime = new THREE.MeshBasicMaterial({ color: 0x91f45f, toneMapped: false });
+    const orange = new THREE.MeshStandardMaterial({ color: 0xff8a25, emissive: 0xff7916, emissiveIntensity: 0.6, roughness: 0.22 });
     const seam = new THREE.MeshStandardMaterial({
       color: colour,
       emissive: colour,
@@ -66,7 +76,8 @@ export default function CrateModel({
       roughness: 0.35,
       toneMapped: false,
     });
-    return { steel, steelDark, brass, brassLite, seam };
+    const core = new THREE.MeshStandardMaterial({ color: colour, emissive: colour, emissiveIntensity: 0.9, toneMapped: false });
+    return { shell, plinth, frame, cobalt, lime, orange, seam, core };
   }, [colour]);
 
   useFrame(({ clock }) => {
@@ -75,10 +86,12 @@ export default function CrateModel({
       group.current.rotation.y = t * 0.35;
       group.current.position.y = Math.sin(t * 1.3) * 0.06;
     }
-    // Seam brightens as the crate opens, then the petals fly outward along
-    // their corner diagonals — the burst reads as the box coming apart rather
-    // than a lid politely lifting.
-    mats.seam.emissiveIntensity = 1.4 + open * 5;
+    // Seam and core brighten as the crate opens, then the petals fly outward
+    // along their corner diagonals — the burst reads as the pod coming apart
+    // rather than a lid politely lifting.
+    const g = glow ?? open;
+    mats.seam.emissiveIntensity = 1.4 + g * 5;
+    mats.core.emissiveIntensity = 0.9 + g * 3;
     petals.current.forEach((petal, i) => {
       if (!petal) return;
       const [sx, sz] = CORNERS[i];
@@ -94,84 +107,48 @@ export default function CrateModel({
   });
 
   return (
-    <group ref={group} scale={1.15 * scale}>
-      {/* body */}
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[BODY, HEIGHT, BODY]} />
-        <primitive object={mats.steel} attach="material" />
+    <group ref={group} scale={1.05 * scale}>
+      {/* Dark metal plinth — the same base the fab machines sit on. */}
+      <RoundedBox args={[BODY + 0.24, 0.34, BODY + 0.24]} radius={0.1} smoothness={3} position={[0, -HH - 0.02, 0]} castShadow receiveShadow>
+        <primitive object={mats.plinth} attach="material" />
+      </RoundedBox>
+
+      {/* White clearcoat body. */}
+      <RoundedBox args={[BODY, HEIGHT * 0.86, BODY]} radius={0.3} smoothness={4} position={[0, -0.08, 0]} castShadow receiveShadow>
+        <primitive object={mats.shell} attach="material" />
+      </RoundedBox>
+
+      {/* Cobalt viewing window on the front, with a rarity-tinted core. */}
+      <RoundedBox args={[BODY * 0.62, HEIGHT * 0.44, 0.08]} radius={0.13} smoothness={3} position={[0, -0.02, HB + 0.005]}>
+        <primitive object={mats.cobalt} attach="material" />
+      </RoundedBox>
+      <mesh position={[0, -0.02, HB + 0.03]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.3, 0.3, 0.05, 32]} />
+        <primitive object={mats.core} attach="material" />
+      </mesh>
+      <mesh position={[0, -0.02, HB + 0.04]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.42, 0.03, 12, 40]} />
+        <primitive object={mats.seam} attach="material" />
       </mesh>
 
-      {/* recessed dark panels on the four vertical faces */}
-      {([[0, HB], [0, -HB], [HB, 0], [-HB, 0]] as Array<[number, number]>).map(([x, z], i) => (
-        <mesh
-          key={`panel-${i}`}
-          position={[
-            x ? (x > 0 ? HB - 0.02 : -HB + 0.02) : 0,
-            -0.05,
-            z ? (z > 0 ? HB - 0.02 : -HB + 0.02) : 0,
-          ]}
-        >
-          <boxGeometry
-            args={[x ? 0.05 : BODY * 0.64, HEIGHT * 0.62, z ? 0.05 : BODY * 0.64]}
-          />
-          <primitive object={mats.steelDark} attach="material" />
-        </mesh>
-      ))}
+      {/* Orange safety latch and a lime status strip. */}
+      <RoundedBox args={[0.62, 0.2, 0.1]} radius={0.05} smoothness={2} position={[0, -HH * 0.72, HB + 0.02]}>
+        <primitive object={mats.orange} attach="material" />
+      </RoundedBox>
+      <mesh position={[0, HH * 0.5, HB + 0.02]}>
+        <boxGeometry args={[BODY * 0.42, 0.08, 0.04]} />
+        <primitive object={mats.lime} attach="material" />
+      </mesh>
 
-      {/* brass frame — four uprights */}
+      {/* Dark corner posts, echoing the fab equipment frame. */}
       {CORNERS.map(([x, z], i) => (
-        <mesh key={`post-${i}`} position={[x * HB, 0, z * HB]} castShadow>
-          <boxGeometry args={[BW, HEIGHT, BW]} />
-          <primitive object={mats.brass} attach="material" />
+        <mesh key={`post-${i}`} position={[x * (HB - 0.06), -0.08, z * (HB - 0.06)]} castShadow>
+          <cylinderGeometry args={[0.09, 0.09, HEIGHT * 0.82, 12]} />
+          <primitive object={mats.frame} attach="material" />
         </mesh>
       ))}
 
-      {/* top and bottom rims */}
-      {[-HH, HH].map((y) => (
-        <group key={`rim-${y}`}>
-          {[HB, -HB].map((z) => (
-            <mesh key={`rz-${z}`} position={[0, y, z]} castShadow>
-              <boxGeometry args={[BODY + BW, BW, BW]} />
-              <primitive object={mats.brass} attach="material" />
-            </mesh>
-          ))}
-          {[HB, -HB].map((x) => (
-            <mesh key={`rx-${x}`} position={[x, y, 0]} castShadow>
-              <boxGeometry args={[BW, BW, BODY + BW]} />
-              <primitive object={mats.brass} attach="material" />
-            </mesh>
-          ))}
-        </group>
-      ))}
-
-      {/* corner caps */}
-      {[HH, -HH].map((y) =>
-        CORNERS.map(([x, z], i) => (
-          <mesh key={`cap-${y}-${i}`} position={[x * HB, y, z * HB]} castShadow>
-            <boxGeometry args={[BW * 1.7, BW * 1.7, BW * 1.7]} />
-            <primitive object={mats.brassLite} attach="material" />
-          </mesh>
-        ))
-      )}
-
-      {/* hex bolts */}
-      {([[0, 1], [0, -1], [1, 0], [-1, 0]] as Array<[number, number]>).map(([nx, nz]) =>
-        ([[0.66, 0.62], [-0.66, 0.62], [0.66, -0.62], [-0.66, -0.62]] as Array<[number, number]>).map(
-          ([a, b], j) => (
-            <mesh
-              key={`bolt-${nx}-${nz}-${j}`}
-              castShadow
-              position={nz ? [a, b, nz * (HB + 0.02)] : [nx * (HB + 0.02), b, a]}
-              rotation={nz ? [Math.PI / 2, 0, 0] : [0, 0, Math.PI / 2]}
-            >
-              <cylinderGeometry args={[0.085, 0.085, 0.06, 6]} />
-              <primitive object={mats.brassLite} attach="material" />
-            </mesh>
-          )
-        )
-      )}
-
-      {/* glowing rarity seam just under the lid line */}
+      {/* Glowing rarity seam along the lid line. */}
       {(
         [
           [BODY, 0.07, 0, HB],
@@ -180,13 +157,13 @@ export default function CrateModel({
           [0.07, BODY, -HB, 0],
         ] as Array<[number, number, number, number]>
       ).map(([w, d, x, z], i) => (
-        <mesh key={`seam-${i}`} position={[x, HH - 0.06, z]}>
+        <mesh key={`seam-${i}`} position={[x, HH - 0.14, z]}>
           <boxGeometry args={[w, 0.05, d]} />
           <primitive object={mats.seam} attach="material" />
         </mesh>
       ))}
 
-      {/* four-petal lid */}
+      {/* Four-petal lid — white shell plates with a rarity seam edge. */}
       {CORNERS.map(([sx, sz], i) => (
         <group
           key={`petal-${i}`}
@@ -195,22 +172,9 @@ export default function CrateModel({
           }}
           position={[(sx * BODY) / 4, HH + LID_H / 2, (sz * BODY) / 4]}
         >
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[LID_PLATE, LID_H, LID_PLATE]} />
-            <primitive object={mats.steel} attach="material" />
-          </mesh>
-          <mesh position={[0, LID_H / 2, (sz * LID_PLATE) / 2]} castShadow>
-            <boxGeometry args={[LID_PLATE + BW, BW, BW]} />
-            <primitive object={mats.brass} attach="material" />
-          </mesh>
-          <mesh position={[(sx * LID_PLATE) / 2, LID_H / 2, 0]} castShadow>
-            <boxGeometry args={[BW, BW, LID_PLATE + BW]} />
-            <primitive object={mats.brass} attach="material" />
-          </mesh>
-          <mesh position={[(sx * LID_PLATE) / 2, LID_H / 2, (sz * LID_PLATE) / 2]} castShadow>
-            <boxGeometry args={[BW * 1.7, BW * 1.7, BW * 1.7]} />
-            <primitive object={mats.brassLite} attach="material" />
-          </mesh>
+          <RoundedBox args={[LID_PLATE, LID_H, LID_PLATE]} radius={0.08} smoothness={3} castShadow receiveShadow>
+            <primitive object={mats.shell} attach="material" />
+          </RoundedBox>
           <mesh position={[0, LID_H / 2 + 0.005, (-sz * LID_PLATE) / 2 + 0.05]}>
             <boxGeometry args={[LID_PLATE, 0.05, 0.06]} />
             <primitive object={mats.seam} attach="material" />
@@ -218,7 +182,7 @@ export default function CrateModel({
         </group>
       ))}
 
-      {/* rarity key light inside, revealed as the lid comes apart */}
+      {/* Rarity key light inside, revealed as the lid comes apart. */}
       <pointLight color={colour} intensity={2 + open * 26} distance={16} decay={2} />
     </group>
   );

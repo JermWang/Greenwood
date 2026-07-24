@@ -1,7 +1,7 @@
 // Central app config — Robinhood Chain (EVM, Arbitrum Orbit L2).
 
 export const APP_NAME = 'GPU — Graphics Processing Utility';
-export const X_URL = 'https://x.com/PlayGPU_RH';
+export const X_URL = 'https://x.com/GPU_RH';
 
 export const CHAIN = {
   id: 4663,
