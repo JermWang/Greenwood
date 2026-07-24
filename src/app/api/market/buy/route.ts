@@ -127,11 +127,34 @@ export async function POST(request: Request) {
         );
       }
       getOrCreateUser(listing.seller);
-      const sold = transferSoldItem(listingId, wallet);
-      db.prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ?').run(
-        listing.price_osr,
-        wallet
-      );
+
+      // Charge before handing over the item, and make the charge itself enforce
+      // the balance. The check above reads a row fetched earlier, so two
+      // purchases in flight at once can both pass it and both spend the same
+      // GPU; the condition on the UPDATE is what actually prevents that, since
+      // the schema has no CHECK keeping the balance non-negative.
+      const charged = db
+        .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
+        .run(listing.price_osr, wallet, listing.price_osr);
+      if (Number(charged.changes) === 0) {
+        throw new GameError(`Not enough GPU: need ${listing.price_osr.toLocaleString()}.`, 400);
+      }
+
+      // transferSoldItem runs its own transaction, so this cannot be wrapped in
+      // an outer one — node:sqlite has no nested transactions. If it refuses
+      // (another buyer took the listing first) the charge is put back rather
+      // than left as money taken for nothing.
+      let sold;
+      try {
+        sold = transferSoldItem(listingId, wallet);
+      } catch (transferError) {
+        db.prepare('UPDATE users SET osr_balance = osr_balance + ? WHERE wallet = ?').run(
+          listing.price_osr,
+          wallet
+        );
+        throw transferError;
+      }
+
       db.prepare('UPDATE users SET osr_balance = osr_balance + ? WHERE wallet = ?').run(
         toSeller,
         listing.seller

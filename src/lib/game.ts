@@ -262,6 +262,20 @@ export interface SpendOpts {
  * Resolve how much to subtract from the mirrored balance, enforcing the
  * affordability check only when the operator has not already paid on-chain.
  */
+/**
+ * Assert a guarded debit actually took the money.
+ *
+ * The balance test in offChainDebit runs against a row read earlier in the
+ * request, so it cannot see a debit that landed in between — and the schema has
+ * no CHECK keeping osr_balance non-negative, so nothing below it would object
+ * either. The `AND osr_balance >= ?` on each UPDATE is what genuinely enforces
+ * the balance; this turns the resulting no-op into an error rather than letting
+ * the caller carry on and hand out the goods for free.
+ */
+function requireDebited(result: { changes: number | bigint }, message: string): void {
+  if (Number(result.changes) === 0) throw new GameError(message);
+}
+
 function offChainDebit(
   user: UserRow,
   cost: number,
@@ -576,7 +590,7 @@ export function openCrate(
   const tier = RARITIES.indexOf(rarity);
   const rigIncrement = crateType === 'rig_crate' ? 1 : 0;
   const shaftIncrement = crateType === 'shaft_crate' ? 1 : 0;
-  db.prepare(
+  const charged = db.prepare(
     `UPDATE users SET
        osr_balance = osr_balance - ?,
        crates_opened_today = CASE WHEN crates_day = ? THEN crates_opened_today + 1 ELSE 1 END,
@@ -589,7 +603,7 @@ export function openCrate(
        pity_legendary = ?,
        pity_mythic = ?,
        pity_divine = ?
-     WHERE wallet = ?`
+     WHERE wallet = ? AND osr_balance >= ?`
   ).run(
     debit,
     today,
@@ -604,8 +618,10 @@ export function openCrate(
     tier >= RARITIES.indexOf('legendary') ? 0 : user.pity_legendary + 1,
     tier >= RARITIES.indexOf('mythic') ? 0 : user.pity_mythic + 1,
     tier >= RARITIES.indexOf('divine') ? 0 : user.pity_divine + 1,
-    wallet
+    wallet,
+    debit
   );
+  requireDebited(charged, 'Not enough GPU to open that crate.');
   // Consume the crate in the same pass that charges for it, so a failure
   // cannot leave the operator paid-up with the crate still openable.
   db.prepare(
@@ -667,9 +683,15 @@ export function mintNode(wallet: string, familyKey: string, opts?: SpendOpts) {
   const burn = (fam.burnCostOsr * fam.burnShareBps) / 10000;
   const treasury = (fam.burnCostOsr * fam.treasuryShareBps) / 10000;
   const now = Date.now();
-  db.prepare(
-    'UPDATE users SET osr_balance = osr_balance - ?, welcome_started_at = COALESCE(welcome_started_at, ?) WHERE wallet = ?'
-  ).run(debit, now, wallet);
+  requireDebited(
+    db
+      .prepare(
+        `UPDATE users SET osr_balance = osr_balance - ?, welcome_started_at = COALESCE(welcome_started_at, ?)
+          WHERE wallet = ? AND osr_balance >= ?`
+      )
+      .run(debit, now, wallet, debit),
+    'Not enough GPU to mint that node.'
+  );
   paySplits(wallet, 'mint_node', fam.burnCostOsr, { burn, treasury }, fam.mintFeeEth, {
     familyKey,
   });
@@ -821,9 +843,15 @@ export function upgradeCompound(
   );
 
   const now = Date.now();
-  db.prepare(
-    'UPDATE users SET osr_balance = osr_balance - ?, compound_level = ?, compound_ready_at = ? WHERE wallet = ?'
-  ).run(debit, targetLevel, now + COMPOUND_COOLDOWN_MS, wallet);
+  requireDebited(
+    db
+      .prepare(
+        `UPDATE users SET osr_balance = osr_balance - ?, compound_level = ?, compound_ready_at = ?
+          WHERE wallet = ? AND osr_balance >= ?`
+      )
+      .run(debit, targetLevel, now + COMPOUND_COOLDOWN_MS, wallet, debit),
+    'Not enough GPU for that compound upgrade.'
+  );
   paySplits(
     wallet,
     expedite ? 'compound_expedite' : 'compound_upgrade',
@@ -941,7 +969,12 @@ export function upgradeNode(
   );
   const burn = Math.floor((cost * SPLIT_BURN_BPS) / 10000);
   const reserve = Math.floor((cost * SPLIT_RESERVE_BPS) / 10000);
-  db.prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ?').run(debit, wallet);
+  requireDebited(
+    db
+      .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
+      .run(debit, wallet, debit),
+    'Not enough GPU to level up that node.'
+  );
   db.prepare('UPDATE nodes SET level = level + 1 WHERE id = ?').run(nodeId);
   paySplits(wallet, 'node_upgrade', cost, { burn, reserve, treasury: cost - burn - reserve }, 0, {
     nodeId,
