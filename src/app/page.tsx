@@ -74,6 +74,9 @@ export default function Landing() {
           <span>GPU</span>
         </Link>
         <div className="gpu-title-top-actions">
+          {/* Renders nothing until the token address is configured, so it simply
+              appears in the top bar the moment the CA goes live. */}
+          <CopyContract />
           <a href={X_URL} target="_blank" rel="noreferrer" aria-label="GPU on X"><XLogo size={18} weight="fill" /></a>
           <SoundToggle />
         </div>
@@ -112,7 +115,6 @@ export default function Landing() {
       </section>
 
       <footer className="gpu-title-footer">
-        <CopyContract />
         <span className="gpu-title-build"><i /> ROBINHOOD CHAIN // BUILD 02</span>
       </footer>
     </main>
