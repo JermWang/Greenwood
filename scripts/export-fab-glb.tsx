@@ -52,6 +52,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { EUVUtilityCore, AcceleratorTestRack } from '../src/components/three/Compound';
+import { FabCrate, CRATE_RARITY_ACCENTS } from '../src/components/three/FabCrate';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const OUT = join(ROOT, 'blender', 'fab-glb');
@@ -84,6 +85,11 @@ const MODELS: Array<{ slug: string; element: React.ReactElement }> = [
   { slug: 'ai-accelerator-test-rack', element: <AcceleratorTestRack review /> },
   { slug: 'liquid-cooling-array', element: <CompactMachine kind="cooling" /> },
   { slug: 'chiplet-packaging-line', element: <CompactMachine kind="packaging" /> },
+  // Fab-style supply pods, one per rarity, tinted by the game's rarity accent.
+  ...Object.entries(CRATE_RARITY_ACCENTS).map(([rarity, accent]) => ({
+    slug: `crate-${rarity}`,
+    element: <FabCrate accent={accent} />,
+  })),
 ];
 
 /** Reach the real THREE.Scene behind the test renderer's wrapper. */

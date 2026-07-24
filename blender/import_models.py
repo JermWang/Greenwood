@@ -194,13 +194,27 @@ def main():
     if CLEAR_SCENE:
         clear_scene()
 
-    placed = import_row(
-        CRATES_DIR,
-        lambda r: "crate_%s.glb" % r,
-        CRATE_ORDER,
-        lambda r: "crate_%s" % r,
-        row_y=0.0,
-    )
+    # Prefer the fab-style supply pods baked into fab-glb/. They share the fab
+    # equipment's material language; the wooden crates in public/models/crates are
+    # the retired oil/mining loot boxes, used only as a fallback if the bake has
+    # not been run.
+    fab_crates = os.path.isdir(FAB_DIR) and os.path.isfile(os.path.join(FAB_DIR, "crate-common.glb"))
+    if fab_crates:
+        placed = import_row(
+            FAB_DIR,
+            lambda r: "crate-%s.glb" % r,
+            CRATE_ORDER,
+            lambda r: "crate_%s" % r,
+            row_y=0.0,
+        )
+    else:
+        placed = import_row(
+            CRATES_DIR,
+            lambda r: "crate_%s.glb" % r,
+            CRATE_ORDER,
+            lambda r: "crate_%s" % r,
+            row_y=0.0,
+        )
 
     if os.path.isdir(FAB_DIR):
         placed += import_row(
