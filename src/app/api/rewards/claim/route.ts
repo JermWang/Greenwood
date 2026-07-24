@@ -50,13 +50,13 @@ export async function POST(request: Request) {
       );
     }
     const feeBps = mode === 'compound' ? COMPOUND_REINVEST_FEE_BPS : CLAIM_FEE_BPS;
-    const net = gross - (gross * feeBps) / 10_000;
+    const estimatedNet = gross - (gross * feeBps) / 10_000;
 
     // Check the claim can cover its own gas BEFORE consuming the accrual —
     // rejecting afterwards would burn the operator's rewards for a payout that
     // never went out, and there is no way to hand them back.
-    const gasOsr = await estimatePayoutGasOsr(wallet, net);
-    if (net - gasOsr <= 0) {
+    const gasOsr = await estimatePayoutGasOsr(wallet, estimatedNet);
+    if (estimatedNet - gasOsr <= 0) {
       throw new GameError(
         'this claim is too small to cover its own network fee — let more rewards accrue first',
         400
@@ -66,17 +66,33 @@ export async function POST(request: Request) {
     // Consume the accrual first (see note above), then pay.
     const result = claimRewards(wallet, nodeId, mode, { settledOnChain: true });
 
+    // Pay what was actually consumed, never the figure read before the await
+    // above. The two diverge whenever a second claim lands in between: that one
+    // zeroes the accrual, this one consumes nothing and comes back with no
+    // claims, and paying the stale figure would send the same rewards out of the
+    // treasury a second time. Firing N concurrent claims paid N times over.
+    //
+    // 'claim' mode was accidentally shielded by its one-hour cooldown, which is
+    // checked inside claimRewards. 'compound' has no such cooldown, so this was
+    // the only thing standing between it and a repeatable drain.
+    const payable = result.claims.reduce((sum, claim) => sum + claim.net, 0);
+    if (payable <= 0) {
+      throw new GameError('those rewards have already been claimed', 409);
+    }
+
     let payout: Awaited<ReturnType<typeof payoutOsr>>;
     try {
-      payout = await payoutOsr(wallet, net);
+      payout = await payoutOsr(wallet, payable);
     } catch (payoutError) {
-      if (payoutError instanceof GameError && payoutError.status === 400) throw payoutError;
-      // The rewards are already spent server-side; record the debt rather than
-      // dropping it, and tell the operator plainly instead of failing silently.
-      recordPayout(wallet, net, null, { error: String(payoutError), result });
+      // Every failure from here owes the operator, because the accrual is
+      // already gone. That includes the 400 payoutOsr raises when gas has risen
+      // enough to swallow the payout between the estimate above and the send:
+      // this used to rethrow it untouched, consuming the rewards and leaving no
+      // record that anything was owed.
+      recordPayout(wallet, payable, null, { error: String(payoutError), result });
       console.error('[claim] payout failed after accrual was consumed', payoutError);
       throw new GameError(
-        `Rewards were settled but the transfer did not go through. ${Math.round(net).toLocaleString()} GPU is recorded as owed to you.`,
+        `Rewards were settled but the transfer did not go through. ${Math.round(payable).toLocaleString()} GPU is recorded as owed to you.`,
         502
       );
     }
@@ -87,7 +103,8 @@ export async function POST(request: Request) {
       settled: true,
       result,
       txHash: payout.hash,
-      gross,
+      // Report the claim that actually happened, not the pre-consume read.
+      gross: result.claims.reduce((sum, claim) => sum + claim.gross, 0),
       net: payout.sentOsr,
       gasOsr: payout.gasOsr,
       mode,

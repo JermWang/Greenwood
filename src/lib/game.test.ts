@@ -220,6 +220,40 @@ describe('full game cycle', () => {
     expect(() => claimRewards(w)).toThrow(/cooldown/i);
   });
 
+  test('a second compound claim on spent accrual returns no claims', () => {
+    // The property /api/rewards/claim relies on to size its payout. Compound
+    // mode has no cooldown, so when two land together the loser must come back
+    // with nothing to pay for — the route reads the amount to send off these
+    // claims, and an empty list has to mean zero rather than "pay the amount we
+    // read before the accrual was consumed".
+    const w = wallet(61);
+    getOrCreateUser(w);
+    fund(w, 10_000_000);
+    mintNode(w, 'mine_shaft');
+
+    const total = (r: { claims: Array<{ net: number }> }) =>
+      r.claims.reduce((sum, c) => sum + c.net, 0);
+
+    // Seed a known accrual rather than waiting for one. Comparing two live
+    // claims is timing-dependent — the node keeps producing between them, and a
+    // freshly minted node can accrue more before the second call than it had
+    // before the first, which says nothing about whether consumption worked.
+    getDb()
+      .prepare('UPDATE nodes SET accrued = 1000, accrued_updated_at = ? WHERE wallet = ?')
+      .run(Date.now(), w);
+
+    const first = claimRewards(w, undefined, 'compound');
+    expect(first.claims.length).toBeGreaterThan(0);
+    expect(total(first)).toBeGreaterThan(900);
+
+    // Not exactly zero: the node accrues again between the two calls, and that
+    // sliver is real and payable. What matters is that the seeded 1,000 is gone,
+    // so a second payout cannot be anywhere near the first — which is exactly
+    // what paying the pre-consume figure would have done.
+    const second = claimRewards(w, undefined, 'compound');
+    expect(total(second)).toBeLessThan(1);
+  });
+
   test('a compound upgrade refuses to apply a quote taken at a different level', () => {
     // Quotes are free and unlimited, so several can be taken while the operator
     // is still at L1 and then settled in sequence. Each must be honoured only at
