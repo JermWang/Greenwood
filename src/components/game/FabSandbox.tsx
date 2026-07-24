@@ -60,6 +60,14 @@ function loadLayout(storageKey: string, machines: SandboxMachine[]): PlacedMachi
 
 function Player({ position, keys }: { position: MutableRefObject<THREE.Vector3>; keys: MutableRefObject<Set<string>> }) {
   const ref = useRef<THREE.Group>(null);
+  const armLeft = useRef<THREE.Group>(null);
+  const armRight = useRef<THREE.Group>(null);
+  const legLeft = useRef<THREE.Group>(null);
+  const legRight = useRef<THREE.Group>(null);
+  // Gait state lives outside React: phase is where in the stride cycle the limbs
+  // are, stride/air are 0..1 blend weights eased every frame so starting, stopping
+  // and landing settle smoothly instead of snapping between poses.
+  const gait = useRef({ phase: 0, stride: 0, air: 0, jumpY: 0, jumpVelocity: 0, yaw: 0 });
   const { camera } = useThree();
   const desiredCamera = useMemo(() => new THREE.Vector3(), []);
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
@@ -71,16 +79,52 @@ function Player({ position, keys }: { position: MutableRefObject<THREE.Vector3>;
     if (keys.current.has('s') || keys.current.has('arrowdown')) dz += 1;
     if (keys.current.has('a') || keys.current.has('arrowleft')) dx -= 1;
     if (keys.current.has('d') || keys.current.has('arrowright')) dx += 1;
+    const gaitState = gait.current;
+    const grounded = gaitState.jumpY <= 0.0001;
+    let speed = 0;
     if (dx || dz) {
       const length = Math.hypot(dx, dz);
       dx /= length;
       dz /= length;
-      const speed = keys.current.has('shift') ? 7.2 : 4.7;
+      speed = keys.current.has('shift') ? 7.2 : 4.7;
       position.current.x = clamp(position.current.x + dx * speed * delta, -13.4, 13.4);
       position.current.z = clamp(position.current.z + dz * speed * delta, -21, 14);
-      if (ref.current) ref.current.rotation.y = Math.atan2(dx, dz);
+      gaitState.yaw = Math.atan2(dx, dz);
     }
-    ref.current?.position.copy(position.current);
+
+    if (grounded && keys.current.has(' ')) gaitState.jumpVelocity = 5.3;
+    gaitState.jumpY += gaitState.jumpVelocity * delta;
+    if (gaitState.jumpY > 0) {
+      gaitState.jumpVelocity -= 14 * delta;
+    } else {
+      gaitState.jumpY = 0;
+      if (gaitState.jumpVelocity < 0) gaitState.jumpVelocity = 0;
+    }
+
+    // Stride frequency tracks ground speed, so running pumps the limbs faster
+    // rather than lengthening an invisible step.
+    if (speed && grounded) gaitState.phase += delta * speed * 2.1;
+    gaitState.stride += ((speed && grounded ? 1 : 0) - gaitState.stride) * (1 - Math.exp(-10 * delta));
+    gaitState.air += ((grounded ? 0 : 1) - gaitState.air) * (1 - Math.exp(-9 * delta));
+
+    const swing = Math.sin(gaitState.phase) * 0.62 * gaitState.stride;
+    const tuck = gaitState.air;
+    armLeft.current?.rotation.set(swing - 0.25 * tuck, 0, -0.1 - 0.5 * tuck);
+    armRight.current?.rotation.set(-swing - 0.25 * tuck, 0, 0.1 + 0.5 * tuck);
+    legLeft.current?.rotation.set(-swing * 0.85 + 0.32 * tuck, 0, 0);
+    legRight.current?.rotation.set(swing * 0.85 + 0.18 * tuck, 0, 0);
+
+    if (ref.current) {
+      // Turn along the shortest arc; a raw copy of the target yaw makes a
+      // reversal spin the long way round through a full turn.
+      const turn = THREE.MathUtils.euclideanModulo(gaitState.yaw - ref.current.rotation.y + Math.PI, Math.PI * 2) - Math.PI;
+      ref.current.rotation.y += turn * (1 - Math.exp(-11 * delta));
+      const bob = Math.abs(Math.sin(gaitState.phase)) * 0.05 * gaitState.stride * (1 - tuck);
+      ref.current.position.set(position.current.x, 0.42 + gaitState.jumpY + bob, position.current.z);
+    }
+
+    // The camera tracks the ground position, not the jump arc — chasing the hop
+    // vertically makes the whole room lurch.
     desiredCamera.set(position.current.x, 5.2, position.current.z + 8.2);
     camera.position.lerp(desiredCamera, 1 - Math.exp(-5 * delta));
     lookTarget.set(position.current.x, 1.2, position.current.z - 1.8);
@@ -91,8 +135,19 @@ function Player({ position, keys }: { position: MutableRefObject<THREE.Vector3>;
     <group ref={ref} position={[0, 0.42, 12]}>
       <mesh position={[0, 1.45, 0]} castShadow><sphereGeometry args={[0.34, 18, 14]} /><meshStandardMaterial color="#f4f7f3" roughness={0.55} /></mesh>
       <RoundedBox args={[0.72, 1.2, 0.48]} radius={0.2} smoothness={3} position={[0, 0.66, 0]} castShadow><meshStandardMaterial color="#195fd1" roughness={0.42} /></RoundedBox>
-      {[-1, 1].map((side) => <RoundedBox key={`arm-${side}`} args={[0.18, 0.88, 0.18]} radius={0.08} smoothness={2} position={[side * 0.5, 0.75, 0]} rotation={[0, 0, side * -0.16]}><meshStandardMaterial color="#e9f0ed" /></RoundedBox>)}
-      {[-1, 1].map((side) => <RoundedBox key={`leg-${side}`} args={[0.22, 0.74, 0.24]} radius={0.08} smoothness={2} position={[side * 0.2, -0.22, 0]}><meshStandardMaterial color="#202a36" /></RoundedBox>)}
+      {/* Limbs hang from pivot groups at the shoulder and hip, so swinging them
+          rotates about the joint. Rotating the box itself pivots at its middle,
+          which drove the arm tops through the torso. */}
+      {([[-1, armLeft], [1, armRight]] as const).map(([side, joint]) => (
+        <group key={`arm-${side}`} ref={joint} position={[side * 0.5, 1.14, 0]}>
+          <RoundedBox args={[0.18, 0.84, 0.18]} radius={0.08} smoothness={2} position={[0, -0.4, 0]} castShadow><meshStandardMaterial color="#e9f0ed" /></RoundedBox>
+        </group>
+      ))}
+      {([[-1, legLeft], [1, legRight]] as const).map(([side, joint]) => (
+        <group key={`leg-${side}`} ref={joint} position={[side * 0.2, 0.3, 0]}>
+          <RoundedBox args={[0.22, 0.72, 0.24]} radius={0.08} smoothness={2} position={[0, -0.36, 0]} castShadow><meshStandardMaterial color="#202a36" /></RoundedBox>
+        </group>
+      ))}
       <mesh position={[0, 0.1, -0.27]}><boxGeometry args={[0.46, 0.12, 0.06]} /><meshBasicMaterial color="#b7ff4a" toneMapped={false} /></mesh>
     </group>
   );
@@ -267,7 +322,8 @@ export default function FabSandbox({ machines, storageKey, demo = false, wallet 
       const target = event.target as HTMLElement | null;
       if (target?.matches('input, textarea, select, [contenteditable="true"]')) return;
       const key = event.key.toLowerCase();
-      if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(key)) {
+      // Space is the jump key; preventDefault also stops it scrolling the page.
+      if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', ' '].includes(key)) {
         event.preventDefault();
         keys.current.add(key);
       }
@@ -365,7 +421,7 @@ export default function FabSandbox({ machines, storageKey, demo = false, wallet 
       )}
 
       <div className="fab-sandbox-controls">
-        {mode === 'walk' ? <><kbd>WASD</kbd><span>Walk</span><kbd>SHIFT</kbd><span>Run</span><kbd>B</kbd><span>Build mode</span></> : <><span>Select equipment, then click the floor to place or move it</span><kbd>R</kbd><span>Rotate</span><kbd>DEL</kbd><span>Store</span></>}
+        {mode === 'walk' ? <><kbd>WASD</kbd><span>Walk</span><kbd>SHIFT</kbd><span>Run</span><kbd>SPACE</kbd><span>Jump</span><kbd>B</kbd><span>Build mode</span></> : <><span>Select equipment, then click the floor to place or move it</span><kbd>R</kbd><span>Rotate</span><kbd>DEL</kbd><span>Store</span></>}
       </div>
 
       {demo && <div className="fab-demo-exit"><span><b>DEMO MODE</b><small>No wallet. Layout saved only on this device.</small></span><Link href="/start">Create your company</Link></div>}
