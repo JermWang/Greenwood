@@ -118,6 +118,55 @@ export interface UserRow {
   xstock_cvxx: number;
 }
 
+/**
+ * The row a wallet would be given on registration, materialised in memory only.
+ *
+ * Deliberately without the starter grant: nothing has been granted, and a read
+ * path must not report a balance the protocol has not actually issued.
+ */
+function unregisteredUser(wallet: string): UserRow {
+  const now = Date.now();
+  return {
+    wallet,
+    osr_balance: 0,
+    created_at: now,
+    last_seen: now,
+    dripped: 0,
+    compound_level: 1,
+    compound_started_at: null,
+    compound_target_level: null,
+    compound_ready_at: null,
+    last_crate_at: null,
+    crates_opened_today: 0,
+    rig_crates_opened_today: 0,
+    shaft_crates_opened_today: 0,
+    crates_day: 0,
+    pity_legendary: 0,
+    pity_mythic: 0,
+    pity_divine: 0,
+    welcome_started_at: null,
+    last_claim_at: null,
+    xstock_xomx: 0,
+    xstock_cvxx: 0,
+  };
+}
+
+/**
+ * Look a wallet up without bringing it into existence.
+ *
+ * Reads are reachable unauthenticated — anyone can ask about any address — so
+ * they must not be able to write. getOrCreateUser inserts a row and credits the
+ * starter grant, which made a plain GET over random addresses both a way to
+ * fill the disk and a way to mint supply that the public protocol figures then
+ * reported as circulating.
+ */
+export function readUser(wallet: string): UserRow {
+  const stored = getDb()
+    .prepare('SELECT * FROM users WHERE wallet = ?')
+    .get(wallet) as unknown as UserRow | undefined;
+  return stored ?? unregisteredUser(wallet);
+}
+
 export function getOrCreateUser(wallet: string): UserRow {
   const db = getDb();
   let user = db.prepare('SELECT * FROM users WHERE wallet = ?').get(wallet) as unknown as UserRow | undefined;
@@ -305,7 +354,7 @@ interface SettledNode {
  * user_rate = min(user_gp / network_gp, 30%) x E(t) x welcome_boost,
  * distributed across the user's nodes proportional to node gp.
  */
-export function settleUser(wallet: string): {
+export function settleUser(wallet: string, create = true): {
   user: UserRow;
   nodes: SettledNode[];
   userRate: number;
@@ -317,7 +366,10 @@ export function settleUser(wallet: string): {
   layout: LayoutBonus;
 } {
   const db = getDb();
-  const user = getOrCreateUser(wallet);
+  // A wallet that has never played settles to zeros: it owns no nodes, so the
+  // accrual loop and the crate roll below are both empty and nothing is written.
+  // That is what makes the read routes safe to expose without authentication.
+  const user = create ? getOrCreateUser(wallet) : readUser(wallet);
   const now = Date.now();
   const g = genesisMs();
   const emission = emissionRateAt(g, now);
@@ -714,8 +766,8 @@ export function claimRewards(
 // Compound upgrade
 // ---------------------------------------------------------------------------
 
-export function compoundInfo(wallet: string) {
-  const { user } = settleUser(wallet);
+export function compoundInfo(wallet: string, create = true) {
+  const { user } = settleUser(wallet, create);
   const level = user.compound_level;
   const next = level + 1;
   const nextDef = COMPOUND_LEVELS[next];
@@ -837,7 +889,10 @@ export function unequipComponent(wallet: string, nodeId: number, slot: string) {
 }
 
 export function inventory(wallet: string) {
-  getOrCreateUser(wallet);
+  // No user lookup: this only reads rows keyed by wallet, and an unknown wallet
+  // simply owns none. The getOrCreateUser call that used to sit here discarded
+  // its result — it existed only to ensure the row, which is exactly what a read
+  // must not do.
   const rows = getDb()
     .prepare('SELECT * FROM components WHERE wallet = ? ORDER BY acquired_at DESC')
     .all(wallet) as unknown as ComponentRow[];
@@ -901,7 +956,8 @@ export function upgradeNode(
 // ---------------------------------------------------------------------------
 
 export function xstockPending(wallet: string) {
-  const user = getOrCreateUser(wallet);
+  // Pure read — an unknown wallet has nothing pending.
+  const user = readUser(wallet);
   return { xomx: user.xstock_xomx, cvxx: user.xstock_cvxx };
 }
 

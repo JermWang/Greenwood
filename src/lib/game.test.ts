@@ -25,6 +25,10 @@ const {
   inventory,
   networkGrowPower,
   userOperation,
+  readUser,
+  compoundInfo,
+  xstockPending,
+  crateAllowance,
 } = await import('./game');
 const { SHARE_CAP, STARTER_OSR_GRANT, GENESIS_RATE_PER_SEC } = await import('./economy');
 const { getDb } = await import('./db');
@@ -252,6 +256,44 @@ describe('full game cycle', () => {
     // what paying the pre-consume figure would have done.
     const second = claimRewards(w, undefined, 'compound');
     expect(total(second)).toBeLessThan(1);
+  });
+
+  test('reading an unknown wallet never creates it', () => {
+    // These are the paths behind the unauthenticated GET routes. Each used to
+    // run getOrCreateUser, so a curl loop over random addresses inserted a row
+    // and credited the starter grant every time — filling the volume and minting
+    // supply that the public protocol figures then reported as circulating.
+    const w = wallet(63);
+    const rows = () =>
+      (getDb().prepare('SELECT COUNT(*) AS n FROM users WHERE wallet = ?').get(w) as unknown as {
+        n: number;
+      }).n;
+    const ledger = () =>
+      (getDb()
+        .prepare("SELECT COUNT(*) AS n FROM ledger WHERE wallet = ? AND kind = 'starter_grant'")
+        .get(w) as unknown as { n: number }).n;
+
+    expect(rows()).toBe(0);
+
+    const user = readUser(w);
+    inventory(w);
+    compoundInfo(w, false);
+    xstockPending(w);
+    crateAllowance(readUser(w));
+    settleUser(w, false);
+
+    expect(rows()).toBe(0);
+    expect(ledger()).toBe(0);
+    // And the wallet is reported as holding nothing, rather than the grant it
+    // would receive if it ever actually registered.
+    expect(user.osr_balance).toBe(0);
+    expect(inventory(w).items).toHaveLength(0);
+    expect(settleUser(w, false).nodes).toHaveLength(0);
+
+    // Registering still works, and still grants.
+    getOrCreateUser(w);
+    expect(rows()).toBe(1);
+    expect(ledger()).toBe(1);
   });
 
   test('a node upgrade refuses to apply a quote taken at a different level', () => {
