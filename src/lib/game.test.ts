@@ -219,4 +219,22 @@ describe('full game cycle', () => {
     const w = wallet(40);
     expect(() => claimRewards(w)).toThrow(/cooldown/i);
   });
+
+  test('a compound upgrade refuses to apply a quote taken at a different level', () => {
+    // Quotes are free and unlimited, so several can be taken while the operator
+    // is still at L1 and then settled in sequence. Each must be honoured only at
+    // the level it was priced for, or the second one grants L3 for L2's price.
+    const w = wallet(60);
+    getOrCreateUser(w);
+    fund(w, 10_000_000);
+
+    const first = upgradeCompound(w, true, undefined, 2);
+    expect(first.compound.level).toBe(2);
+
+    // A second quote issued while still at L1 is now stale.
+    expect(() => upgradeCompound(w, true, undefined, 2)).toThrow(/level moved/i);
+
+    // Re-quoting at the level the operator actually holds still works.
+    expect(upgradeCompound(w, true, undefined, 3).compound.level).toBe(3);
+  });
 });

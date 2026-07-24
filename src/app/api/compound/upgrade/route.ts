@@ -30,6 +30,6 @@ export async function POST(request: Request) {
         feeEth: next.feeEth,
       };
     },
-    apply: (wallet, _p, opts) => upgradeCompound(wallet, false, opts),
+    apply: (wallet, p, opts) => upgradeCompound(wallet, false, opts, p.targetLevel),
   });
 }

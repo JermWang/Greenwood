@@ -744,7 +744,12 @@ export function compoundInfo(wallet: string) {
   };
 }
 
-export function upgradeCompound(wallet: string, expedite = false, opts?: SpendOpts) {
+export function upgradeCompound(
+  wallet: string,
+  expedite = false,
+  opts?: SpendOpts,
+  expectTargetLevel?: number
+) {
   const db = getDb();
   const info = compoundInfo(wallet);
   const user = getOrCreateUser(wallet);
@@ -752,6 +757,13 @@ export function upgradeCompound(wallet: string, expedite = false, opts?: SpendOp
   if (!expedite && info.cooldownRemainingMs > 0)
     throw new GameError('Compound is cooling down — expedite for 0.005 ETH or wait.');
   const { totalOsr, burnOsr, reserveOsr, treasuryOsr, targetLevel } = info.nextUpgradeCost;
+  // The caller priced a specific level. Re-deriving "whatever is next" here
+  // instead would let several quotes taken at one level be settled in sequence,
+  // each granting the next level for the price of the first: L1 costs 1,000, so
+  // five L2 quotes bought L2..L6 for 5,000 against a real cost of 31,000.
+  if (expectTargetLevel != null && expectTargetLevel !== targetLevel) {
+    throw new GameError('compound level moved since the quote — request a fresh one', 409);
+  }
   const debit = offChainDebit(user, totalOsr, opts, (have) =>
     `Not enough GPU for compound upgrade: need ${totalOsr.toLocaleString()} GPU (you have ${have}).`
   );
