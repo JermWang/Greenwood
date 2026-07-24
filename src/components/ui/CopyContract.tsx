@@ -26,6 +26,11 @@ export default function CopyContract() {
   }, []);
 
   if (!isConfiguredAddress(OSR_TOKEN_ADDRESS)) return null;
+  // The token can be live for settlement while the address is deliberately kept
+  // off the site — a soft launch where the CA is announced separately. Setting
+  // NEXT_PUBLIC_OSR_TOKEN turns settlement on; this button stays hidden until
+  // NEXT_PUBLIC_SHOW_CA is also set, so the two can be flipped independently.
+  if (process.env.NEXT_PUBLIC_SHOW_CA !== '1') return null;
 
   const short = `${OSR_TOKEN_ADDRESS.slice(0, 6)}…${OSR_TOKEN_ADDRESS.slice(-4)}`;
 
