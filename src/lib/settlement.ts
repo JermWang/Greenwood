@@ -193,6 +193,7 @@ interface SettlementRow {
  */
 export async function settleSpend<T>(
   wallet: string,
+  action: SettlementAction,
   nonce: string,
   txHash: string,
   apply: (row: SettlementRow) => T
@@ -206,6 +207,12 @@ export async function settleSpend<T>(
 
   if (!row) throw new GameError('unknown settlement nonce', 404);
   if (row.wallet !== wallet) throw new GameError('settlement belongs to another wallet', 403);
+  // A nonce is only redeemable at the action it was priced for. Without this the
+  // stored detail — which every route trusts over the request body — gets handed
+  // to a different route's decoder, and the payment verified is the one this row
+  // quoted, not the one that route charges. A 250 GPU node upgrade would settle
+  // a 10,000 GPU crate, since both are just "a nonce with a paid amount".
+  if (row.action !== action) throw new GameError('settlement was quoted for a different action', 409);
   if (row.status === 'settled') {
     // Idempotent replay: hand back what was already applied.
     return JSON.parse(row.applied_result ?? 'null') as T;

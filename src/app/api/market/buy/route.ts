@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     // the expensive item and have the treasury pay its seller the difference.
     if (SETTLEMENT_CONFIGURED && nonce && txHash) {
       let paid: { listing: ListingRow; fee: number; toSeller: number } | null = null;
-      const sold = await settleSpend(wallet, nonce, txHash, (row) => {
+      const sold = await settleSpend(wallet, 'MarketBuy', nonce, txHash, (row) => {
         const quotedId = Number(decodeDetail(row.detail));
         if (!Number.isInteger(quotedId) || quotedId <= 0) {
           throw new GameError('that settlement is not a marketplace purchase', 400);

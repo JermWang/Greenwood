@@ -74,7 +74,7 @@ export async function handleSettlementRoute<P>(
 
     // Phase 2 — settle: verify the operator's payment landed, then apply.
     if (nonce && txHash) {
-      const result = await settleSpend(wallet, nonce, txHash, (row) =>
+      const result = await settleSpend(wallet, spec.action, nonce, txHash, (row) =>
         spec.apply(wallet, spec.decode(decodeDetail(row.detail)), { settledOnChain: true })
       );
       return NextResponse.json({ settled: true, result });
