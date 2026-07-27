@@ -222,15 +222,24 @@ export const DOORS: Doorway[] = [
     arriveAt: 'tf-to-grounds',
   },
   {
-    id: 'treeline',
+    /**
+     * The north gate now leads to HQ, not straight to the Treeline.
+     *
+     * The route used to be Grounds -> Treeline -> Deep Forest, so the step
+     * after "a pleasant park" was "something moves out here" with nothing in
+     * between worth losing. HQ goes here: the most civilised place in the game,
+     * and the last one before the fence means anything. The Treeline is reached
+     * from HQ's service gate instead — see lib/hq-map.
+     */
+    id: 'greenwood-hq',
     axis: 'x',
     x: 0,
     z: FENCE_Z + 1,
     rotation: Math.PI,
-    label: 'The Treeline',
-    href: '/app/treeline',
-    region: 'treeline',
-    blurb: 'Past the fence. Bring a pack.',
+    label: 'Greenwood HQ',
+    href: '/app/hq',
+    region: 'greenwood-hq',
+    blurb: 'The plaza and the tower. Where the lights are run from.',
     // The Treeline has no scene yet, and will not want a door table when it
     // does: outdoor regions spawn at their own arrival cell.
     arriveAt: null,

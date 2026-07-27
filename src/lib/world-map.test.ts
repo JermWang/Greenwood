@@ -77,15 +77,17 @@ describe('finding the way home', () => {
   });
 
   it('names the next region on the way, not the destination', () => {
-    // The Deep Forest is two hops out. A player standing in it should be told to
-    // head for the Treeline — the door they can actually walk to from here.
+    // The Deep Forest is three hops out now that HQ sits between the Grounds
+    // and the Treeline. A player should always be told the door they can
+    // actually walk to from where they are, never the destination.
     expect(stepHome('deep-forest')).toBe('treeline');
-    expect(stepHome('treeline')).toBe(HOME);
+    expect(stepHome('treeline')).toBe('greenwood-hq');
+    expect(stepHome('greenwood-hq')).toBe(HOME);
   });
 
   it('takes the shortest route rather than the first one found', () => {
     const route = routeBetween('deep-forest', HOME);
-    expect(route).toEqual(['deep-forest', 'treeline', 'grounds']);
+    expect(route).toEqual(['deep-forest', 'treeline', 'greenwood-hq', 'grounds']);
   });
 });
 

@@ -35,8 +35,10 @@ import { REGIONS, type RegionId } from './regions';
  * walked north-west to get there" agree, which is the entire point of a map.
  */
 export const MAP_LAYOUT: Record<RegionId, { x: number; y: number }> = {
-  treeline: { x: 0, y: -2 },
-  'deep-forest': { x: 2, y: -2 },
+  'deep-forest': { x: 2, y: -3 },
+  treeline: { x: 1, y: -2 },
+  'hq-lobby': { x: -1, y: -2 },
+  'greenwood-hq': { x: 0, y: -1 },
   grounds: { x: 0, y: 0 },
   'machine-room': { x: -1, y: 1 },
   'trading-floor': { x: 1, y: 1 },
@@ -55,7 +57,9 @@ export const MAP_LINKS: Array<[RegionId, RegionId]> = [
   ['grounds', 'machine-room'],
   ['grounds', 'trading-floor'],
   ['machine-room', 'trading-floor'],
-  ['grounds', 'treeline'],
+  ['grounds', 'greenwood-hq'],
+  ['greenwood-hq', 'hq-lobby'],
+  ['greenwood-hq', 'treeline'],
   ['treeline', 'deep-forest'],
 ];
 
@@ -87,6 +91,8 @@ export const REGION_STYLE: Record<
   RegionId,
   { fill: string; edge: string; motif: 'grid' | 'trees' | 'dense' }
 > = {
+  'greenwood-hq': { fill: '#4a4d47', edge: '#9aa08f', motif: 'grid' },
+  'hq-lobby': { fill: '#3f423c', edge: '#8d9184', motif: 'grid' },
   'machine-room': { fill: '#3a3a34', edge: '#6f6d64', motif: 'grid' },
   'trading-floor': { fill: '#43403a', edge: '#7d786e', motif: 'grid' },
   grounds: { fill: '#4a5c3c', edge: '#7d9a63', motif: 'trees' },

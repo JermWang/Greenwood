@@ -13,7 +13,14 @@
 // Grounds open early and read as a park, the Treeline is the first wrongness you
 // can walk into, and the Deep Forest is the turn.
 
-export type RegionId = 'machine-room' | 'trading-floor' | 'grounds' | 'treeline' | 'deep-forest';
+export type RegionId =
+  | 'machine-room'
+  | 'trading-floor'
+  | 'grounds'
+  | 'greenwood-hq'
+  | 'hq-lobby'
+  | 'treeline'
+  | 'deep-forest';
 
 /**
  * The light a region is lit by.
@@ -144,6 +151,58 @@ export const REGIONS: Region[] = [
      */
     bounds: { minX: -22, maxX: 22, minZ: -20, maxZ: 24 },
     blurb: 'Outside. Paths, tree lines, and the fence at the far end.',
+  },
+  {
+    /**
+     * Greenwood HQ — the plaza and the tower on it.
+     *
+     * Sits between the Grounds and the Treeline, which is the point of adding
+     * it: the route used to go straight from "a pleasant park" to "something
+     * moves out here", with nothing in between worth losing. HQ is the most
+     * civilised place in the game and the last one before the fence means
+     * anything.
+     *
+     * Level 3 rather than 0: it is the first place that has to be REACHED, and
+     * an introduction that has already taught a player to open a desk and route
+     * yield is exactly three levels long.
+     */
+    id: 'greenwood-hq',
+    name: 'Greenwood HQ',
+    href: '/app/hq',
+    minTotalLevel: 3,
+    minDeskLevel: 0,
+    pvp: false,
+    hostiles: false,
+    requiresPack: false,
+    lighting: 'overcast-afternoon',
+    // Must match BOUNDS in lib/hq-map — asserted in hq-map.test.
+    bounds: { minX: -20, maxX: 20, minZ: -16, maxZ: 20 },
+    blurb: 'The plaza, the fountain, and the tower that runs the lights.',
+  },
+  {
+    /**
+     * The lobby, and everything above it.
+     *
+     * Declared before it has a scene ON PURPOSE. The tower door in the plaza
+     * points here, so the gate refuses it with a sentence rather than the door
+     * simply not being drawn — a building whose entrance you can see is one you
+     * can plan to get into, and the region table is where "not yet" is said.
+     *
+     * The floors above are their own regions reached by the elevator, which is
+     * the first VERTICAL door in this game; components/iso/portals has no
+     * concept of floors and that is deliberately unsolved here.
+     */
+    id: 'hq-lobby',
+    name: 'HQ Lobby',
+    href: '/app/hq/lobby',
+    minTotalLevel: 3,
+    minDeskLevel: 0,
+    pvp: false,
+    hostiles: false,
+    requiresPack: false,
+    lighting: 'interior-neutral',
+    bounds: { minX: -14, maxX: 14, minZ: -14, maxZ: 14 },
+    blurb: 'Reception, the boards, and the lifts.',
   },
   {
     id: 'treeline',
