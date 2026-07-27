@@ -259,6 +259,15 @@ export interface CharacterProps {
    * has no reason to be part of that.
    */
   positionRef?: React.MutableRefObject<{ x: number; z: number } | null>;
+  /**
+   * Pointed at, right now.
+   *
+   * Hover feedback has to reach the CHARACTER rather than living only on the
+   * ground ring beneath them. A ring says "something is on that tile", which is
+   * also what it says for a loot pile, a door and a creature — lighting the
+   * person is what confirms the PERSON is the thing about to be clicked.
+   */
+  highlight?: boolean;
 }
 
 export default function Character({
@@ -271,6 +280,7 @@ export default function Character({
   spawn,
   spawnFacing = 0,
   positionRef,
+  highlight = false,
 }: CharacterProps) {
   const root = useRef<THREE.Group>(null);
   /** The footprint square, held square to the grid while the body turns. */
@@ -410,6 +420,19 @@ export default function Character({
         </group>
       )}
 
+      {/*
+        Hover: a light ON them, not a decal near them.
+
+        A point light inside the figure catches every face of a flat-shaded model
+        at once, so the whole silhouette lifts out of the scene from any angle —
+        which an outline would not, since there is no post-processing pass here
+        and a scaled-up shell would clip through the room. It costs one light
+        only while the pointer is actually over somebody.
+      */}
+      {highlight && (
+        <pointLight position={[0, 0.9, 0]} color={ISO.accent} intensity={5} distance={3.2} decay={2} />
+      )}
+
       {/* Legs hang off the root so the walk cycle is unaffected by the torso's
           lean and bob — hips stay level, which is what makes a stride read. */}
       <Limb x={-0.1} y={0.42} length={0.4} width={0.15} color={legColour} end={bootEnd} groupRef={legL} />
@@ -447,7 +470,11 @@ export default function Character({
           parent's spin does not tilt it — Html only projects a position. */}
       {name && (
         <Html center position={[0, 1.62, 0]} zIndexRange={[10, 0]}>
-          <div className={`iso-nameplate ${look.isSelf ? 'is-self' : ''}`}>{name}</div>
+          <div
+            className={`iso-nameplate${look.isSelf ? ' is-self' : ''}${highlight ? ' is-hover' : ''}`}
+          >
+            {name}
+          </div>
         </Html>
       )}
     </group>

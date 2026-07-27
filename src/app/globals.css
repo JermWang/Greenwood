@@ -1639,3 +1639,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     transform: none;
   }
 }
+
+/* Nameplate of whoever the pointer is over. The 3D light does the heavy work;
+   this is what makes it unambiguous WHICH name belongs to the lit figure when
+   several people are standing close together. */
+.iso-nameplate.is-hover {
+  border: 1px solid var(--robin-neon, #ccff00);
+  background: rgba(28, 36, 18, 0.9);
+  color: #fff;
+}

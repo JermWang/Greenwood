@@ -12,7 +12,7 @@
 // standing on a paved tile who blocks the only route to a door is a much bigger
 // one, and pathfinding around a moving cast is a whole system for no gain.
 
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { ThreeEvent } from '@react-three/fiber';
 import Character from './Character';
 import { TileRing } from './TileMarker';
@@ -28,6 +28,9 @@ export default memo(function NpcField({
   playerAt: { x: number; z: number };
   onTalk: (npc: Npc) => void;
 }) {
+  /** Who the pointer is over. Null when it is over nobody. */
+  const [hover, setHover] = useState<string | null>(null);
+
   const click = useCallback(
     (event: ThreeEvent<MouseEvent>, npc: Npc) => {
       event.stopPropagation();
@@ -40,9 +43,11 @@ export default memo(function NpcField({
     <>
       {npcsIn(region).map((npc) => {
         const near = Math.hypot(playerAt.x - npc.x, playerAt.z - npc.z) <= TALK_RADIUS;
+        const hovered = hover === npc.id;
         return (
           <group key={npc.id}>
             <Character
+              highlight={hovered}
               look={{
                 body: npc.outfit,
                 cap: npc.cap,
@@ -66,8 +71,8 @@ export default memo(function NpcField({
             <TileRing
               x={npc.x}
               z={npc.z}
-              color={near ? ISO.accent : ISO.steel}
-              opacity={near ? 0.85 : 0.3}
+              color={near || hovered ? ISO.accent : ISO.steel}
+              opacity={near ? 0.85 : hovered ? 0.6 : 0.3}
             />
 
             {/*
@@ -81,20 +86,30 @@ export default memo(function NpcField({
               interaction in this world already follows: doors open when you
               stand in them, desks are worked at, loot is read from beside it.
 
-              The hitbox is simply not rendered when far, so a distant click
-              falls through to the ground and walks you there instead — which is
-              exactly what somebody clicking a person across the square meant.
+              The hitbox exists at ANY distance so hovering still highlights
+              them — you should be able to tell a person from scenery before you
+              have committed to walking over. It simply does not act on a click
+              from out of range, and because it never calls stopPropagation in
+              that case the event carries on to the ground plane underneath and
+              walks you there, which is what clicking somebody across the square
+              meant anyway.
 
               Transparent rather than invisible: three.js skips invisible
-              objects when raycasting, which would make this a click target
-              nothing can click.
+              objects when raycasting, which would make this a target nothing
+              can hit.
             */}
-            {near && (
-              <mesh position={[npc.x, 0.9, npc.z]} onClick={(e) => click(e, npc)}>
-                <boxGeometry args={[1.1, 2, 1.1]} />
-                <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-              </mesh>
-            )}
+            <mesh
+              position={[npc.x, 0.9, npc.z]}
+              onPointerOver={() => { setHover(npc.id); document.body.style.cursor = 'pointer'; }}
+              onPointerOut={() => {
+                setHover((h) => (h === npc.id ? null : h));
+                document.body.style.cursor = '';
+              }}
+              onClick={(e) => { if (near) click(e, npc); }}
+            >
+              <boxGeometry args={[1.1, 2, 1.1]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+            </mesh>
           </group>
         );
       })}
