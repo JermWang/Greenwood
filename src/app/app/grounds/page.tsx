@@ -283,6 +283,10 @@ export default function GroundsPage() {
           interactive
           bounds={WORLD}
           zoom={26}
+          // Stops the player pulling back until the region is a small diamond
+          // adrift in empty ground, which is the impression the tightened
+          // bounds exist to avoid.
+          minZoom={16}
           // `follow` is the fallback for the first frames, before the character
           // has written a live position; `followRef` takes over from then on.
           follow={here}

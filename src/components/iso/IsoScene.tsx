@@ -40,6 +40,7 @@ export function IsoRig({
   zoom,
   follow,
   followRef,
+  minZoom,
 }: {
   dragRef: React.MutableRefObject<DragState>;
   interactive: boolean;
@@ -78,6 +79,16 @@ export function IsoRig({
    * position change, and the camera does not need React to know anything.
    */
   followRef?: React.MutableRefObject<{ x: number; z: number } | null>;
+  /**
+   * How far out the player may zoom.
+   *
+   * ZOOM.min exists so a 25x33 room can be seen whole on a phone, and applying
+   * that to an outdoor region lets you pull back until the map is a small
+   * diamond adrift in empty ground — the region reads as mostly nothing, which
+   * is exactly the impression the Grounds were shrunk to avoid. A region that
+   * knows how big it is should say how far out is useful.
+   */
+  minZoom?: number;
 }) {
   const { camera, gl, size } = useThree();
   /**
@@ -136,6 +147,9 @@ export function IsoRig({
     target.current.copy(centre);
   }, [camera, bounds, zoom, size.width, size.height, centre]);
 
+  /** Zoom-out limit: the region's own, or the global room minimum. */
+  const floor = minZoom ?? ZOOM.min;
+
   useEffect(() => {
     if (!interactive) return;
     const el = gl.domElement;
@@ -178,7 +192,7 @@ export function IsoRig({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const cam = camera as THREE.OrthographicCamera;
-      cam.zoom = THREE.MathUtils.clamp(cam.zoom * (1 - e.deltaY * 0.0012), ZOOM.min, ZOOM.max);
+      cam.zoom = THREE.MathUtils.clamp(cam.zoom * (1 - e.deltaY * 0.0012), floor, ZOOM.max);
       cam.updateProjectionMatrix();
     };
 
@@ -192,7 +206,7 @@ export function IsoRig({
       window.removeEventListener('pointerup', onUp);
       el.removeEventListener('wheel', onWheel);
     };
-  }, [camera, gl, dragRef, interactive]);
+  }, [camera, gl, dragRef, interactive, floor]);
 
   useFrame((_, delta) => {
     // Re-aim at the followed point unless the player is actively looking around.
