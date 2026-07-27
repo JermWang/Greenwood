@@ -1552,3 +1552,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   cursor: default;
 }
 @media (max-width: 760px) { .desk-here { left: 10px; right: 10px; bottom: 58px; width: auto; } }
+.desk-here-up {
+  padding: 7px 12px;
+  border: 1px solid rgba(212, 210, 207, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  font: 700 9.5px var(--font-mono), monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(232, 238, 240, 0.82);
+  cursor: pointer;
+}
+.desk-here-up:hover:not(:disabled) { border-color: rgba(204, 255, 0, 0.5); color: #fff; }
+.desk-here-up:disabled { opacity: 0.4; cursor: default; }

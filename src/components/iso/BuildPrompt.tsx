@@ -29,6 +29,25 @@ export interface DeskFamily {
   burnCostOsr: number;
 }
 
+/**
+ * The catalogue request, made at most once.
+ *
+ * Held as the PROMISE rather than the result, so two prompts opening in the
+ * same tick share one request instead of racing. Cleared on failure so a
+ * transient error is retryable — a permanently-cached rejection would leave the
+ * build prompt broken for the rest of the session.
+ */
+let familiesOnce: Promise<DeskFamily[]> | null = null;
+function loadFamilies(): Promise<DeskFamily[]> {
+  if (!familiesOnce) {
+    familiesOnce = api.families().catch((e) => {
+      familiesOnce = null;
+      throw e;
+    });
+  }
+  return familiesOnce.catch(() => []);
+}
+
 export default function BuildPrompt({
   cell,
   balance,
@@ -49,21 +68,26 @@ export default function BuildPrompt({
   const [families, setFamilies] = useState<DeskFamily[]>([]);
 
   /**
-   * Loaded once, when the prompt is first opened.
+   * Loaded once per session, then shared.
    *
    * The catalogue is the server's, not a copy: cost and family come from the
    * same payload the mint route charges against, so what this quotes and what
    * the engine takes cannot disagree.
+   *
+   * Cached at module level rather than fetched per-open, and that is a fix
+   * rather than an optimisation. The per-open version used the usual
+   * `cancelled` flag, and React's development double-mount runs the effect,
+   * tears it down and runs it again — so the response that arrived belonged to
+   * an effect whose flag was already set, the result was thrown away, and the
+   * prompt sat on "Reading the catalogue…" forever with a 200 in the network
+   * panel. A promise shared across mounts cannot be cancelled by one of them.
    */
   useEffect(() => {
-    if (!cell || families.length) return;
-    let cancelled = false;
-    void api
-      .families()
-      .then((list) => { if (!cancelled) setFamilies(list); })
-      .catch(() => { if (!cancelled) setFamilies([]); });
-    return () => { cancelled = true; };
-  }, [cell, families.length]);
+    if (!cell) return;
+    let live = true;
+    void loadFamilies().then((list) => { if (live) setFamilies(list); });
+    return () => { live = false; };
+  }, [cell]);
 
   /** Escape closes. A prompt you have to mouse out of is a modal in disguise. */
   useEffect(() => {

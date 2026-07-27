@@ -176,6 +176,24 @@ export default function IsoBoard({
   // standing in the middle of the floor.
   const doors = useMemo(() => machineRoomDoors(bounds), [bounds]);
 
+  /**
+   * Cell -> instance index, for the pick plane.
+   *
+   * Hover is still stored as an index because the tint effect writes colours by
+   * instance, but it is now DERIVED from a rounded world coordinate rather than
+   * read off a raycast against the tile geometry. A lookup rather than a scan:
+   * this runs on every pointer move across ~800 cells.
+   */
+  const cellIndex = useMemo(() => {
+    const map = new Map<string, number>();
+    cells.forEach((c, i) => map.set(cellKey(c.x, c.z), i));
+    return map;
+  }, [cells]);
+  const indexOfCell = useCallback(
+    (x: number, z: number) => cellIndex.get(cellKey(x, z)) ?? null,
+    [cellIndex]
+  );
+
   const byId = useMemo(() => new Map(machines.map((m) => [m.id, m])), [machines]);
   const occupied = useMemo(() => {
     const set = new Map<string, string>();
@@ -282,30 +300,66 @@ export default function IsoBoard({
 
       {dressed && <MachineRoomSet bounds={bounds} />}
 
+      {/*
+        The floor. DRAWN here, but no longer picked here.
+
+        Tiles are boxes 0.16 units tall, and under a fixed isometric camera a ray
+        toward a far tile clips the raised SIDE of a nearer one on the way — so
+        the instanceId that came back was the tile in front of the one you were
+        pointing at. Consistently, by roughly one cell, in the same direction.
+        That is the offset, and it is the same class of bug the Deep Forest had
+        before it stopped picking against geometry.
+      */}
       <instancedMesh
         ref={meshRef}
         args={[TILE_GEO, undefined, cells.length]}
         receiveShadow
         castShadow
+        raycast={() => null}
+      >
+        <meshStandardMaterial map={concreteTexture()} flatShading roughness={0.84} metalness={0.02} />
+      </instancedMesh>
+
+      {/*
+        The pick surface: one flat plane, and a rounding.
+
+        Exactly what the outdoor maps do. A plane has no thickness, so there is
+        no side face to clip and the hit point IS the tile — world x/z round
+        straight to a cell with nothing to convert and nothing to get wrong.
+
+        Sits at 0.09, just above the tile tops (0.08) and just below where desks
+        stand (TILE_TOP, 0.1), so desks and doors still take their own clicks
+        first and only bare floor reaches this.
+
+        Transparent, NOT `visible={false}` — three.js skips invisible objects
+        when raycasting, which would make this a pick surface nothing can pick.
+      */}
+      <mesh
+        position={[(bounds.minX + bounds.maxX) / 2, 0.09, (bounds.minZ + bounds.maxZ) / 2]}
+        rotation={[-Math.PI / 2, 0, 0]}
         onPointerMove={(e) => {
           e.stopPropagation();
-          if (e.instanceId != null) setHover(e.instanceId);
+          setHover(indexOfCell(Math.round(e.point.x), Math.round(e.point.z)));
         }}
         onPointerOut={() => setHover(null)}
         onClick={(e) => {
           e.stopPropagation();
           // A drag that ends over a tile is a camera pan, not a placement.
           if (dragRef.current.moved > 6) return;
-          if (e.instanceId == null) return;
-          const cell = cells[e.instanceId];
+          const x = Math.round(e.point.x);
+          const z = Math.round(e.point.z);
+          if (indexOfCell(x, z) == null) return;
           // Holding a machine means the click is a placement; otherwise it is
           // the player deciding to go and stand somewhere.
-          if (holdingId) onTileClick(cell.x, cell.z);
-          else walkTo(cell.x, cell.z);
+          if (holdingId) onTileClick(x, z);
+          else walkTo(x, z);
         }}
       >
-        <meshStandardMaterial map={concreteTexture()} flatShading roughness={0.84} metalness={0.02} />
-      </instancedMesh>
+        <planeGeometry
+          args={[bounds.maxX - bounds.minX + 1, bounds.maxZ - bounds.minZ + 1]}
+        />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
 
       {/* Ghost of the desk being placed, so the drop lands where it looks. */}
       {holding && hoverCell && (

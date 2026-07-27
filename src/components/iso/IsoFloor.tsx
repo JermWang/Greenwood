@@ -75,6 +75,7 @@ export default function IsoFloor({
   const [building, setBuilding] = useState(false);
   const [buildError, setBuildError] = useState<string | null>(null);
   const [routing, setRouting] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
   /** Live fund, for what a desk costs against and to refresh after building. */
   const op = useOperation((s) => s.op);
@@ -332,6 +333,29 @@ export default function IsoFloor({
     }
   }, [nearbyDesk, wallet, routing, refresh]);
 
+  /**
+   * Level up the desk you are standing at.
+   *
+   * The last verb that was pretending to be a list operation. Levelling has
+   * always been per-desk — it multiplies THAT desk and spends from shared fund
+   * capital — so a row in a table was the wrong shape for it twice over: it hid
+   * which desk you were improving, and it hid that the capital came from
+   * somewhere the other desks also draw on.
+   */
+  const upgradeHere = useCallback(async () => {
+    if (!nearbyDesk || !wallet || upgrading) return;
+    setUpgrading(true);
+    setRouteError(null);
+    try {
+      await api.upgradeNode(wallet, nearbyDesk.node.id);
+      void refresh();
+    } catch (e) {
+      setRouteError(e instanceof Error ? e.message : 'That did not go through.');
+    } finally {
+      setUpgrading(false);
+    }
+  }, [nearbyDesk, wallet, upgrading, refresh]);
+
   const canBuildHere =
     !demo &&
     !!wallet &&
@@ -436,6 +460,22 @@ export default function IsoFloor({
                 ? `Route ${nearbyDesk.node.pendingOsr.toFixed(2)} BNTY`
                 : 'Nothing to route yet'}
           </button>
+
+          {/* Levelling, at the desk it levels. Quoted against the live balance
+              so an unaffordable upgrade says what it costs rather than only
+              greying out — the price IS the decision here, because the capital
+              is shared with every other desk on this floor. */}
+          {nearbyDesk.node.nextLevelCost > 0 && (
+            <button
+              className="desk-here-up"
+              onClick={() => void upgradeHere()}
+              disabled={upgrading || (op?.osrBalance ?? 0) < nearbyDesk.node.nextLevelCost}
+            >
+              {upgrading
+                ? 'Building…'
+                : `Level up → L${nearbyDesk.node.level + 1} · ${Math.round(nearbyDesk.node.nextLevelCost).toLocaleString()} BNTY`}
+            </button>
+          )}
         </div>
       )}
 
