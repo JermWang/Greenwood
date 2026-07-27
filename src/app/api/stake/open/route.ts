@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       // Throws for an unknown term, so a crafted body cannot invent its own rate.
       findTerm(termDays);
       if (!Number.isFinite(amount) || amount < STAKE_MIN_OSR) {
-        throw new GameError(`minimum contract is ${STAKE_MIN_OSR.toLocaleString()} GPU`, 400);
+        throw new GameError(`minimum Note is ${STAKE_MIN_OSR.toLocaleString()} BNTY`, 400);
       }
       return { amount, termDays };
     },

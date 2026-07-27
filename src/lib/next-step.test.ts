@@ -3,7 +3,7 @@
 // whole point is that the guide shows ONE right thing, in the right order.
 import { describe, test, expect } from 'vitest';
 import { decideNextStep } from './next-step';
-import type { UserOperation, InventoryItem, NodeInfo } from './api-client';
+import type { UserOperation, InventoryItem, NodeInfo, RegionView } from './api-client';
 
 function node(over: Partial<NodeInfo> = {}): NodeInfo {
   return {
@@ -101,5 +101,103 @@ describe('decideNextStep — priority order', () => {
     const s = decideNextStep(op({ nodes: [node({ nextLevelCost: 1e9 })], osrBalance: 10, maxNodes: 1 }), []);
     expect(s.id).toBe('producing');
     expect(s.tone).toBe('wait');
+  });
+});
+
+/**
+ * The outdoor branches.
+ *
+ * Every branch above this used to be a fund action, and the chain terminated in
+ * "nothing needs your attention right now" — the guide's final advice to its most
+ * engaged players, while three regions sat unmentioned and unreachable. These
+ * pin the fix, and pin that it did NOT come at the cost of the fund: anything
+ * urgent still wins, because an expedition keeps and routing yield does not.
+ */
+const region = (over: Partial<RegionView> & { id: string }): RegionView => ({
+  name: 'Somewhere',
+  href: '/app/somewhere',
+  blurb: 'A place.',
+  minTotalLevel: 0,
+  minDeskLevel: 0,
+  pvp: false,
+  hostiles: false,
+  requiresPack: false,
+  lighting: 'overcast-afternoon',
+  allowed: true,
+  reason: null,
+  code: 'ok',
+  ...over,
+});
+
+/** A fund with nothing left to do indoors — where the outdoor branches live. */
+const idle = () => op({ nodes: [node({ nextLevelCost: 1e9 })], osrBalance: 10, maxNodes: 1 });
+
+describe('decideNextStep — the outdoors', () => {
+  test('without region data it behaves exactly as before', () => {
+    expect(decideNextStep(idle(), []).id).toBe('producing');
+  });
+
+  test('an open region replaces the idle wait state', () => {
+    const s = decideNextStep(idle(), [], [region({ id: 'grounds', name: 'Greenwood Grounds' })]);
+    expect(s.id).toBe('go-outside');
+    expect(s.tone).toBe('act');
+    expect(s.action).toMatchObject({ kind: 'link', href: '/app/grounds' });
+  });
+
+  test('names the furthest open region, not the nearest', () => {
+    // Pointing a Deep Forest player at the doorstep would be correct and useless.
+    const s = decideNextStep(idle(), [], [
+      region({ id: 'grounds', name: 'Greenwood Grounds' }),
+      region({ id: 'deep-forest', name: 'The Deep Forest' }),
+    ]);
+    expect(s.title).toContain('Deep Forest');
+  });
+
+  test('a pack you could buy beats a region you could already walk into', () => {
+    // Smaller, more concrete, and it opens somewhere new. "Go for a walk"
+    // competes badly with a named purchase at a known price.
+    const s = decideNextStep(idle(), [], [
+      region({ id: 'grounds', name: 'Greenwood Grounds' }),
+      region({ id: 'treeline', name: 'The Treeline', minTotalLevel: 6, allowed: false, code: 'pack', reason: 'You need a pack.' }),
+    ]);
+    expect(s.id).toBe('need-pack');
+    expect(s.title).toContain('Treeline');
+  });
+
+  test('everything locked still names the nearest gate rather than going quiet', () => {
+    const s = decideNextStep(idle(), [], [
+      region({ id: 'treeline', name: 'The Treeline', minTotalLevel: 6, allowed: false, code: 'level', reason: 'Opens at 6.' }),
+      region({ id: 'deep-forest', name: 'The Deep Forest', minTotalLevel: 10, allowed: false, code: 'level', reason: 'Opens at 10.' }),
+    ]);
+    expect(s.id).toBe('next-region');
+    expect(s.title).toContain('Treeline');
+    expect(s.tone).toBe('wait');
+  });
+
+  test('the fund still wins: routing yield beats going outside', () => {
+    const s = decideNextStep(
+      op({ nodes: [node()], pending: { n1: 42 } }),
+      [],
+      [region({ id: 'deep-forest', name: 'The Deep Forest' })]
+    );
+    expect(s.id).toBe('claim');
+  });
+
+  test('a brand-new fund is still told to open a desk first', () => {
+    const s = decideNextStep(op(), [], [region({ id: 'grounds', name: 'Greenwood Grounds' })]);
+    expect(s.id).toBe('mint-first');
+  });
+
+  test('every outdoor suggestion routes through the Grounds', () => {
+    // The hub is where the doors are, where the refusal is, and where the pack
+    // that gets you past it is sold. A deep link to a locked region would land
+    // the player on a refusal with nothing to do about it.
+    for (const regions of [
+      [region({ id: 'deep-forest', name: 'The Deep Forest' })],
+      [region({ id: 'treeline', name: 'The Treeline', allowed: false, code: 'pack' as const, reason: 'Pack.' })],
+    ]) {
+      const s = decideNextStep(idle(), [], regions);
+      expect(s.action).toMatchObject({ kind: 'link', href: '/app/grounds' });
+    }
   });
 });

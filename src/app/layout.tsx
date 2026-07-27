@@ -2,39 +2,40 @@ import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import PrivyAppProvider from '@/components/providers/PrivyAppProvider';
-import CinematicBackdrop from '@/components/ui/CinematicBackdrop';
 
 const displayFont = Space_Grotesk({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
 const monoFont = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
-const SITE_URL = 'https://playgpu.fun';
+// Placeholder marketing domain — swap for the project's real domain before launch.
+const SITE_URL = 'https://greenwood.fun';
 const DESCRIPTION =
-  'Build wafer fabs and cleanrooms, upgrade silicon equipment, open supply pods, and farm GPU on Robinhood Chain.';
+  'Open equity and treasury desks, upgrade your portfolio, unlock allocations, and earn BNTY yield from tokenized real-world assets on Robinhood Chain.';
 
 export const metadata: Metadata = {
-  // metadataBase resolves the relative asset paths below to absolute URLs, which
-  // Open Graph and Twitter both require — without it a shared link renders no
-  // card. Set to the live domain so the preview points at production, not the
-  // Railway subdomain.
+  // metadataBase resolves relative asset paths to absolute URLs, which Open
+  // Graph and Twitter both require. Set to the live domain so previews point at
+  // production, not the Railway subdomain.
+  //
+  // No `images` yet: the share card art is being commissioned. A card with no
+  // image still renders as a title/description summary, which beats shipping
+  // artwork from the previous theme.
   metadataBase: new URL(SITE_URL),
-  title: 'GPU — Graphics Processing Utility',
+  title: 'Greenwood — Real-World Yield',
   description: DESCRIPTION,
   icons: { icon: '/gpu-mark.svg' },
   openGraph: {
     type: 'website',
     url: SITE_URL,
-    siteName: 'GPU — Graphics Processing Utility',
-    title: 'GPU — Graphics Processing Utility',
+    siteName: 'Greenwood — Real-World Yield',
+    title: 'Greenwood — Real-World Yield',
     description: DESCRIPTION,
-    images: [{ url: '/social/BANNER.png', width: 1500, height: 500, alt: 'GPU — Graphics Processing Utility' }],
   },
   twitter: {
-    card: 'summary_large_image',
-    site: '@GPU_RH',
-    creator: '@GPU_RH',
-    title: 'GPU — Graphics Processing Utility',
+    card: 'summary',
+    site: '@greenwood_rwa',
+    creator: '@greenwood_rwa',
+    title: 'Greenwood — Real-World Yield',
     description: DESCRIPTION,
-    images: ['/social/BANNER.png'],
   },
 };
 
@@ -49,10 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${displayFont.variable} ${monoFont.variable}`}>
-        <PrivyAppProvider>
-          <CinematicBackdrop />
-          {children}
-        </PrivyAppProvider>
+        <PrivyAppProvider>{children}</PrivyAppProvider>
       </body>
     </html>
   );

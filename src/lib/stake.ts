@@ -14,6 +14,7 @@
 import { getDb, getProtocolValue, setProtocolValue } from './db';
 import { GameError } from './errors';
 import { addLedger, bumpProtocolCounter, getOrCreateUser, protocolCounters } from './game';
+import { recordQuestProgress } from './quests';
 import {
   EMISSION_RESERVE,
   TOTAL_SUPPLY,
@@ -210,7 +211,7 @@ export function openStake(
   const term = findTerm(termDays);
   const principal = Math.floor(amountOsr);
   if (!Number.isFinite(principal) || principal < STAKE_MIN_OSR) {
-    throw new GameError(`minimum contract is ${STAKE_MIN_OSR.toLocaleString()} GPU`, 400);
+    throw new GameError(`minimum Note is ${STAKE_MIN_OSR.toLocaleString()} BNTY`, 400);
   }
 
   const db = getDb();
@@ -225,7 +226,7 @@ export function openStake(
 
   if (!opts.settledOnChain && user.osr_balance < principal) {
     throw new GameError(
-      `Not enough GPU: need ${principal.toLocaleString()} (you have ${Math.floor(user.osr_balance).toLocaleString()}).`,
+      `Not enough BNTY: need ${principal.toLocaleString()} (you have ${Math.floor(user.osr_balance).toLocaleString()}).`,
       400
     );
   }
@@ -250,7 +251,7 @@ export function openStake(
       const debited = db
         .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
         .run(principal, wallet, principal);
-      if (debited.changes === 0) throw new GameError('Not enough GPU to open that contract.', 400);
+      if (debited.changes === 0) throw new GameError('Not enough BNTY to open that Note.', 400);
     }
     const inserted = db
       .prepare(
@@ -279,6 +280,7 @@ export function openStake(
   }
 
   const row = db.prepare('SELECT * FROM stakes WHERE id = ?').get(stakeId) as unknown as StakeRow;
+  recordQuestProgress(wallet, 'open_note');
   return { position: toPosition(row, now), ...stakePositions(wallet) };
 }
 

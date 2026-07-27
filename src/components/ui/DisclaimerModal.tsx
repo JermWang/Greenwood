@@ -21,14 +21,14 @@ export default function DisclaimerModal() {
           <div className="fab-safety-wafer" aria-hidden><span>!</span></div>
           <div>
             <h2 className="text-[clamp(2rem,5vw,3.8rem)] font-semibold leading-[.92] tracking-[-.055em] text-white">Real network.<br />Exact review.</h2>
-            <p className="mt-5 text-sm leading-relaxed text-sky-100/58">
-              You are entering GPU on <strong>{CHAIN.name}</strong> (chain {CHAIN.id}), an EVM L2 that settles with ETH gas. Privy can provision an embedded wallet or link MetaMask, Rabby, or Robinhood Wallet. Mainnet transfers use real assets and cannot be reversed. Before any wallet prompt, GPU simulates the exact direct transfer and shows the amount, token, treasury, network, and zero native value. GPU never requests an unlimited token allowance. GPU is a game, not a financial product, and rewards are not guaranteed.
+            <p className="mt-5 text-sm leading-relaxed text-emerald-100/58">
+              You are entering Greenwood on <strong>{CHAIN.name}</strong> (chain {CHAIN.id}), an EVM L2 that settles with ETH gas. Privy can provision an embedded wallet or link MetaMask, Rabby, or Robinhood Wallet. Mainnet transfers use real assets and cannot be reversed. Before any wallet prompt, Greenwood simulates the exact direct transfer and shows the amount, token, treasury, network, and zero native value. Greenwood never requests an unlimited token allowance. Greenwood is a game, not a financial product, and rewards are not guaranteed.
             </p>
           </div>
         </div>
         <div className="mt-6 flex flex-col gap-2 border-t border-white/10 pt-5 sm:flex-row sm:justify-end">
           <button className="btn-secondary w-full sm:w-auto" onClick={() => window.location.replace('/')}>Exit to title</button>
-          <button className="btn-primary w-full sm:w-auto" onClick={() => acceptTerms()}>{wallet ? 'Unlock fab controls' : 'Acknowledge & enter'}</button>
+          <button className="btn-primary w-full sm:w-auto" onClick={() => acceptTerms()}>{wallet ? 'Unlock fund controls' : 'Acknowledge & enter'}</button>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { api, type UserOperation, type ProtocolOverview } from './api-client';
+import { DEV_WALLET } from './dev-mode';
 
 // Polls the game API (operation every 15s, overview every 30s — same cadence
 // as the original) and exposes shared state + refresh triggers.
@@ -85,3 +86,18 @@ export const useOperation = create<OperationState>()((set, get) => ({
     }
   },
 }));
+
+/**
+ * Sign in automatically when the dev wallet bypass is on.
+ *
+ * Goes through setWallet rather than seeding the wallet in the initialiser,
+ * because setWallet is what starts the two polling timers — a seeded value
+ * would leave the dashboard holding an address it never fetches anything for,
+ * which looks exactly like a hung request.
+ *
+ * DEV_WALLET is null in every production build and on every deployed
+ * environment, so this is a no-op everywhere real.
+ */
+if (DEV_WALLET) {
+  useOperation.getState().setWallet(DEV_WALLET);
+}

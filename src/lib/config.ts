@@ -1,7 +1,8 @@
 // Central app config — Robinhood Chain (EVM, Arbitrum Orbit L2).
 
-export const APP_NAME = 'GPU — Graphics Processing Utility';
-export const X_URL = 'https://x.com/GPU_RH';
+export const APP_NAME = 'Greenwood — Real-World Yield';
+// Placeholder social handle — swap for the project's real X account.
+export const X_URL = 'https://x.com/greenwood_rwa';
 
 export const CHAIN = {
   id: 4663,
@@ -15,7 +16,7 @@ export const CHAIN = {
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 /**
- * The GPU token, once it exists on Flap, and the protocol treasury wallet that
+ * The BNTY token, once it exists on Flap, and the protocol treasury wallet that
  * receives spends and pays out claims. There are no application contracts —
  * every action is an ordinary ERC-20 transfer between these two, so these are
  * the only two addresses the app needs.
@@ -23,7 +24,7 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const OSR_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_OSR_TOKEN ?? ZERO_ADDRESS;
 export const OSR_TREASURY_ADDRESS = process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET ?? ZERO_ADDRESS;
 /** On-chain identity required before any browser wallet prompt is allowed. */
-export const EXPECTED_TOKEN_SYMBOL = process.env.NEXT_PUBLIC_GPU_TOKEN_SYMBOL ?? 'GPU';
+export const EXPECTED_TOKEN_SYMBOL = process.env.NEXT_PUBLIC_GPU_TOKEN_SYMBOL ?? 'BNTY';
 
 export function isConfiguredAddress(value: string): value is `0x${string}` {
   return /^0x[0-9a-fA-F]{40}$/.test(value) && value.toLowerCase() !== ZERO_ADDRESS;
@@ -31,7 +32,7 @@ export function isConfiguredAddress(value: string): value is `0x${string}` {
 
 /**
  * Whether the token is live. Gates on-chain UI: balances, explorer links, and
- * the "paid in GPU" framing. Before the token exists the game still plays in
+ * the "paid in BNTY" framing. Before the token exists the game still plays in
  * full against the mirrored balance — this only decides what the UI claims.
  *
  * Deliberately mirrors the server's SETTLEMENT_CONFIGURED so the two cannot

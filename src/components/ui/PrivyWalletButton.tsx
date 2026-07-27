@@ -105,20 +105,30 @@ export default function PrivyWalletButton() {
     });
   }, [authenticated, identityToken, managedWallet, user?.id]);
 
+  /*
+   * Plain words for the plain action.
+   *
+   * These read "Initialize fund", "Syncing fund…" and "Opening uplink…", which
+   * is in-fiction and actively unhelpful: this button connects a wallet, and a
+   * player who has not yet connected one has no idea what a fund is or why they
+   * would initialise it. Flavour belongs on things the player already
+   * understands — naming the ONE control that stands between them and the game
+   * after a concept the game has not taught them yet just costs sign-ups.
+   */
   if (!ready || (authenticated && !walletsReady)) {
-    return <button className="btn-primary text-xs" disabled>Syncing operator…</button>;
+    return <button className="btn-primary text-xs" disabled>Connecting…</button>;
   }
 
   if (!authenticated) {
     return (
       <button className="btn-primary text-xs" onClick={() => login()}>
-        Initialize operator
+        Connect Wallet
       </button>
     );
   }
 
   if (!managedWallet) {
-    return <button className="btn-primary text-xs" disabled>Opening uplink…</button>;
+    return <button className="btn-primary text-xs" disabled>Connecting…</button>;
   }
 
   // Wallet is the only login route, so the account is normally the operator's
@@ -134,7 +144,7 @@ export default function PrivyWalletButton() {
       >
         <span className="fab-operator-avatar">{managedWallet.address.slice(2, 4).toUpperCase()}</span>
         <span className="hidden text-left sm:block">
-          <span className="block text-[8px] uppercase tracking-[.18em] text-sky-100/40">Operator linked</span>
+          <span className="block text-[8px] uppercase tracking-[.18em] text-emerald-100/40">Fund linked</span>
           <span className="mt-0.5 block font-mono text-[10px] text-white">{shortAddress(managedWallet.address)}</span>
         </span>
       </button>
@@ -145,7 +155,7 @@ export default function PrivyWalletButton() {
               {shortAddress(managedWallet.address)}
             </p>
             <p className="mt-1 font-mono text-[8px] uppercase tracking-[.16em] text-lime-300">
-              {isEmbedded ? 'Managed operator key' : 'Self-custodied operator key'} · mainnet
+              {isEmbedded ? 'Managed fund key' : 'Self-custodied fund key'} · mainnet
             </p>
             <div className="mt-3 flex items-center justify-between text-xs">
               <span className="text-steel-400">ETH balance</span>
@@ -167,7 +177,7 @@ export default function PrivyWalletButton() {
             className="fab-account-action mt-1"
             onClick={() => void navigator.clipboard.writeText(managedWallet.address)}
           >
-            Copy operator address
+            Copy fund address
           </button>
           <button
             className="fab-account-action"
@@ -196,8 +206,8 @@ export default function PrivyWalletButton() {
           >
             Sign out
           </button>
-          <p className="mt-1 border-t border-white/10 px-3 py-2 text-[9px] leading-relaxed text-sky-100/35">
-            GPU never stores raw private keys. Privy secures wallet key material and session recovery.
+          <p className="mt-1 border-t border-white/10 px-3 py-2 text-[9px] leading-relaxed text-emerald-100/35">
+            Greenwood never stores raw private keys. Privy secures wallet key material and session recovery.
           </p>
         </div>
       )}

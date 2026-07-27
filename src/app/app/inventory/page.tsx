@@ -31,7 +31,7 @@ function NodeChip({ type, abbrev }: { type: 'oil' | 'mine'; abbrev?: boolean }) 
       }}
     >
       <span aria-hidden>{oil ? '◉' : '⬡'}</span>
-      {abbrev ? (oil ? 'FAB' : 'CLEAN') : oil ? 'Wafer Fab' : 'Cleanroom'}
+      {abbrev ? (oil ? 'EQD' : 'TSY') : oil ? 'Equity Desk' : 'Treasury Desk'}
     </span>
   );
 }
@@ -108,7 +108,7 @@ export default function InventoryPage() {
     async (slot: string) => {
       if (!wallet || !selected || !node || busy) return;
       if (selected.nodeType !== node.type) {
-        showToast(`That component belongs to a ${selected.nodeType === 'oil' ? 'fab' : 'cleanroom'}`);
+        showToast(`That instrument belongs to a ${selected.nodeType === 'oil' ? 'Equity Desk' : 'Treasury Desk'}`);
         return;
       }
       if (selected.slot !== slot) {
@@ -148,9 +148,9 @@ export default function InventoryPage() {
   );
 
   return (
-    <PageShell title="Parts Bay" subtitle="Stage, compare, and install process equipment across every live silicon line." backHref="/app" backLabel="Fab Floor" maxWidth="max-w-[1560px]">
+    <PageShell title="Instruments" subtitle="Stage, compare, and install instruments across every live desk." backHref="/app" backLabel="Trading Floor" maxWidth="max-w-[1560px]">
       {!wallet ? (
-        <p className="text-sm text-steel-400">Initialize an operator uplink from the Fab Floor first.</p>
+        <p className="text-sm text-steel-400">Connect your wallet to see your instruments.</p>
       ) : !loaded ? (
         <p className="text-sm text-steel-400">Loading inventory…</p>
       ) : error ? (
@@ -222,7 +222,7 @@ export default function InventoryPage() {
                 <div className="rounded-lg border border-dashed border-steel-500/40 p-8 text-center">
                   <p className="text-sm text-steel-300">Locker is empty.</p>
                   <p className="mt-1 text-xs text-steel-500">
-                    New supply pods land here. Open one from the Fab Floor to start filling
+                    New allocations land here. Open one from the Trading Floor to start filling
                     it.
                   </p>
                   {equippedItems.length > 0 && (
@@ -234,7 +234,7 @@ export default function InventoryPage() {
                         setSelectedId(null);
                       }}
                     >
-                      View equipped components
+                      View equipped instruments
                     </button>
                   )}
                 </div>
@@ -242,7 +242,7 @@ export default function InventoryPage() {
                 <div className="rounded-lg border border-dashed border-steel-500/40 p-8 text-center">
                   <p className="text-sm text-steel-300">Nothing equipped.</p>
                   <p className="mt-1 text-xs text-steel-500">
-                    Commission a production line from the Fab Floor to start installing equipment.
+                    Open a desk from the Trading Floor to start installing instruments.
                   </p>
                 </div>
               )
@@ -345,8 +345,8 @@ export default function InventoryPage() {
                   {compatible
                     ? `Click the ${SLOT_LABELS[selected.slot]} slot on this node to equip.`
                     : selected.nodeType === 'oil'
-                      ? 'Navigate to a Wafer Fab to equip this part.'
-                      : 'Navigate to a Cleanroom to equip this part.'}
+                      ? 'Navigate to an Equity Desk to equip this instrument.'
+                      : 'Navigate to a Treasury Desk to equip this instrument.'}
                 </p>
               </div>
             )}
@@ -357,7 +357,7 @@ export default function InventoryPage() {
             <h2 className="stat-label mb-3">Target Node</h2>
             {nodes.length === 0 ? (
               <p className="panel p-4 text-sm text-steel-400">
-                You don&rsquo;t own any production lines yet. Commission a fab or cleanroom from the Fab Floor.
+                You don&rsquo;t own any desks yet. Open an Equity Desk or Treasury Desk from the Trading Floor.
               </p>
             ) : node ? (
               <div className="panel p-4">
@@ -464,12 +464,12 @@ export default function InventoryPage() {
                 {/* Hints */}
                 {!selected ? (
                   <p className="mt-3 text-center text-xs text-steel-500">
-                    Pick a component from the left to start equipping.
+                    Pick an instrument from the left to start equipping.
                   </p>
                 ) : !compatible ? (
                   <p className="mt-3 text-center text-xs text-steel-500">
                     This item only fits on{' '}
-                    {selected.nodeType === 'oil' ? 'a Wafer Fab' : 'a Cleanroom'}. Page to one.
+                    {selected.nodeType === 'oil' ? 'an Equity Desk' : 'a Treasury Desk'}. Page to one.
                   </p>
                 ) : null}
               </div>

@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       recordPayout(wallet, payable, null, { error: String(payoutError), result });
       console.error('[claim] payout failed after accrual was consumed', payoutError);
       throw new GameError(
-        `Rewards were settled but the transfer did not go through. ${Math.round(payable).toLocaleString()} GPU is recorded as owed to you.`,
+        `Rewards were settled but the transfer did not go through. ${Math.round(payable).toLocaleString()} BNTY is recorded as owed to you.`,
         502
       );
     }

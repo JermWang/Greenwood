@@ -31,7 +31,9 @@ export type SettlementAction =
   | 'ExpediteCompound'
   | 'Claim'
   | 'MarketBuy'
-  | 'StakeOpen';
+  | 'StakeOpen'
+  | 'BuyCosmetic'
+  | 'UpgradeCosmetic';
 
 const TRANSFER_ABI = parseAbi([
   'event Transfer(address indexed from, address indexed to, uint256 value)',

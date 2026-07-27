@@ -105,7 +105,3 @@ export function computeNodeMultiplier(slotRarities: (Rarity | null | undefined)[
 export function rarityHex(r: Rarity): string {
   return `#${COMPONENT_RARITIES[r].tint.toString(16).padStart(6, '0')}`;
 }
-
-export function cratePath(rarity: Rarity): string {
-  return `/models/crates/crate_${rarity}.glb`;
-}

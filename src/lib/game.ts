@@ -34,14 +34,14 @@ import {
   COMPOUND_FEE_ETH,
   CRATE_FEE_ETH,
   EXPEDITE_FEE_ETH,
-  XSTOCK_MIN_COMPOUND_LEVEL,
-  XSTOCK_ACCRUAL_RATE,
   TOTAL_SUPPLY,
   EMISSION_RESERVE,
   STARTER_OSR_GRANT,
 } from './economy';
+import { nodeUpgradeCost } from './capital';
 import { NODE_SLOTS, RARITIES, type NodeFamily, type Rarity } from './rarity';
 import { allLayoutMultipliers, layoutBonus, type LayoutBonus } from './floor';
+import { recordQuestProgress } from './quests';
 
 export { GameError } from './errors';
 import { GameError } from './errors';
@@ -114,8 +114,6 @@ export interface UserRow {
   pity_divine: number;
   welcome_started_at: number | null;
   last_claim_at?: number | null;
-  xstock_xomx: number;
-  xstock_cvxx: number;
 }
 
 /**
@@ -146,8 +144,6 @@ function unregisteredUser(wallet: string): UserRow {
     pity_divine: 0,
     welcome_started_at: null,
     last_claim_at: null,
-    xstock_xomx: 0,
-    xstock_cvxx: 0,
   };
 }
 
@@ -232,15 +228,42 @@ function equippedComponents(nodeId: number): ComponentRow[] {
 }
 
 /**
- * Formula D: average of the 4 slots' multipliers (empty = Common 1x), raised
- * to the power 0.75 (capped at 500x), times the per-component rarity-boost
- * stack (Epic 1.05, Legendary 1.15, Mythic 1.4, Divine 2 per component).
+ * Averaging exponent for fitted instruments.
+ *
+ * Was 0.75. Halved to 0.5 — a square root — as the second half of the rarity
+ * rebalance (see RARITY_MULT in lib/economy for the first).
+ *
+ * The exponent is what decides how much CONCENTRATING gear beats spreading it,
+ * and therefore how much a deep build beats a wide one. archetype-balance.test
+ * sweeps it: at 0.75 a deep build finished 64% ahead even with the compressed
+ * rarity table, and reaching the test's original 10% needed 0.25 — which caps
+ * the best gear in the game at 2.1x and makes instruments barely worth finding.
+ *
+ * 0.45 is where the levers line up: gear tops out around 3.9x against desk
+ * level's 5x, and the gap between builds falls to about 30%. That is a
+ * preference. Three hundred and sixty-six percent was a solved game.
+ *
+ * Chosen over 0.5, which measured 35.4% against a 35% tolerance — passing by
+ * four tenths of a percent is not passing, it is a number that will go red on
+ * the next unrelated edit. 0.45 leaves five points of headroom.
+ */
+export const COMPONENT_AVG_EXPONENT = 0.45;
+
+/**
+ * Formula D: average of the 4 slots' multipliers (empty = Common 1x), raised to
+ * COMPONENT_AVG_EXPONENT, times the per-component rarity-boost stack.
+ *
+ * The boost stack is currently neutral — every entry is 1. It used to compound
+ * per instrument, which meant four Divines on one desk were worth ~6x the same
+ * four spread across four desks, and that is what made concentration the only
+ * correct play. Kept in the expression rather than removed so the shape is still
+ * visible; if it comes back it has to be additive.
  */
 export function componentMultiplier(comps: { rarity: Rarity }[]): number {
   const mults = comps.map((c) => RARITY_MULT[c.rarity] ?? 1);
   while (mults.length < 4) mults.push(1);
   const avg = mults.reduce((a, b) => a + b, 0) / 4;
-  const powered = Math.min(500, Math.pow(avg, 0.75));
+  const powered = Math.min(500, Math.pow(avg, COMPONENT_AVG_EXPONENT));
   const boost = comps.reduce((p, c) => p * (RARITY_BOOST[c.rarity] ?? 1), 1);
   return powered * boost;
 }
@@ -555,16 +578,16 @@ export function openCrate(
     .get(crateId, wallet) as
     | { id: number; crate_type: 'rig_crate' | 'shaft_crate'; opened_at: number | null; listing_id: number | null }
     | undefined;
-  if (!crateRow) throw new GameError('crate not found in your inventory', 404);
-  if (crateRow.opened_at != null) throw new GameError('that crate has already been opened', 400);
+  if (!crateRow) throw new GameError('allocation not found in your inventory', 404);
+  if (crateRow.opened_at != null) throw new GameError('that allocation has already been opened', 400);
   if (crateRow.listing_id != null) {
-    throw new GameError('that crate is listed for sale — cancel the listing to open it', 400);
+    throw new GameError('that allocation is listed for sale — cancel the listing to open it', 400);
   }
   const crateType = crateRow.crate_type;
 
   const cost = crateCostOsr(getOsrUsdPrice().usdPerOsr);
   const debit = offChainDebit(user, cost, opts, (have) =>
-    `Not enough GPU for crate: need ${cost.toLocaleString()} GPU (you have ${have}). Claim rewards or earn more GPU first.`
+    `Not enough BNTY to open that allocation: need ${cost.toLocaleString()} BNTY (you have ${have}). Route rewards or earn more BNTY first.`
   );
 
   const family: NodeFamily = crateType === 'rig_crate' ? 'oil' : 'mine';
@@ -621,7 +644,7 @@ export function openCrate(
     wallet,
     debit
   );
-  requireDebited(charged, 'Not enough GPU to open that crate.');
+  requireDebited(charged, 'Not enough BNTY to open that allocation.');
   // Consume the crate in the same pass that charges for it, so a failure
   // cannot leave the operator paid-up with the crate still openable.
   db.prepare(
@@ -653,6 +676,8 @@ export function openCrate(
     )
     .run(wallet, slot, family, rarity, now);
 
+  recordQuestProgress(wallet, 'open_allocation');
+
   return {
     inventoryItemId: Number(res.lastInsertRowid),
     slot,
@@ -675,9 +700,9 @@ export function mintNode(wallet: string, familyKey: string, opts?: SpendOpts) {
 
   const cap = familyCap(user, fam.family);
   const owned = nodes.filter((n) => n.row.family === fam.family).length;
-  if (owned >= cap) throw new GameError('Capacity full · upgrade compound to add more');
+  if (owned >= cap) throw new GameError('Capacity full · upgrade portfolio to add more');
   const debit = offChainDebit(user, fam.burnCostOsr, opts, (have) =>
-    `Not enough GPU: need ${fam.burnCostOsr.toLocaleString()} GPU (you have ${have}). Claim rewards or open crates first.`
+    `Not enough BNTY: need ${fam.burnCostOsr.toLocaleString()} BNTY (you have ${have}). Route rewards or open allocations first.`
   );
 
   const burn = (fam.burnCostOsr * fam.burnShareBps) / 10000;
@@ -690,7 +715,7 @@ export function mintNode(wallet: string, familyKey: string, opts?: SpendOpts) {
           WHERE wallet = ? AND osr_balance >= ?`
       )
       .run(debit, now, wallet, debit),
-    'Not enough GPU to mint that node.'
+    'Not enough BNTY to open that desk.'
   );
   paySplits(wallet, 'mint_node', fam.burnCostOsr, { burn, treasury }, fam.mintFeeEth, {
     familyKey,
@@ -702,6 +727,7 @@ export function mintNode(wallet: string, familyKey: string, opts?: SpendOpts) {
     .run(wallet, fam.family, now, now, now);
 
   invalidateNetworkGp();
+  recordQuestProgress(wallet, 'mint_desk');
   return { node: { id: Number(res.lastInsertRowid), type: fam.family, level: 1 } };
 }
 
@@ -772,15 +798,11 @@ export function claimRewards(
       fee,
     });
 
-    if (n.row.family === 'oil' && user.compound_level >= XSTOCK_MIN_COMPOUND_LEVEL) {
-      const div = gross * XSTOCK_ACCRUAL_RATE;
-      db.prepare(
-        'UPDATE users SET xstock_xomx = xstock_xomx + ?, xstock_cvxx = xstock_cvxx + ? WHERE wallet = ?'
-      ).run(div / 2, div / 2, wallet);
-    }
-
     claims.push({ nodeId: n.row.id, status: 'confirmed', gross, fee, net, mode: isCompound ? 'compound' : 'claim' });
   }
+  // One routing action, however many desks it settled — otherwise a wide floor
+  // finishes a "route 3 times" daily in a single click.
+  if (claims.length > 0) recordQuestProgress(wallet, 'claim');
   return { claims };
 }
 
@@ -827,19 +849,19 @@ export function upgradeCompound(
   const db = getDb();
   const info = compoundInfo(wallet);
   const user = getOrCreateUser(wallet);
-  if (!info.nextUpgradeCost) throw new GameError('already at max compound level');
+  if (!info.nextUpgradeCost) throw new GameError('already at max portfolio level');
   if (!expedite && info.cooldownRemainingMs > 0)
-    throw new GameError('Compound is cooling down — expedite for 0.005 ETH or wait.');
+    throw new GameError('Portfolio upgrade is cooling down — expedite for 0.005 ETH or wait.');
   const { totalOsr, burnOsr, reserveOsr, treasuryOsr, targetLevel } = info.nextUpgradeCost;
   // The caller priced a specific level. Re-deriving "whatever is next" here
   // instead would let several quotes taken at one level be settled in sequence,
   // each granting the next level for the price of the first: L1 costs 1,000, so
   // five L2 quotes bought L2..L6 for 5,000 against a real cost of 31,000.
   if (expectTargetLevel != null && expectTargetLevel !== targetLevel) {
-    throw new GameError('compound level moved since the quote — request a fresh one', 409);
+    throw new GameError('portfolio level moved since the quote — request a fresh one', 409);
   }
   const debit = offChainDebit(user, totalOsr, opts, (have) =>
-    `Not enough GPU for compound upgrade: need ${totalOsr.toLocaleString()} GPU (you have ${have}).`
+    `Not enough BNTY for portfolio upgrade: need ${totalOsr.toLocaleString()} BNTY (you have ${have}).`
   );
 
   const now = Date.now();
@@ -850,7 +872,7 @@ export function upgradeCompound(
           WHERE wallet = ? AND osr_balance >= ?`
       )
       .run(debit, targetLevel, now + COMPOUND_COOLDOWN_MS, wallet, debit),
-    'Not enough GPU for that compound upgrade.'
+    'Not enough BNTY for that portfolio upgrade.'
   );
   paySplits(
     wallet,
@@ -880,15 +902,22 @@ export function equipComponent(wallet: string, inventoryItemId: number, targetNo
   const comp = db
     .prepare('SELECT * FROM components WHERE id = ? AND wallet = ?')
     .get(inventoryItemId, wallet) as unknown as ComponentRow | undefined;
-  if (!comp) throw new GameError('Component not found in your inventory', 404);
-  if (comp.equipped_node_id != null) throw new GameError('Component is already equipped');
+  if (!comp) throw new GameError('Instrument not found in your inventory', 404);
+  if (comp.equipped_node_id != null) throw new GameError('Instrument is already equipped');
+  // An open listing is a promise to a buyer. Fitting a listed instrument to a
+  // desk would let the desk sale carry it to one wallet while the listing is
+  // still standing for another — the same item sold twice.
+  const listed = db
+    .prepare(`SELECT 1 AS hit FROM listings WHERE item_kind = 'component' AND item_id = ? AND status = 'open'`)
+    .get(inventoryItemId) as { hit: number } | undefined;
+  if (listed) throw new GameError('That instrument is listed on the Exchange — cancel the listing first');
   const node = db
     .prepare('SELECT * FROM nodes WHERE id = ? AND wallet = ?')
     .get(targetNodeId, wallet) as unknown as NodeRow | undefined;
-  if (!node) throw new GameError('Node not found', 404);
+  if (!node) throw new GameError('Desk not found', 404);
   if (node.family !== comp.family)
     throw new GameError(
-      `That component belongs to a ${comp.family === 'oil' ? 'rig' : 'shaft'}`
+      `That instrument belongs to a ${comp.family === 'oil' ? 'equity desk' : 'treasury desk'}`
     );
 
   settleUser(wallet);
@@ -900,6 +929,7 @@ export function equipComponent(wallet: string, inventoryItemId: number, targetNo
     inventoryItemId
   );
   invalidateNetworkGp();
+  recordQuestProgress(wallet, 'equip_instrument');
   return { ok: true, slot: comp.slot, rarity: comp.rarity, nodeId: targetNodeId };
 }
 
@@ -943,9 +973,12 @@ export function inventory(wallet: string) {
 // Node level-up (mine compounding sink)
 // ---------------------------------------------------------------------------
 
-export function nodeUpgradeCost(level: number): number {
-  return Math.round(250 * Math.pow(1.6, level - 1));
-}
+// Priced in lib/capital, next to the capital a level consumes. The two are one
+// decision — what a desk costs in money and what it costs against the fund's
+// budget only balance when they are chosen together — and splitting them across
+// two files is how they drift apart. Re-exported so existing callers are
+// unaffected.
+export { nodeUpgradeCost };
 
 export function upgradeNode(
   wallet: string,
@@ -956,16 +989,16 @@ export function upgradeNode(
   const db = getDb();
   const { user, nodes } = settleUser(wallet);
   const node = nodes.find((n) => n.row.id === nodeId);
-  if (!node) throw new GameError('Node not found', 404);
+  if (!node) throw new GameError('Desk not found', 404);
   // Upgrade cost climbs with level, and quotes are free and unlimited, so ten
   // taken while the node sits at L1 must not settle in sequence to reach L11 at
   // L1's price — 2,500 GPU against a true cost near 45,000.
   if (expectFromLevel != null && expectFromLevel !== node.row.level) {
-    throw new GameError('node level moved since the quote — request a fresh one', 409);
+    throw new GameError('desk level moved since the quote — request a fresh one', 409);
   }
   const cost = nodeUpgradeCost(node.row.level);
   const debit = offChainDebit(user, cost, opts, (have) =>
-    `Not enough GPU to level up: need ${cost.toLocaleString()} GPU (you have ${have}).`
+    `Not enough BNTY to level up: need ${cost.toLocaleString()} BNTY (you have ${have}).`
   );
   const burn = Math.floor((cost * SPLIT_BURN_BPS) / 10000);
   const reserve = Math.floor((cost * SPLIT_RESERVE_BPS) / 10000);
@@ -973,7 +1006,7 @@ export function upgradeNode(
     db
       .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
       .run(debit, wallet, debit),
-    'Not enough GPU to level up that node.'
+    'Not enough BNTY to level up that desk.'
   );
   db.prepare('UPDATE nodes SET level = level + 1 WHERE id = ?').run(nodeId);
   paySplits(wallet, 'node_upgrade', cost, { burn, reserve, treasury: cost - burn - reserve }, 0, {
@@ -981,27 +1014,8 @@ export function upgradeNode(
     toLevel: node.row.level + 1,
   });
   invalidateNetworkGp();
+  recordQuestProgress(wallet, 'upgrade_desk');
   return { nodeId, level: node.row.level + 1, cost };
-}
-
-// ---------------------------------------------------------------------------
-// xStock
-// ---------------------------------------------------------------------------
-
-export function xstockPending(wallet: string) {
-  // Pure read — an unknown wallet has nothing pending.
-  const user = readUser(wallet);
-  return { xomx: user.xstock_xomx, cvxx: user.xstock_cvxx };
-}
-
-export function xstockClaim(wallet: string, assetSymbol: 'XOMX' | 'CVXX') {
-  const user = getOrCreateUser(wallet);
-  const amount = assetSymbol === 'XOMX' ? user.xstock_xomx : user.xstock_cvxx;
-  if (amount <= 0) return { ok: false, reason: 'nothing_pending' };
-  throw new GameError(
-    `${assetSymbol} claims are unavailable until the token and claim contracts are deployed`,
-    503
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1031,8 +1045,8 @@ export function userOperation(wallet: string) {
     welcomeBoostFactor: boost,
     osrBalance: user.osr_balance,
     totalProduced: totals.t,
-    totals: { GPU: totals.t },
-    pending: { GPU: nodes.reduce((s, n) => s + n.pendingOsr, 0) },
+    totals: { BNTY: totals.t },
+    pending: { BNTY: nodes.reduce((s, n) => s + n.pendingOsr, 0) },
     claimCooldownRemainingMs,
     crateCooldown: {
       rigCratesRemaining: allowance.rigCratesRemaining,
@@ -1100,8 +1114,6 @@ export function protocolOverview() {
     // What is left in the rewards pool, not the whole supply: emission draws
     // from the reserve, and the reserve split on in-game spends tops it back up.
     osrReserveBalance: reserve,
-    xomxReserveBalance: 0,
-    cvxxReserveBalance: 0,
     treasury: counters.treasury,
     genesisMs: g,
     halving,
@@ -1190,7 +1202,7 @@ export function treasuryEvents(limit = 100) {
     eventType: e.kind,
     walletLabel: `${e.wallet.slice(0, 4)}…${e.wallet.slice(-4)}`,
     amount: e.amount,
-    assetSymbol: 'GPU',
+    assetSymbol: 'BNTY',
     meta: e.meta ? JSON.parse(e.meta) : null,
   }));
 }

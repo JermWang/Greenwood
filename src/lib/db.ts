@@ -89,9 +89,7 @@ function migrate(db: DatabaseSync) {
       pity_legendary INTEGER NOT NULL DEFAULT 0,
       pity_mythic INTEGER NOT NULL DEFAULT 0,
       pity_divine INTEGER NOT NULL DEFAULT 0,
-      welcome_started_at INTEGER,
-      xstock_xomx REAL NOT NULL DEFAULT 0,
-      xstock_cvxx REAL NOT NULL DEFAULT 0
+      welcome_started_at INTEGER
     );
 
     CREATE TABLE IF NOT EXISTS nodes (
@@ -195,7 +193,7 @@ function migrate(db: DatabaseSync) {
     CREATE TABLE IF NOT EXISTS listings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       seller TEXT NOT NULL REFERENCES users(wallet),
-      item_kind TEXT NOT NULL CHECK (item_kind IN ('crate','component','node')),
+      item_kind TEXT NOT NULL CHECK (item_kind IN ('crate','component','node','cosmetic')),
       item_id INTEGER NOT NULL,
       price_osr REAL NOT NULL CHECK (price_osr > 0),
       created_at INTEGER NOT NULL,
@@ -239,6 +237,119 @@ function migrate(db: DatabaseSync) {
       updated_at INTEGER NOT NULL
     );
 
+    -- Cosmetics a wallet owns. The catalogue itself is code, not data, so this
+    -- only records ownership and what is currently worn: a cosmetic is defined
+    -- by how it renders, which lives with the models.
+    --
+    -- paid_currency and paid_amount are kept for the receipt, not for the game
+    -- state: a purchase is settled once and must stay auditable after the
+    -- catalogue price moves.
+    CREATE TABLE IF NOT EXISTS cosmetics_owned (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      wallet TEXT NOT NULL REFERENCES users(wallet),
+      cosmetic_key TEXT NOT NULL,
+      paid_currency TEXT NOT NULL,
+      paid_amount REAL NOT NULL,
+      acquired_at INTEGER NOT NULL,
+      upgrade_level INTEGER NOT NULL DEFAULT 0
+    );
+    -- A wallet may only own one of each cosmetic; re-buying is a no-op, not a
+    -- second charge.
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_cosmetics_owned_unique
+      ON cosmetics_owned(wallet, cosmetic_key);
+
+    -- What each wallet is currently wearing, one row per slot.
+    CREATE TABLE IF NOT EXISTS cosmetics_equipped (
+      wallet TEXT NOT NULL REFERENCES users(wallet),
+      slot TEXT NOT NULL,
+      cosmetic_key TEXT NOT NULL,
+      equipped_at INTEGER NOT NULL,
+      PRIMARY KEY (wallet, slot)
+    );
+
+    -- Experience per activity track. Stored per (wallet, track) rather than as
+    -- columns on users so a new track is a new row, not a migration.
+    -- No foreign key to users on purpose. Progression is keyed by address, and
+    -- quests are derived for any address whether or not it has ever played, so
+    -- requiring a users row would make a side-channel write able to fail — and
+    -- roll back — the real game action that triggered it.
+    CREATE TABLE IF NOT EXISTS xp_tracks (
+      wallet TEXT NOT NULL,
+      track TEXT NOT NULL,
+      xp REAL NOT NULL DEFAULT 0,
+      PRIMARY KEY (wallet, track)
+    );
+
+    -- Daily quests. Which three a wallet gets is DERIVED from (wallet, day), not
+    -- stored, so a row only appears once there is progress to record — and a
+    -- player cannot reroll by clearing state.
+    CREATE TABLE IF NOT EXISTS daily_quests (
+      wallet TEXT NOT NULL,
+      day INTEGER NOT NULL,
+      quest_key TEXT NOT NULL,
+      progress REAL NOT NULL DEFAULT 0,
+      claimed_at INTEGER,
+      PRIMARY KEY (wallet, day, quest_key)
+    );
+    CREATE INDEX IF NOT EXISTS idx_daily_quests_day ON daily_quests(wallet, day);
+
+    -- What a player is carrying into a hostile region, and what spilled when
+    -- they did not come back.
+    --
+    -- Deliberately separate from the components table and the balance columns:
+    -- this is the only inventory in the game another player can take, so keeping
+    -- it in its own table means nothing at home can be reached by a bug in the
+    -- looting path. A row here is at risk; a row anywhere else is not.
+    CREATE TABLE IF NOT EXISTS pack_contents (
+      wallet TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      ref TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 0,
+      PRIMARY KEY (wallet, kind, ref),
+      FOREIGN KEY (wallet) REFERENCES users(wallet)
+    );
+
+    CREATE TABLE IF NOT EXISTS loot_piles (
+      id TEXT PRIMARY KEY,
+      region_id TEXT NOT NULL,
+      x INTEGER NOT NULL,
+      z INTEGER NOT NULL,
+      -- Who died here. For the kill feed only: a pile has no owner and reserves
+      -- nothing, so this column must never gate access to the contents.
+      dropped_by TEXT NOT NULL,
+      dropped_at INTEGER NOT NULL,
+      -- CarriedStack[] as JSON. Read through lib/loot's visibleTo, which
+      -- withholds contents from anyone not standing next to the pile.
+      contents TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_loot_piles_region ON loot_piles(region_id, dropped_at);
+
+    -- Where a player is standing, their health, and how hurt each creature is.
+    --
+    -- This lived in module-level Maps, on the reasoning that it changes
+    -- constantly and is worthless after a session. That reasoning was right
+    -- about the data and wrong about the runtime: Next bundles every route
+    -- handler separately, so a Map in lib/expedition is a DIFFERENT Map for
+    -- /step than it is for /state. The symptom was a player who moved
+    -- successfully and then could not attack anything, because the attack route
+    -- could not see that they had ever taken a step.
+    --
+    -- Rows are session state, not history: they are overwritten in place and
+    -- mean nothing once a run ends.
+    CREATE TABLE IF NOT EXISTS expedition_state (
+      wallet TEXT PRIMARY KEY,
+      x INTEGER,
+      z INTEGER,
+      health INTEGER NOT NULL DEFAULT 100,
+      FOREIGN KEY (wallet) REFERENCES users(wallet)
+    );
+
+    CREATE TABLE IF NOT EXISTS creature_state (
+      spawn_id TEXT PRIMARY KEY,
+      health INTEGER NOT NULL,
+      swung_at INTEGER NOT NULL DEFAULT 0
+    );
+
     CREATE INDEX IF NOT EXISTS idx_listings_open ON listings(status, item_kind, created_at);
     CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller, status);
     -- One live listing per item. Partial index so sold/cancelled rows can pile
@@ -255,6 +366,99 @@ function migrate(db: DatabaseSync) {
   // Tracks how much of each node's mining has already been rolled for crate
   // drops, so restarts cannot re-roll the same elapsed time for another chance.
   ensureColumn(db, 'nodes', 'crate_rolled_at', 'INTEGER NOT NULL DEFAULT 0');
+
+  // How far a cosmetic has been taken up its upgrade track. Added after
+  // cosmetics shipped, so it defaults to 0 — every already-owned item starts at
+  // the bottom of the track rather than being retroactively granted levels.
+  ensureColumn(db, 'cosmetics_owned', 'upgrade_level', 'INTEGER NOT NULL DEFAULT 0');
+
+  widenListingKinds(db);
+  dropColumn(db, 'users', 'xstock_xomx');
+  dropColumn(db, 'users', 'xstock_cvxx');
+
+  // Scrip, in two kinds. Split at the schema rather than tracked as one number
+  // with a flag, because the difference between them is what stops the quest
+  // faucet draining into the token — and a boundary that matters that much
+  // should be impossible to lose track of in application code.
+  ensureColumn(db, 'users', 'scrip_bound', 'REAL NOT NULL DEFAULT 0');
+  ensureColumn(db, 'users', 'scrip_bearer', 'REAL NOT NULL DEFAULT 0');
+
+  // How far up the pack ladder this wallet has bought. 0 means no pack at all,
+  // which is the correct default for every existing player: the pack is the
+  // entry ticket to the hostile regions, and nobody should be retroactively
+  // holding one for a zone that did not exist when they last played.
+  ensureColumn(db, 'users', 'pack_step', 'INTEGER NOT NULL DEFAULT 0');
+}
+
+/**
+ * Remove a column that is no longer part of the game.
+ *
+ * Used for the xStock accrual counters: nothing ever paid out of them — the
+ * claim endpoint threw a 503 in every case — so the stored figures were phantom
+ * bookkeeping, and leaving them behind would mean the schema kept advertising a
+ * feature that no longer exists. Dropping is guarded on the column being
+ * present, so it runs once and is a no-op on a database created after this.
+ */
+function dropColumn(db: DatabaseSync, table: string, column: string) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  if (!columns.some((item) => item.name === column)) return;
+  db.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+}
+
+/**
+ * Let cosmetics be listed on an already-created listings table.
+ *
+ * `CREATE TABLE IF NOT EXISTS` does nothing to a table that exists, and SQLite
+ * cannot ALTER a CHECK constraint — so a database created before cosmetics were
+ * tradeable still refuses to insert them, and the only fix is to rebuild the
+ * table. Done under a transaction with foreign keys off, which is SQLite's
+ * documented procedure: the child rows that reference listings would otherwise
+ * see the table vanish mid-swap.
+ *
+ * Guarded on the constraint text so it runs exactly once. A rebuild that ran on
+ * every boot would be a slow, and eventually dangerous, no-op.
+ */
+function widenListingKinds(db: DatabaseSync) {
+  const row = db
+    .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'listings'`)
+    .get() as { sql: string } | undefined;
+  if (!row?.sql || row.sql.includes("'cosmetic'")) return;
+
+  db.exec('PRAGMA foreign_keys = OFF;');
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.exec(`
+      CREATE TABLE listings_migrated (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        seller TEXT NOT NULL REFERENCES users(wallet),
+        item_kind TEXT NOT NULL CHECK (item_kind IN ('crate','component','node','cosmetic')),
+        item_id INTEGER NOT NULL,
+        price_osr REAL NOT NULL CHECK (price_osr > 0),
+        created_at INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'open',
+        buyer TEXT,
+        sold_at INTEGER,
+        sold_price_osr REAL,
+        fee_osr REAL
+      );
+      INSERT INTO listings_migrated
+        SELECT id, seller, item_kind, item_id, price_osr, created_at, status,
+               buyer, sold_at, sold_price_osr, fee_osr
+          FROM listings;
+      DROP TABLE listings;
+      ALTER TABLE listings_migrated RENAME TO listings;
+      CREATE INDEX IF NOT EXISTS idx_listings_open ON listings(status, item_kind, created_at);
+      CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller, status);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_listings_item_live
+        ON listings(item_kind, item_id) WHERE status = 'open';
+    `);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON;');
+  }
 }
 
 function ensureColumn(db: DatabaseSync, table: string, column: string, definition: string) {

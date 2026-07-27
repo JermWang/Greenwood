@@ -52,7 +52,7 @@ export default function TransactionSafetyModal() {
           <div><dt>Token contract</dt><dd title={pending.preview.tokenAddress}>{short(pending.preview.tokenAddress)}</dd></div>
           <div><dt>Protocol treasury</dt><dd title={pending.preview.treasuryAddress}>{short(pending.preview.treasuryAddress)}</dd></div>
         </dl>
-        <div className="gpu-tx-no-approval"><b>No approval. No unlimited allowance.</b><span>This is one direct ERC-20 transfer. GPU cannot spend from your wallet later.</span></div>
+        <div className="gpu-tx-no-approval"><b>No approval. No unlimited allowance.</b><span>This is one direct ERC-20 transfer. Greenwood cannot spend from your wallet later.</span></div>
         <footer><button className="btn-secondary" onClick={() => finish(false)}>Cancel</button><button className="btn-primary" onClick={() => finish(true)}>Continue to wallet</button></footer>
       </section>
     </div>

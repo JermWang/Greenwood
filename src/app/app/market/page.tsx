@@ -9,6 +9,7 @@ import PageShell from '@/components/ui/PageShell';
 import ComponentTile from '@/components/ui/ComponentTile';
 import {
   api,
+  type CosmeticItem,
   type InventoryItem,
   type MarketItemKind,
   type MarketListing,
@@ -24,9 +25,10 @@ const CrateThumb = dynamic(() => import('@/components/three/CrateThumb'), { ssr:
 
 const KINDS: Array<{ key: MarketItemKind | 'all'; label: string }> = [
   { key: 'all', label: 'Everything' },
-  { key: 'crate', label: 'Crates' },
-  { key: 'component', label: 'Components' },
-  { key: 'node', label: 'Fabs & Cleanrooms' },
+  { key: 'crate', label: 'Allocations' },
+  { key: 'component', label: 'Instruments' },
+  { key: 'node', label: 'Equity & Treasury Desks' },
+  { key: 'cosmetic', label: 'Wardrobe' },
 ];
 
 const fmtOsr = (n: number) => Math.round(n).toLocaleString();
@@ -110,13 +112,13 @@ export default function MarketPage() {
 
   return (
     <PageShell
-      title="Chip Exchange"
-      subtitle="Route equipment, sealed supply pods, and complete fabrication campuses across the operator network."
+      title="Exchange"
+      subtitle="Route instruments, sealed allocations, and complete desks across the fund network."
       maxWidth="max-w-[1500px]"
     >
       <div className="exchange-layout">
         <section className="exchange-hero">
-          <div><span className="fab-scene-kicker">OPERATOR-TO-OPERATOR / LIVE BOOK</span><h2>Route hardware.<br /><em>Reprice capacity.</em></h2><p>Every order is backed by a real campus asset: process equipment, sealed supply pods, or a complete production line.</p></div>
+          <div><span className="fab-scene-kicker">FUND-TO-FUND / LIVE BOOK</span><h2>Route assets.<br /><em>Reprice yield.</em></h2><p>Every order is backed by a real portfolio asset: an instrument, a sealed allocation, or a complete desk.</p></div>
           <div className="exchange-hero-stats"><span><small>OPEN LOTS</small><strong>{listings?.length ?? '—'}</strong></span><span><small>SETTLED</small><strong>{sales.length}</strong></span><span><small>FEE</small><strong>{(feeBps / 100).toFixed(2)}%</strong></span></div>
         </section>
         <div className="exchange-modebar">
@@ -168,7 +170,7 @@ export default function MarketPage() {
               <div className="panel p-6 text-center">
                 <p className="text-sm font-semibold text-steel-200">Nothing listed yet</p>
                 <p className="mt-1 text-xs text-steel-500">
-                  The market is entirely player-supplied — when someone lists a crate or a fab, it
+                  The market is entirely player-supplied — when someone lists an allocation or a desk, it
                   shows up here.
                 </p>
               </div>
@@ -232,7 +234,7 @@ export default function MarketPage() {
                             {s.item_kind}
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-white">
-                            {fmtOsr(s.sold_price_osr)} GPU
+                            {fmtOsr(s.sold_price_osr)} BNTY
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-[11px] text-steel-500">
                             {new Date(s.sold_at).toLocaleDateString()}
@@ -273,14 +275,14 @@ export default function MarketPage() {
             <h2 className="stat-label">Network depth</h2>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               <StatCard label="Total Nodes" value={String(overview.totalNodes)} />
-              <StatCard label="Wafer Fabs" value={String(overview.totalOilRigs)} />
-              <StatCard label="Cleanrooms" value={String(overview.totalMiningShafts)} />
-              <StatCard label="Total GPU Burned" value={fmtOsr(overview.totalOsrBurned)} />
+              <StatCard label="Equity Desks" value={String(overview.totalOilRigs)} />
+              <StatCard label="Treasury Desks" value={String(overview.totalMiningShafts)} />
+              <StatCard label="Total BNTY Burned" value={fmtOsr(overview.totalOsrBurned)} />
               <StatCard
                 label="Protocol ETH Revenue"
                 value={`${overview.totalCreatorRewardsProcessed.toFixed(4)} ETH`}
               />
-              <StatCard label="GPU Reserve" value={fmtOsr(overview.osrReserveBalance)} />
+              <StatCard label="BNTY Reserve" value={fmtOsr(overview.osrReserveBalance)} />
             </div>
           </section>
         )}
@@ -325,7 +327,7 @@ function ListingCard({
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-xl"
             style={{ background: `${accent}18`, border: `1px solid ${accent}44` }}
           >
-            <span className="font-mono text-[9px] font-black tracking-tight">{item.family === 'mine' ? 'CLN' : 'FAB'}</span>
+            <span className="font-mono text-[9px] font-black tracking-tight">{item.family === 'mine' ? 'TSY' : 'EQD'}</span>
           </div>
         )}
         <div className="min-w-0">
@@ -338,7 +340,7 @@ function ListingCard({
 
       <div className="mt-auto flex items-baseline justify-between">
         <span className="font-mono text-sm font-bold text-amber-400">
-          {fmtOsr(listing.priceOsr)} <small>GPU</small>
+          {fmtOsr(listing.priceOsr)} <small>BNTY</small>
         </span>
         <span className="font-mono text-[10px] text-steel-500">seller nets {fmtOsr(net)}</span>
       </div>
@@ -359,10 +361,11 @@ function ListingCard({
 function title(l: MarketListing): string {
   const item = (l.item ?? {}) as Record<string, string | number>;
   if (l.itemKind === 'crate') {
-    return item.crate_type === 'shaft_crate' ? 'Cleanroom Supply Pod' : 'Fab Supply Pod';
+    return item.crate_type === 'shaft_crate' ? 'Treasury Desk Allocation' : 'Equity Desk Allocation';
   }
   if (l.itemKind === 'component') return SLOT_LABELS[String(item.slot)] ?? String(item.slot);
-  return item.family === 'mine' ? 'Cleanroom' : 'Wafer Fab';
+  if (l.itemKind === 'cosmetic') return String(item.name ?? item.cosmetic_key ?? 'Cosmetic');
+  return item.family === 'mine' ? 'Treasury Desk' : 'Equity Desk';
 }
 
 function subtitle(l: MarketListing): string {
@@ -371,6 +374,11 @@ function subtitle(l: MarketListing): string {
   if (l.itemKind === 'component') {
     const r = item.rarity as Rarity;
     return `${COMPONENT_RARITIES[r]?.label ?? r} · ${COMPONENT_RARITIES[r]?.multiplier ?? 1}×`;
+  }
+  if (l.itemKind === 'cosmetic') {
+    // The rank is the whole reason one copy is worth more than another, so it
+    // is what the card leads with. Resolved server-side from the catalogue.
+    return `${item.rank ?? 'Stock'} · rank ${Number(item.upgrade_level) || 0}/5`;
   }
   const lvl = Number(item.level) || 1;
   return `L${lvl} · ${auraLabel(lvl)}`;
@@ -390,6 +398,7 @@ function SellPanel({
   onList: (kind: MarketItemKind, itemId: number, price: number) => Promise<void>;
 }) {
   const [inventory, setInventory] = useState<InventoryItem[] | null>(null);
+  const [wardrobe, setWardrobe] = useState<CosmeticItem[] | null>(null);
   const [selected, setSelected] = useState<{ kind: MarketItemKind; id: number } | null>(null);
   const [price, setPrice] = useState('');
 
@@ -399,6 +408,10 @@ function SellPanel({
       .inventory(wallet)
       .then((r) => setInventory(r.items))
       .catch(() => setInventory([]));
+    api
+      .cosmetics(wallet)
+      .then((r) => setWardrobe(r.items))
+      .catch(() => setWardrobe([]));
   }, [wallet]);
 
   if (!wallet) {
@@ -412,6 +425,10 @@ function SellPanel({
   // Equipped gear is excluded: it has to come off the fab before it can be sold,
   // and offering it here would only produce a server rejection.
   const sellableComponents = (inventory ?? []).filter((i) => i.equippedNodeId == null);
+  // Same rule for the wardrobe — owned, not worn, not already on the board.
+  const sellableCosmetics = (wardrobe ?? []).filter(
+    (c) => c.owned && !c.equipped && !c.listed && c.ownedId != null
+  );
   const priceNum = Number(price);
   const valid = selected != null && Number.isFinite(priceNum) && priceNum > 0;
   const net = valid ? priceNum - Math.floor((priceNum * feeBps) / 10_000) : 0;
@@ -419,9 +436,9 @@ function SellPanel({
   return (
     <div className="space-y-4">
       <section className="space-y-2">
-        <h2 className="stat-label">Unopened crates</h2>
+        <h2 className="stat-label">Unopened allocations</h2>
         {crates.length === 0 ? (
-          <p className="text-xs text-steel-500">No crates to sell — they turn up as you mine.</p>
+          <p className="text-xs text-steel-500">No allocations to sell — they turn up as your desks run.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {crates.map((c) => (
@@ -436,7 +453,7 @@ function SellPanel({
               >
                 <CrateThumb size={36} rarity="legendary" animate={false} />
                 <span className="text-[11px] text-steel-300">
-                  {c.crateType === 'rig_crate' ? 'Fab Supply Pod' : 'Cleanroom Supply Pod'}
+                  {c.crateType === 'rig_crate' ? 'Equity Desk Allocation' : 'Treasury Desk Allocation'}
                 </span>
               </button>
             ))}
@@ -445,12 +462,12 @@ function SellPanel({
       </section>
 
       <section className="space-y-2">
-        <h2 className="stat-label">Unequipped components</h2>
+        <h2 className="stat-label">Unequipped instruments</h2>
         {inventory == null ? (
           <p className="text-xs text-steel-500">Loading…</p>
         ) : sellableComponents.length === 0 ? (
           <p className="text-xs text-steel-500">
-            Nothing spare — unequip a component from a fab to sell it.
+            Nothing spare — unequip an instrument from a desk to sell it.
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -477,9 +494,46 @@ function SellPanel({
         )}
       </section>
 
+      <section className="space-y-2">
+        <h2 className="stat-label">Wardrobe</h2>
+        {wardrobe == null ? (
+          <p className="text-xs text-steel-500">Loading…</p>
+        ) : sellableCosmetics.length === 0 ? (
+          <p className="text-xs text-steel-500">
+            Nothing spare — take a cosmetic off at the Outfitter to sell it. Refinements travel
+            with the item, so a higher rank is worth more.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {sellableCosmetics.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setSelected({ kind: 'cosmetic', id: c.ownedId! })}
+                className={`flex items-center gap-2 rounded border p-2 transition ${
+                  selected?.kind === 'cosmetic' && selected.id === c.ownedId
+                    ? 'border-amber-500 bg-amber-500/10'
+                    : 'border-ink-600 bg-ink-800 hover:border-steel-500'
+                }`}
+              >
+                <span
+                  className="grid h-9 w-9 place-items-center rounded border border-lime-400/30 bg-lime-400/10 font-mono text-[9px] text-lime-300"
+                  aria-hidden
+                >
+                  {c.level}/5
+                </span>
+                <span className="text-[11px] text-steel-300">
+                  {c.name}
+                  <span className="ml-1 font-mono text-lime-300">{c.rank}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="panel space-y-2 p-4">
         <label className="stat-label" htmlFor="market-price">
-          Ask price (GPU)
+          Ask price (BNTY)
         </label>
         <input
           id="market-price"
@@ -495,7 +549,7 @@ function SellPanel({
           {valid && (
             <>
               {' '}
-              You would receive <span className="font-mono text-amber-400">{fmtOsr(net)} GPU</span>.
+              You would receive <span className="font-mono text-amber-400">{fmtOsr(net)} BNTY</span>.
             </>
           )}
         </p>

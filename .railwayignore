@@ -27,12 +27,8 @@ data/
 .idea/
 .DS_Store
 
-# Source assets that are not served at runtime. The Blender/design working
-# files are large and only used to author what already lives in public/.
-# Being in .gitignore is not enough — the tarball ignores it, so list them here.
+# Source assets that are not served at runtime. These working files are large
+# and only used to author art. Being in .gitignore is not enough — the tarball
+# ignores it, so list them here.
 design_polish/
 ORS MODELS/
-design-qa-evidence/
-
-# Blender project files — dev tooling, not served at runtime
-blender/

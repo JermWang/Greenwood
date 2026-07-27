@@ -27,7 +27,6 @@ const {
   userOperation,
   readUser,
   compoundInfo,
-  xstockPending,
   crateAllowance,
 } = await import('./game');
 const { SHARE_CAP, STARTER_OSR_GRANT, GENESIS_RATE_PER_SEC } = await import('./economy');
@@ -216,7 +215,7 @@ describe('full game cycle', () => {
     const w = wallet(50);
     getOrCreateUser(w);
     fund(w, 0);
-    expect(() => mintNode(w, 'oil_rig')).toThrow(/Not enough GPU/);
+    expect(() => mintNode(w, 'oil_rig')).toThrow(/Not enough BNTY/);
   });
 
   test('claim cooldown is enforced', () => {
@@ -291,7 +290,6 @@ describe('full game cycle', () => {
     const user = readUser(w);
     inventory(w);
     compoundInfo(w, false);
-    xstockPending(w);
     crateAllowance(readUser(w));
     settleUser(w, false);
 

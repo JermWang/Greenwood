@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       recordPayout(wallet, result.payout, null, { stakeId, error: String(payoutError), result });
       console.error('[stake/close] payout failed after the contract was closed', payoutError);
       throw new GameError(
-        `The contract closed but the transfer did not go through. ${Math.round(result.payout).toLocaleString()} GPU is recorded as owed to you.`,
+        `The Note closed but the transfer did not go through. ${Math.round(result.payout).toLocaleString()} BNTY is recorded as owed to you.`,
         502
       );
     }

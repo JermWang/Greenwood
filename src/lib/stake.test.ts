@@ -63,7 +63,7 @@ describe('opening a contract', () => {
   test('refuses a principal the wallet cannot cover', () => {
     const w = wallet(2);
     fund(w, 100);
-    expect(() => openStake(w, 5_000, TERM.days)).toThrow(/Not enough GPU/);
+    expect(() => openStake(w, 5_000, TERM.days)).toThrow(/Not enough BNTY/);
   });
 
   test('refuses a term that is not on the published rate card', () => {
@@ -76,7 +76,7 @@ describe('opening a contract', () => {
   test('refuses anything under the minimum', () => {
     const w = wallet(4);
     fund(w, 10_000);
-    expect(() => openStake(w, STAKE_MIN_OSR - 1, TERM.days)).toThrow(/minimum contract/);
+    expect(() => openStake(w, STAKE_MIN_OSR - 1, TERM.days)).toThrow(/minimum Note/);
   });
 
   test('caps how many contracts one operator may hold open', () => {

@@ -174,7 +174,7 @@ function InjectedWalletButton() {
           {!initialized && <div className="px-3 py-3 text-xs text-steel-400">Detecting wallets…</div>}
           {error && <p className="px-3 py-2 text-[11px] text-red-400">{error}</p>}
           <div className="mt-1 border-t border-ink-600 px-3 py-2 text-[10px] leading-relaxed text-steel-500">
-            Wallet signatures stay in your extension. GPU never receives your private key.
+            Wallet signatures stay in your extension. Greenwood never receives your private key.
           </div>
         </div>
       )}

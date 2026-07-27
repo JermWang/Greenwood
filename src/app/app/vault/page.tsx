@@ -61,7 +61,7 @@ export default function VaultPage() {
       setEvents(ev as unknown as TreasuryEvent[]);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'API unreachable';
-      setError(message.startsWith('429') ? 'Telemetry bus is saturated. Retry in a moment.' : message);
+      setError(message.startsWith('429') ? 'Data feed is saturated. Retry in a moment.' : message);
     } finally {
       setLoading(false);
     }
@@ -80,17 +80,17 @@ export default function VaultPage() {
   const share = op && op.networkGrowPower > 0 ? op.growPower / op.networkGrowPower : null;
 
   return (
-    <PageShell title="Treasury Core" subtitle="Inspect the emission chamber, custody cells, and every network flow from one proof-of-reserve console." maxWidth="max-w-[1500px]">
+    <PageShell title="The Vault" subtitle="Inspect the emission chamber, custody cells, and every network flow from one proof-of-reserve console." maxWidth="max-w-[1500px]">
       {loading && !overview ? (
-        <div className="fab-loading-deck"><span className="fab-loading-scan" /><p className="font-mono text-[10px] uppercase tracking-[.25em] text-cyan-200">Reading reserve lattice</p></div>
+        <div className="fab-loading-deck"><span className="fab-loading-scan" /><p className="font-mono text-[10px] uppercase tracking-[.25em] text-emerald-200">Reading reserve ledger</p></div>
       ) : error ? (
-        <div className="fab-system-alert is-error"><span>CORE</span><p>{error}</p><button className="btn-secondary ml-auto" onClick={() => void load()}>Retry link</button></div>
+        <div className="fab-system-alert is-error"><span>VAULT</span><p>{error}</p><button className="btn-secondary ml-auto" onClick={() => void load()}>Retry link</button></div>
       ) : (
         <div className="treasury-layout">
           <section className="treasury-reactor">
             <div className="treasury-reactor-copy">
               <span className="fab-scene-kicker">EMISSION CHAMBER / LIVE</span>
-              <h2>{compact(overview?.osrReserveBalance)} <small>GPU</small></h2>
+              <h2>{compact(overview?.osrReserveBalance)} <small>BNTY</small></h2>
               <p>Unrouted network reserve</p>
               <div className="treasury-flow-legend">
                 <span><i className="is-reserve" /> Reserve {Math.round(reserveFill * 100)}%</span>
@@ -100,14 +100,14 @@ export default function VaultPage() {
             <div className="treasury-orbit" style={{ '--reserve-fill': `${reserveFill * 360}deg` } as CSSProperties}>
               <span className="treasury-orbit-ring is-a" />
               <span className="treasury-orbit-ring is-b" />
-              <span className="treasury-orbit-core"><b>GPU</b><small>RESERVE</small></span>
+              <span className="treasury-orbit-core"><b>BNTY</b><small>RESERVE</small></span>
             </div>
           </section>
 
           <section className="treasury-signal-grid">
-            <Signal code="BURN" label="GPU permanently retired" value={compact(overview?.totalOsrBurned)} unit="GPU" tone="lime" />
-            <Signal code="LINES" label="Active process lines" value={String(overview?.totalNodes ?? 0)} unit="UNITS" tone="cobalt" />
-            <Signal code="FLOW" label="Network silicon output" value={overview?.networkProductionRate?.toFixed(3) ?? '—'} unit="GPU/S" tone="cyan" />
+            <Signal code="BURN" label="BNTY permanently retired" value={compact(overview?.totalOsrBurned)} unit="BNTY" tone="lime" />
+            <Signal code="DESKS" label="Active desks" value={String(overview?.totalNodes ?? 0)} unit="UNITS" tone="cobalt" />
+            <Signal code="FLOW" label="Network yield output" value={overview?.networkProductionRate?.toFixed(3) ?? '—'} unit="BNTY/S" tone="cyan" />
           </section>
 
           <section className="treasury-network">
@@ -117,7 +117,7 @@ export default function VaultPage() {
                 <span>Next halving</span>
                 <b>{countdown}</b>
                 <small>
-                  {overview?.halving.currentRatePerSec.toFixed(3) ?? '—'} → {overview?.halving.nextRatePerSec.toFixed(3) ?? '—'} GPU/sec
+                  {overview?.halving.currentRatePerSec.toFixed(3) ?? '—'} → {overview?.halving.nextRatePerSec.toFixed(3) ?? '—'} BNTY/sec
                 </small>
               </div>
               {/* The bar is cycle progress, which is also how close the rate is
@@ -135,18 +135,18 @@ export default function VaultPage() {
               </div>
               <div>
                 <dt>Emitted to date</dt>
-                <dd>{compact(overview?.totalEmitted)} <em>GPU</em></dd>
+                <dd>{compact(overview?.totalEmitted)} <em>BNTY</em></dd>
                 <small>Drawn from the reserve since genesis</small>
               </div>
               <div>
-                <dt>Locked in contracts</dt>
-                <dd>{compact(overview?.contracts.lockedPrincipal)} <em>GPU</em></dd>
-                <small>{overview?.contracts.open ?? 0} open · {compact(overview?.contracts.committedInterest)} GPU promised</small>
+                <dt>Locked in Notes</dt>
+                <dd>{compact(overview?.contracts.lockedPrincipal)} <em>BNTY</em></dd>
+                <small>{overview?.contracts.open ?? 0} open · {compact(overview?.contracts.committedInterest)} BNTY promised</small>
               </div>
               <div>
                 <dt>Your share of output</dt>
                 <dd>{share == null ? '—' : `${(share * 100).toFixed(2)}%`}</dd>
-                <small>{op ? `${op.growPower.toFixed(1)} of ${op.networkGrowPower.toFixed(1)} grow power` : 'Link an operator to see it'}</small>
+                <small>{op ? `${op.growPower.toFixed(1)} of ${op.networkGrowPower.toFixed(1)} yield power` : 'Link a fund to see it'}</small>
               </div>
             </dl>
           </section>
@@ -157,7 +157,7 @@ export default function VaultPage() {
               <div className="treasury-empty">
                 <span className="treasury-empty-icon">◇</span>
                 <strong>{TOKEN_LIVE ? 'No balances returned' : 'Custody cells awaiting token launch'}</strong>
-                <p>{TOKEN_LIVE ? 'The configured treasury returned no indexed assets.' : 'Protocol accounting is active; public chain balances appear here after GPU launches.'}</p>
+                <p>{TOKEN_LIVE ? 'The configured treasury returned no indexed assets.' : 'Protocol accounting is active; public chain balances appear here after BNTY launches.'}</p>
               </div>
             ) : (
               <div className="treasury-cell-grid">

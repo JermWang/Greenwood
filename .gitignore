@@ -26,8 +26,3 @@ Thumbs.db
 
 # compiled contract artifacts
 contracts/out/
-
-# Generated Blender project (rebuild with blender/import_models.py)
-blender/*.blend
-blender/*.blend1
-blender/fab-glb/

@@ -17,9 +17,5 @@
     "paths": { "@/*": ["./src/*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "ORS MODELS",
-    "scripts/export-fab-glb.tsx"
-  ]
+  "exclude": ["node_modules", "ORS MODELS"]
 }

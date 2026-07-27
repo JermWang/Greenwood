@@ -119,7 +119,7 @@ async function balances(provider: Eip1193Provider, address: Address) {
   const client = createPublicClient({ chain: robinhoodChain, transport: custom(provider) });
   const native = await client.getBalance({ address });
   let osrBalance: string | null = null;
-  let osrSymbol = 'GPU';
+  let osrSymbol = 'BNTY';
   if (isConfiguredAddress(OSR_TOKEN_ADDRESS)) {
     const token = getAddress(OSR_TOKEN_ADDRESS);
     const [amount, decimals, symbol] = await Promise.all([
@@ -204,7 +204,7 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
   chainId: null,
   nativeBalance: null,
   osrBalance: null,
-  osrSymbol: 'GPU',
+  osrSymbol: 'BNTY',
   connecting: false,
   initialized: false,
   error: null,

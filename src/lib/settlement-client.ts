@@ -81,7 +81,7 @@ export function validatePaymentRequest(
   expectedTreasury = OSR_TREASURY_ADDRESS
 ): ValidatedPayment {
   if (!isConfiguredAddress(expectedToken) || !isConfiguredAddress(expectedTreasury)) {
-    throw new Error('GPU settlement addresses are not configured');
+    throw new Error('BNTY settlement addresses are not configured');
   }
   if (payment.chainId !== CHAIN.id) throw new Error(`Payment quote targets unexpected chain ${payment.chainId}`);
   if (!Number.isInteger(payment.deadline) || payment.deadline <= nowSeconds) throw new Error('Payment quote has expired');
@@ -92,7 +92,7 @@ export function validatePaymentRequest(
 
   const token = getAddress(payment.token);
   const treasury = getAddress(payment.to);
-  if (token !== getAddress(expectedToken)) throw new Error('Payment quote changed the GPU token contract');
+  if (token !== getAddress(expectedToken)) throw new Error('Payment quote changed the BNTY token contract');
   if (treasury !== getAddress(expectedTreasury)) throw new Error('Payment quote changed the protocol treasury');
 
   const amount = BigInt(payment.amount);
@@ -104,7 +104,7 @@ export function validatePaymentRequest(
   }
   const tolerance = Math.max(10 ** -Math.min(payment.decimals, 12), Math.abs(payment.osrAmount) * 1e-10);
   if (Math.abs(displayNumber - payment.osrAmount) > tolerance) {
-    throw new Error('Payment base units do not match the quoted GPU amount');
+    throw new Error('Payment base units do not match the quoted BNTY amount');
   }
   return { token, treasury, amount, displayAmount };
 }
@@ -131,7 +131,7 @@ export async function submitPayment(
     pub.readContract({ address: validated.token, abi: erc20Abi, functionName: 'symbol' }),
     pub.readContract({ address: validated.token, abi: erc20Abi, functionName: 'balanceOf', args: [account] }),
   ]);
-  if (tokenDecimals !== payment.decimals) throw new Error('GPU token decimals do not match the payment quote');
+  if (tokenDecimals !== payment.decimals) throw new Error('BNTY token decimals do not match the payment quote');
   if (tokenSymbol.trim().toUpperCase() !== EXPECTED_TOKEN_SYMBOL.toUpperCase()) {
     throw new Error(`Configured token identifies as ${tokenSymbol}, not ${EXPECTED_TOKEN_SYMBOL}; wallet request blocked`);
   }

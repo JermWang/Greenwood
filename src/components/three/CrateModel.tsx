@@ -65,8 +65,8 @@ export default function CrateModel({
     const shell = new THREE.MeshPhysicalMaterial({ color: 0xeff3f7, roughness: 0.44, clearcoat: 0.22, clearcoatRoughness: 0.5 });
     const plinth = new THREE.MeshStandardMaterial({ color: 0x202936, metalness: 0.52, roughness: 0.36 });
     const frame = new THREE.MeshStandardMaterial({ color: 0x2a3442, metalness: 0.6, roughness: 0.3 });
-    const cobalt = new THREE.MeshPhysicalMaterial({ color: 0x0c3d98, metalness: 0.35, roughness: 0.18, clearcoat: 0.5 });
-    const lime = new THREE.MeshBasicMaterial({ color: 0x91f45f, toneMapped: false });
+    const cobalt = new THREE.MeshPhysicalMaterial({ color: 0x0a5c3a, metalness: 0.35, roughness: 0.18, clearcoat: 0.5 });
+    const lime = new THREE.MeshBasicMaterial({ color: 0x00d26a, toneMapped: false });
     const orange = new THREE.MeshStandardMaterial({ color: 0xff8a25, emissive: 0xff7916, emissiveIntensity: 0.6, roughness: 0.22 });
     const seam = new THREE.MeshStandardMaterial({
       color: colour,

@@ -3,25 +3,60 @@
 
 import type { Rarity } from './rarity';
 
+/**
+ * Instrument power by rarity.
+ *
+ * Compressed from a 1 -> 3000 span, and that change is the single most
+ * consequential number in the game, so the reasoning is here rather than in a
+ * commit message.
+ *
+ * Desk power is levelMultiplier MULTIPLIED BY the instrument multiplier. With
+ * the old table the three levers were wildly different sizes — desk level spanned
+ * 5x, floor layout 1.7x, and instruments 6,486x once the boost stack below was
+ * applied. A lever 1,300x wider than every other one is not a lever, it is the
+ * game; and because instruments are scarce, the optimal play was always to
+ * concentrate them onto the deepest desk. archetype-balance.test.ts measured a
+ * deep build finishing 366% ahead of a wide one.
+ *
+ * The span is now 1 -> 20, which under the averaging below yields a best-case
+ * gear multiplier of about 4.5x — deliberately comparable to desk level's 5x.
+ * Three levers of similar size is what makes a build a choice.
+ *
+ * Rarity still means something and still reads the same way: each tier is a
+ * clear step up, Divine is still the best thing you can find. What it no longer
+ * does is make every other decision in the game irrelevant.
+ */
 export const RARITY_MULT: Record<Rarity, number> = {
   common: 1,
-  uncommon: 1.8,
-  rare: 3,
-  epic: 10,
-  legendary: 50,
-  mythic: 300,
-  divine: 3000,
+  uncommon: 1.5,
+  rare: 2.2,
+  epic: 3.6,
+  legendary: 6,
+  mythic: 11,
+  divine: 20,
 };
 
-/** Per-component grow-power boost stack (Formula D). */
+/**
+ * Per-component boost stack — now neutral, and kept only so the shape survives.
+ *
+ * This multiplied PER FITTED INSTRUMENT, so four Divines compounded to 2^4 = 16x
+ * on top of the averaged multiplier. That is what made concentrating scarce gear
+ * onto one desk beat spreading it by a factor of nearly six, and it is the
+ * mechanism that made a deep build unbeatable rather than merely strong.
+ *
+ * Flattened to 1 rather than deleted: the table is read in several places, and a
+ * neutral table keeps those call sites honest while making the stack a knob that
+ * is currently off. If a per-instrument bonus comes back it must be additive,
+ * not multiplicative.
+ */
 export const RARITY_BOOST: Record<Rarity, number> = {
   common: 1,
   uncommon: 1,
   rare: 1,
-  epic: 1.05,
-  legendary: 1.15,
-  mythic: 1.4,
-  divine: 2,
+  epic: 1,
+  legendary: 1,
+  mythic: 1,
+  divine: 1,
 };
 
 /** Base crate drop weights (percent). */
@@ -71,7 +106,7 @@ export const COMPOUND_LEVELS: Record<
 };
 export const MAX_COMPOUND_LEVEL = 10;
 
-/** Cleanrooms add bonus facility slots at higher compound levels. */
+/** Treasury Desks add bonus slots at higher portfolio levels. */
 export function getShaftBonusSlots(level: number): number {
   if (level >= 9) return 4;
   if (level >= 7) return 3;
@@ -124,8 +159,17 @@ export const CRATES_FOUND_PER_DAY = Number(process.env.NEXT_PUBLIC_OSR_CRATES_PE
  */
 export const CRATE_WALLET_DAILY_CAP = Number(process.env.NEXT_PUBLIC_OSR_CRATE_WALLET_CAP ?? 6);
 
-/** Marketplace fee, in basis points, taken from the sale price. */
-export const MARKET_FEE_BPS = Number(process.env.NEXT_PUBLIC_OSR_MARKET_FEE_BPS ?? 250);
+/**
+ * The house cut on a player-to-player sale: 2%, matching cosmetics.
+ *
+ * Unified deliberately so the rule is one sentence a player can hold in their
+ * head — "the house takes 2%, and gives all of it back" — and because a single
+ * figure is far harder to quietly inflate later than four scattered ones.
+ *
+ * This applies to TRANSFERS, where value moves between two players. It is not
+ * the same thing as the spend splits below, which consume the whole amount.
+ */
+export const MARKET_FEE_BPS = Number(process.env.NEXT_PUBLIC_OSR_MARKET_FEE_BPS ?? 200);
 
 /** Node level -> production multiplier (L11+ extrapolates +0.6/level). */
 export function levelMultiplier(level: number): number {
@@ -154,6 +198,89 @@ export const SPLIT_RESERVE_BPS = 3000;
 export const SPLIT_TREASURY_BPS = 2000;
 
 // ---------------------------------------------------------------------------
+// Cosmetics
+// ---------------------------------------------------------------------------
+
+/**
+ * The house cut on a cosmetic purchase: 2%.
+ *
+ * Unlike the other spends in this file, none of it is kept. It is split in half
+ * and both halves go back to the players — one burned, tightening supply, and
+ * one returned to the emission reserve, which is what actually pays rewards.
+ * The treasury takes nothing here on purpose: cosmetics are meant to circulate
+ * value rather than extract it.
+ */
+export const COSMETIC_FEE_BPS = 200;
+/** Of the fee above: half burned, half back into the rewards pool. */
+export const COSMETIC_FEE_BURN_BPS = 5000;
+export const COSMETIC_FEE_RESERVE_BPS = 5000;
+
+/**
+ * SCRIP is the earned currency, and most of the cosmetic catalogue is priced in
+ * it on purpose. A player should be able to look different without ever buying
+ * the token — the wardrobe is the reward for playing, and paywalling all of it
+ * turns a status system into a receipt. BNTY and ETH remain for the pieces that
+ * are meant to be genuinely scarce.
+ */
+export type CosmeticCurrency = 'BNTY' | 'ETH' | 'SCRIP';
+
+export interface CosmeticFeeSplit {
+  /** Total fee taken from the sale. */
+  fee: number;
+  /** Fee half that is destroyed. */
+  burn: number;
+  /** Fee half that funds future rewards. */
+  reserve: number;
+  /** What remains of the sale after the fee. */
+  net: number;
+}
+
+/**
+ * Split a cosmetic sale into fee, burn, reserve and net.
+ *
+ * Burn is derived and reserve is the remainder rather than both being computed
+ * from basis points, so the two halves always sum to exactly the fee. Computing
+ * each independently lets a rounded half-unit go missing on odd amounts, which
+ * over many sales is supply that was neither burned nor paid out.
+ */
+export function cosmeticFeeSplit(amount: number): CosmeticFeeSplit {
+  const fee = (amount * COSMETIC_FEE_BPS) / 10_000;
+  const burn = (fee * COSMETIC_FEE_BURN_BPS) / 10_000;
+  return { fee, burn, reserve: fee - burn, net: amount - fee };
+}
+
+/**
+ * The upgrade track: how far a cosmetic you already own can be taken.
+ *
+ * Five steps, and the cap is published rather than open-ended. A visible finish
+ * line is what makes the track worth starting — an infinite upgrade path reads
+ * as a treadmill, and players stop after the first rung.
+ */
+export const COSMETIC_MAX_LEVEL = 5;
+
+/**
+ * BNTY to take a cosmetic from `fromLevel` to the next step.
+ *
+ * Priced off the item's own BNTY price so an expensive skin costs more to
+ * refine than a cheap one, and geometric so the later steps are a genuine
+ * commitment: taking a 6,000 BNTY item to the cap costs about 45,000 in total.
+ *
+ * This is the sink the token needs. Unlike a multiplier it buys nothing that
+ * pays out — the whole amount leaves circulation as fee, burn and revenue — so
+ * it can be priced aggressively without touching yield or emission.
+ */
+export function cosmeticUpgradeCost(basePriceBnty: number, fromLevel: number): number {
+  return Math.round(basePriceBnty * 0.4 * Math.pow(1.7, fromLevel));
+}
+
+/** Every step's price, for a UI that wants to show the whole ladder up front. */
+export function cosmeticUpgradeLadder(basePriceBnty: number): number[] {
+  return Array.from({ length: COSMETIC_MAX_LEVEL }, (_, level) =>
+    cosmeticUpgradeCost(basePriceBnty, level)
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Fab Capacity Contracts — the staking vault
 // ---------------------------------------------------------------------------
 
@@ -176,9 +303,9 @@ export interface StakeTerm {
 }
 
 export const STAKE_TERMS: readonly StakeTerm[] = [
-  { days: 30, aprBps: 800, label: 'Short run' },
-  { days: 90, aprBps: 1600, label: 'Production run' },
-  { days: 180, aprBps: 2800, label: 'Full campaign' },
+  { days: 30, aprBps: 800, label: '30-Day Note' },
+  { days: 90, aprBps: 1600, label: '90-Day Note' },
+  { days: 180, aprBps: 2800, label: '180-Day Note' },
 ] as const;
 
 /** Below this a contract's interest is dust and the row costs more than it earns. */
@@ -214,8 +341,8 @@ export interface NodeFamilyDef {
 export const NODE_FAMILIES: NodeFamilyDef[] = [
   {
     key: 'oil_rig',
-    name: 'Wafer Fab',
-    description: 'Front-end silicon production wing. Farms GPU and unlocks the strategic xStock bonus pool at Warehouse L5+.',
+    name: 'Equity Desk',
+    description: 'Highest base rate of the two families, and the one instrument sets are built around. Claims pay out at the standard 2% fee.',
     family: 'oil',
     burnCostOsr: 1000,
     burnShareBps: MINT_BURN_BPS,
@@ -224,8 +351,8 @@ export const NODE_FAMILIES: NodeFamilyDef[] = [
   },
   {
     key: 'mine_shaft',
-    name: 'Cleanroom',
-    description: 'Back-end dicing and packaging wing. Farms GPU, compounds at a reduced 0.75% fee, and adds bonus facility slots at L5/L7/L9.',
+    name: 'Treasury Desk',
+    description: 'Tokenized T-bill desk. Earns BNTY, reinvests coupons at a reduced 0.75% fee, and adds bonus desk slots at L5/L7/L9.',
     family: 'mine',
     burnCostOsr: 750,
     burnShareBps: MINT_BURN_BPS,
@@ -395,8 +522,3 @@ export const STARTER_OSR_GRANT = 1_000;
 export const STORAGE_CAP_SECONDS = 43_200;
 
 export const COMPOUND_COOLDOWN_MS = 12 * 3600 * 1000; // 12h, expedite fee skips
-
-// xStock
-export const XSTOCK_MIN_COMPOUND_LEVEL = 5;
-export const AUTO_SWAP_ENABLED = false;
-export const XSTOCK_ACCRUAL_RATE = 0.01;

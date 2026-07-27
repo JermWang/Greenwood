@@ -2,16 +2,31 @@
 // browser. Given the live operation state and the parts locker, it returns the
 // single most important next action — walking the loop:
 //
-//   mint first line (start the 8x boost) -> route yield -> equip found parts ->
-//   open a pod -> upgrade warehouse -> expand -> level up -> (producing)
+//   open first desk (start the 8x boost) -> route yield -> equip found parts ->
+//   open an allocation -> upgrade portfolio -> expand -> level up ->
+//   GO OUTSIDE -> (producing)
 //
 // The order IS the priority: the first branch that matches wins. It never
-// suggests an action the balance cannot cover, so a pod or upgrade only appears
-// once it is actually affordable.
+// suggests an action the balance cannot cover, so an allocation or upgrade only
+// appears once it is actually affordable.
+//
+// THE OUTDOOR BRANCHES ARE WHY THIS FILE MATTERS BEYOND THE FIRST SESSION.
+//
+// Every branch used to be a fund action, and the chain terminated in a wait
+// state that said "nothing needs your attention right now". That is the single
+// most-read line of copy on the dashboard, and for an experienced player it was
+// always the one showing — the guide's final advice to the people most invested
+// in the game was that there was nothing to do. Meanwhile the Grounds, the
+// Treeline and the Deep Forest existed, were gated, were tested, and were
+// mentioned nowhere.
+//
+// So the outdoors sits directly BEFORE the idle states rather than competing
+// with the fund: routing yield is time-sensitive and an expedition is not, so
+// anything urgent still wins. What changed is what "nothing urgent" leads to.
 
-import type { UserOperation, InventoryItem } from './api-client';
+import type { UserOperation, InventoryItem, RegionView } from './api-client';
 
-/** The cheapest line (a Cleanroom) — the floor for "can I afford another line". */
+/** The cheapest desk (a Treasury Desk) — the floor for "can I afford another desk". */
 const NODE_MIN_COST = 750;
 
 export type NextAction =
@@ -38,7 +53,95 @@ function gpu(n: number): string {
   return Math.round(n).toLocaleString();
 }
 
-export function decideNextStep(op: UserOperation, locker: InventoryItem[]): NextStepView {
+/**
+ * The outdoor regions, best first.
+ *
+ * "Best" means furthest from the settlement, which is the axis everything out
+ * there is tuned along — the Deep Forest is the frontier, the Grounds are the
+ * doorstep. Pointing a capable player at the doorstep would be technically
+ * correct and useless.
+ *
+ * Ids, not names: these are the region ids from lib/regions, which are canon and
+ * deliberately not renamed (see CLAUDE.md).
+ */
+const FRONTIER = ['deep-forest', 'treeline', 'grounds'] as const;
+
+/** Where the Grounds live. Every outdoor suggestion routes through the hub. */
+const GROUNDS_HREF = '/app/grounds';
+
+/**
+ * The outdoor half of the decision, or null when there is nothing to say.
+ *
+ * Split out because it answers a different question from the branches above it —
+ * those ask "what can this fund afford", this asks "where may this player go" —
+ * and because the region verdicts are optional. The dashboard fetches them
+ * separately, so a caller without them still gets the whole fund chain rather
+ * than an error.
+ *
+ * Everything routes to the Grounds rather than deep-linking to the region
+ * itself. The Grounds are the hub: the doors are there, the gate that refuses
+ * you is there, and the pack that gets you past it is sold at that gate. A link
+ * straight to a locked region would land the player on a refusal screen with
+ * nothing to do about it.
+ */
+function decideOutdoors(regions: RegionView[]): NextStepView | null {
+  const outdoor = FRONTIER.map((id) => regions.find((r) => r.id === id)).filter(
+    (r): r is RegionView => Boolean(r)
+  );
+  if (outdoor.length === 0) return null;
+
+  // A gate blocked ONLY by a pack beats an open region, because it is a smaller
+  // and more concrete action: something to buy, at a known price, that opens a
+  // place. "Go for a walk" competes badly with that.
+  const needsPack = outdoor.filter((r) => !r.allowed && r.code === 'pack')
+    .sort((a, b) => a.minTotalLevel - b.minTotalLevel)[0];
+  if (needsPack) {
+    return {
+      id: 'need-pack',
+      tag: 'Outside · Blocked',
+      title: `${needsPack.name} is open to you — but not empty-handed`,
+      body:
+        'You have the level for it. What you do not have is a pack, and nothing you find out there can come back without one. They are sold at the gate itself, in the Grounds.',
+      tone: 'act',
+      action: { kind: 'link', label: 'Walk to the gate', href: GROUNDS_HREF },
+    };
+  }
+
+  const open = outdoor.find((r) => r.allowed);
+  if (open) {
+    return {
+      id: 'go-outside',
+      tag: 'Outside',
+      title: `${open.name} is open`,
+      body: `${open.blurb} Everything past the Machine Room door is reached on foot — walk out through the Grounds.`,
+      tone: 'act',
+      action: { kind: 'link', label: 'Step outside', href: GROUNDS_HREF },
+    };
+  }
+
+  // Nothing open and nothing buyable: name the next gate and what it costs, so
+  // an idle fund still has a direction. A locked region the player cannot see is
+  // a locked region they cannot work toward.
+  const next = outdoor.filter((r) => !r.allowed).sort((a, b) => a.minTotalLevel - b.minTotalLevel)[0];
+  if (next) {
+    return {
+      id: 'next-region',
+      tag: 'Outside · Locked',
+      title: `${next.name} opens at level ${next.minTotalLevel}`,
+      body: `${next.reason ?? next.blurb} Levels come from doing things — trading, treasury, allocations and running the floor each raise their own track.`,
+      tone: 'wait',
+      action: { kind: 'link', label: 'See your tracks', href: '/app/profile' },
+    };
+  }
+  return null;
+}
+
+export function decideNextStep(
+  op: UserOperation,
+  locker: InventoryItem[],
+  /** Region verdicts from /api/regions. Omitted when the caller has not loaded them. */
+  regions?: RegionView[]
+): NextStepView {
   const nodes = op.nodes ?? [];
   const balance = op.osrBalance ?? 0;
   const pending = Object.values(op.pending ?? {}).reduce((a, b) => a + b, 0);
@@ -49,12 +152,12 @@ export function decideNextStep(op: UserOperation, locker: InventoryItem[]): Next
   if (nodes.length === 0) {
     return {
       id: 'mint-first',
-      tag: 'Step 1 · Commission',
-      title: 'Build your first production line',
+      tag: 'Step 1 · Open',
+      title: 'Open your first desk',
       body:
-        'Your 1,000 GPU starter grant covers one line. Commissioning it also starts a 72-hour 8× production boost that only ever runs once — the sooner you build, the more you earn.',
+        'Your 1,000 BNTY starter grant covers one desk. Opening it also starts a 72-hour 8× yield boost that only ever runs once — the sooner you build, the more you earn.',
       tone: 'act',
-      action: { kind: 'mint', label: 'Commission a line' },
+      action: { kind: 'mint', label: 'Open a desk' },
     };
   }
 
@@ -63,11 +166,11 @@ export function decideNextStep(op: UserOperation, locker: InventoryItem[]): Next
     return {
       id: 'claim',
       tag: 'Step 2 · Route yield',
-      title: `Route your ${gpu(pending)} GPU`,
+      title: `Route your ${gpu(pending)} BNTY`,
       body:
-        'Your lines have produced GPU. Route it to your balance so you can spend it — and so your lines, which stop earning once full, keep producing.',
+        'Your desks have produced BNTY. Route it to your balance so you can spend it — and so your desks, which stop earning once full, keep producing.',
       tone: 'act',
-      action: { kind: 'claim', label: `Route ${gpu(pending)} GPU` },
+      action: { kind: 'claim', label: `Route ${gpu(pending)} BNTY` },
     };
   }
 
@@ -78,10 +181,10 @@ export function decideNextStep(op: UserOperation, locker: InventoryItem[]): Next
     return {
       id: 'equip',
       tag: 'Step 3 · Equip',
-      title: 'Fit your recovered component',
-      body: `A ${fit.rarity} ${fit.slot.replace(/_/g, ' ')} part is in your Parts Bay locker. Fitting it to a matching line raises its grow-power — and your share of emissions — for free.`,
+      title: 'Equip your new instrument',
+      body: `A ${fit.rarity} ${fit.slot.replace(/_/g, ' ')} instrument is in your Instruments locker. Fitting it to a matching desk raises its yield power — and your share of emissions — for free.`,
       tone: 'act',
-      action: { kind: 'link', label: 'Open Parts Bay', href: '/app/inventory' },
+      action: { kind: 'link', label: 'Open Instruments', href: '/app/inventory' },
     };
   }
 
@@ -91,11 +194,11 @@ export function decideNextStep(op: UserOperation, locker: InventoryItem[]): Next
   if (heldPods > 0 && balance >= op.compound.crateCost) {
     return {
       id: 'open-pod',
-      tag: 'Step 4 · Open a pod',
-      title: unseen > 0 ? 'Open your new supply pod' : 'Open a supply pod',
-      body: `You have a sealed supply pod. Opening it (${gpu(op.compound.crateCost)} GPU) yields a random component you can fit to a line for more output.`,
+      tag: 'Step 4 · Open an allocation',
+      title: unseen > 0 ? 'Open your new allocation' : 'Open an allocation',
+      body: `You have a sealed allocation. Opening it (${gpu(op.compound.crateCost)} BNTY) yields a random instrument you can fit to a desk for more output.`,
       tone: 'act',
-      action: { kind: 'openPod', label: 'Open a pod' },
+      action: { kind: 'openPod', label: 'Open an allocation' },
     };
   }
 
@@ -105,10 +208,10 @@ export function decideNextStep(op: UserOperation, locker: InventoryItem[]): Next
     return {
       id: 'upgrade',
       tag: 'Step 5 · Upgrade',
-      title: `Upgrade your warehouse to Tier ${up.targetLevel}`,
-      body: `You can afford the upgrade (${gpu(up.totalOsr)} GPU). It raises your line capacity, daily pod finds, and the rarity of parts you can recover.`,
+      title: `Upgrade your portfolio to Tier ${up.targetLevel}`,
+      body: `You can afford the upgrade (${gpu(up.totalOsr)} BNTY). It raises your desk capacity, daily allocation finds, and the rarity of instruments you can recover.`,
       tone: 'act',
-      action: { kind: 'scroll', label: 'Upgrade warehouse', scrollTo: 'compound-panel' },
+      action: { kind: 'scroll', label: 'Upgrade portfolio', scrollTo: 'compound-panel' },
     };
   }
 
@@ -122,10 +225,10 @@ export function decideNextStep(op: UserOperation, locker: InventoryItem[]): Next
     return {
       id: 'expand',
       tag: 'Step 6 · Expand',
-      title: 'Add another production line',
-      body: 'You have the GPU and the capacity for another line. More lines mean a bigger share of the emission network.',
+      title: 'Add another desk',
+      body: 'You have the BNTY and the capacity for another desk. More desks mean a bigger share of the emission network.',
       tone: 'act',
-      action: { kind: 'mint', label: 'Commission a line' },
+      action: { kind: 'mint', label: 'Open a desk' },
     };
   }
 
@@ -137,31 +240,42 @@ export function decideNextStep(op: UserOperation, locker: InventoryItem[]): Next
     return {
       id: 'level-up',
       tag: 'Step 7 · Level up',
-      title: 'Level up a production line',
-      body: `You can afford to level up a line (${gpu(affordableLevel.nextLevelCost)} GPU). Higher levels produce more GPU per second.`,
+      title: 'Level up a desk',
+      body: `You can afford to level up a desk (${gpu(affordableLevel.nextLevelCost)} BNTY). Higher levels produce more BNTY per second.`,
       tone: 'act',
-      action: { kind: 'scroll', label: 'Inspect lines', scrollTo: 'production-lines' },
+      action: { kind: 'scroll', label: 'Inspect desks', scrollTo: 'production-lines' },
     };
   }
 
-  // 8) Nothing to act on — lines are producing. Point idle GPU at the vault.
+  // 8) The fund has nothing urgent. THIS is where the rest of the world lives —
+  //    before the idle states, not after them, because "nothing needs your
+  //    attention" should never be the last thing a player is told while three
+  //    regions sit unvisited.
+  const outdoors = regions ? decideOutdoors(regions) : null;
+  if (outdoors?.tone === 'act') return outdoors;
+
+  // 9) Nothing to act on — lines are producing. Point idle GPU at the vault.
   if (pending > 0 && op.claimCooldownRemainingMs > 0) {
     const mins = Math.ceil(op.claimCooldownRemainingMs / 60000);
     return {
       id: 'cooldown',
       tag: 'Producing',
       title: `Yield unlocks in ${mins}m`,
-      body: 'Your lines are producing. Routing is on a short cooldown after each claim — come back when it clears, or put idle GPU to work below.',
+      body: 'Your desks are producing. Routing is on a short cooldown after each claim — come back when it clears, or put idle BNTY to work below.',
       tone: 'wait',
-      action: { kind: 'link', label: 'Explore Capacity Contracts', href: '/app/stake' },
+      action: { kind: 'link', label: 'Explore Fixed Income', href: '/app/stake' },
     };
   }
+  // 10) Still nothing, but a gate is within sight. Naming it beats "nothing
+  //     needs your attention", which is true and demoralising.
+  if (outdoors) return outdoors;
+
   return {
     id: 'producing',
     tag: 'Producing',
-    title: 'Your fab is producing GPU',
-    body: 'Nothing needs your attention right now — lines earn while you are away. Check back to route yield, or lock idle GPU in a Capacity Contract for a fixed return.',
+    title: 'Your fund is earning BNTY',
+    body: 'Nothing needs your attention right now — desks earn while you are away. Check back to route yield, or lock idle BNTY in a Fixed-Income Note for a fixed return.',
     tone: 'wait',
-    action: { kind: 'link', label: 'Explore Capacity Contracts', href: '/app/stake' },
+    action: { kind: 'link', label: 'Explore Fixed Income', href: '/app/stake' },
   };
 }

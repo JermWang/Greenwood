@@ -83,21 +83,15 @@ npm run build
 
 - `src/app` — Next.js App Router pages + API route handlers (the game backend)
 - `src/lib` — game rules: rarity system, economy constants, DB
-- `src/components` — UI (tabs, HUD) and the Three.js scene
-- `public/assets/fab` — generated reference images for the procedural fab assets
-- `design-qa-evidence/fab-sculpts` — img2threejs intake and reconstruction evidence
-- `public/models/authored` — retained legacy source models (not used by the new facility scene)
-- `public/models/crates` — the retained v2 crate models
-- `public/models/original` — the original Blender-exported sand/source GLBs
-- `public/models/runtime` — derived Meshopt/WebP copies used by the live scene
+- `src/components/iso` — the isometric game board (desks, floor, camera rig)
+- `src/components/ui` — HUD, panels, tabs
+- `src/components/three` — the remaining free-camera pieces (crate reveal, desk preview)
+- `public/` — the Greenwood mark only
 - `ORS MODELS/` — source art and delivery packages (kept locally)
 
-## Rebuild optimized model copies
+## Art
 
-The runtime assets can be regenerated without modifying the authoritative
-exports. The script imports each source into a clean Blender scene and only
-writes to `public/models/runtime`:
-
-```powershell
-& 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' --background --factory-startup --python scripts\optimize-authored-models.py
-```
+Every visual currently in the game is built from primitives in code — there are
+no image, model, or environment-map assets in `public/`. The artwork inherited
+from the previous theme has been removed wholesale; commissioned Greenwood art
+will be added here when it lands.

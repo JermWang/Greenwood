@@ -321,7 +321,7 @@ export default function CrateCinematic({
         <fog attach="fog" args={['#05060a', 9, 22]} />
         <ambientLight intensity={0.22} />
         <directionalLight position={[4, 8, 6]} intensity={1.9} color="#ffd9a0" />
-        <pointLight position={[-4, 2, 2]} color="#5fa4ff" intensity={1.1} distance={15} decay={2} />
+        <pointLight position={[-4, 2, 2]} color="#79e0b0" intensity={1.1} distance={15} decay={2} />
         <pointLight position={[0, 2.5, 0]} color={color} intensity={phase === 'detonate' || showCard ? 17 : 3.5} distance={16} decay={2} />
         <Suspense fallback={null}>
           <CrateModel rarity={rarity} phase={phase} phaseT={phaseT} />

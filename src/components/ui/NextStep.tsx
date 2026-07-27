@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Lightning, Sparkle } from '@phosphor-icons/react';
-import { api, type UserOperation, type InventoryItem } from '@/lib/api-client';
+import { api, type UserOperation, type InventoryItem, type RegionView } from '@/lib/api-client';
 import { decideNextStep } from '@/lib/next-step';
 
 function scroll(id: string) {
@@ -33,6 +33,7 @@ export default function NextStep({
   onOpenPod: () => void;
 }) {
   const [locker, setLocker] = useState<InventoryItem[]>([]);
+  const [regions, setRegions] = useState<RegionView[] | undefined>(undefined);
 
   // The equip step needs the locker, which the dashboard does not otherwise
   // load. Fetch it once per wallet and refresh when production advances so a
@@ -47,7 +48,29 @@ export default function NextStep({
     return () => { cancelled = true; };
   }, [wallet, op.nodes.length, op.totalProduced]);
 
-  const step = decideNextStep(op, locker);
+  /**
+   * Which regions are open to this fund.
+   *
+   * Left `undefined` on failure rather than set to an empty array: an empty
+   * array is a claim that there are no regions, which would make the guide
+   * silently drop the outdoors entirely. Undefined means "not known", and
+   * decideNextStep falls back to the fund-only chain.
+   *
+   * Refetched when the total level could have moved — a region opening is the
+   * single most interesting thing that can happen to this panel, and finding out
+   * on the next full page load is finding out too late.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    if (!wallet) return;
+    void api
+      .regions(wallet)
+      .then((r) => { if (!cancelled) setRegions(r.regions); })
+      .catch(() => { if (!cancelled) setRegions(undefined); });
+    return () => { cancelled = true; };
+  }, [wallet, op.totalProduced]);
+
+  const step = decideNextStep(op, locker, regions);
   const Icon = step.tone === 'act' ? Lightning : Sparkle;
   const a = step.action;
 

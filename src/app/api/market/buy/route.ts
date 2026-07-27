@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       const buyer = getOrCreateUser(wallet);
       if (buyer.osr_balance < listing.price_osr) {
         throw new GameError(
-          `Not enough GPU: need ${listing.price_osr.toLocaleString()} (you have ${Math.floor(buyer.osr_balance).toLocaleString()}).`,
+          `Not enough BNTY: need ${listing.price_osr.toLocaleString()} (you have ${Math.floor(buyer.osr_balance).toLocaleString()}).`,
           400
         );
       }
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
         .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
         .run(listing.price_osr, wallet, listing.price_osr);
       if (Number(charged.changes) === 0) {
-        throw new GameError(`Not enough GPU: need ${listing.price_osr.toLocaleString()}.`, 400);
+        throw new GameError(`Not enough BNTY: need ${listing.price_osr.toLocaleString()}.`, 400);
       }
 
       // transferSoldItem runs its own transaction, so this cannot be wrapped in

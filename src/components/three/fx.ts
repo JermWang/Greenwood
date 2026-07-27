@@ -101,7 +101,7 @@ export function levelTheme(levelIn: number): LevelTheme {
   if (level >= 10)
     return { era: 'prestige', pigment: '#d9a93a', pigmentTint: 0.34, metal: 0.5, rough: 0.42, emissive: 0.5, ring: 1, scale };
   if (level >= 7)
-    return { era: 'hightech', pigment: '#9fb0c4', pigmentTint: 0.14, metal: 0.45, rough: 0.45, emissive: 0.2, ring: 0.7, scale };
+    return { era: 'hightech', pigment: '#79e0b0', pigmentTint: 0.14, metal: 0.45, rough: 0.45, emissive: 0.2, ring: 0.7, scale };
   if (level >= 4)
     return { era: 'reinforced', pigment: '#7d756a', pigmentTint: 0.12, metal: 0.46, rough: 0.54, emissive: 0.06, ring: 0.45, scale };
   return { era: 'rough', pigment: '#6a655c', pigmentTint: 0.18, metal: 0.18, rough: 0.82, emissive: 0, ring: 0, scale };

@@ -2,6 +2,10 @@
 
 // Shared post-processing stack.
 //
+// Currently unreferenced: its only consumers were the old free-camera fab
+// scene, which has been deleted. Kept because it is entirely procedural and
+// drops straight into IsoScene if the isometric board ever wants AO and bloom.
+//
 // Ambient occlusion does more for perceived production value than any other
 // single change here: without it every object floats, because nothing darkens
 // where surfaces meet. N8AO is the ground-truth variant — it traces against the
@@ -61,7 +65,7 @@ export default function PostFX({
         distanceFalloff={0.9}
         quality={half ? 'medium' : 'high'}
         halfRes={half}
-        color="#0a1418"
+        color="#06140d"
       />
       <Bloom
         intensity={bloomIntensity}

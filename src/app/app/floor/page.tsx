@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Flask } from '@phosphor-icons/react';
-import FabSandbox, { type MachineKind, type SandboxMachine } from '@/components/game/FabSandbox';
+import IsoFloor, { type IsoMachine, type MachineKind } from '@/components/iso/IsoFloor';
 import { api, type InventoryItem } from '@/lib/api-client';
-import { SLOT_LABELS } from '@/lib/rarity';
+import { COMPONENT_RARITIES, SLOT_LABELS, type Rarity } from '@/lib/rarity';
+import { MACHINE_SPECS } from '@/lib/floor-rules';
 import { useOperation } from '@/lib/useOperation';
 
 function componentKind(item: InventoryItem): MachineKind {
@@ -35,32 +36,50 @@ export default function CompanyFloorPage() {
     return () => { cancelled = true; };
   }, [wallet]);
 
-  const machines = useMemo<SandboxMachine[]>(() => [
-    ...(op?.nodes ?? []).map((node, index) => ({
-      id: `line:${node.id}`,
-      kind: (node.type === 'oil' ? 'euv' : 'rack') as MachineKind,
-      label: `${node.type === 'oil' ? 'Wafer Fab' : 'Accelerator Line'} ${String(index + 1).padStart(2, '0')}`,
-      accent: node.type === 'oil' ? '#b7ff4a' : '#56e5ff',
-    })),
-    ...inventory.map((item) => ({
-      id: `component:${item.id}`,
-      kind: componentKind(item),
-      label: SLOT_LABELS[item.slot as keyof typeof SLOT_LABELS] ?? 'Fab Component',
-      accent: item.rarity === 'divine' ? '#ffdf70' : item.rarity === 'mythic' ? '#ff6ceb' : '#65e8ff',
-    })),
+  /**
+   * The book, with the numbers a placement decision actually needs.
+   *
+   * Cost and rate come from the same payload the dashboard reads, so what the
+   * book quotes and what the engine charges cannot disagree — and the floor
+   * stops being a memory test about which desk is which.
+   */
+  const machines = useMemo<IsoMachine[]>(() => [
+    ...(op?.nodes ?? []).map((node, index) => {
+      const kind = (node.type === 'oil' ? 'euv' : 'rack') as MachineKind;
+      return {
+        id: `line:${node.id}`,
+        kind,
+        label: `${node.type === 'oil' ? 'Equity Desk' : 'Treasury Desk'} ${String(index + 1).padStart(2, '0')}`,
+        accent: node.type === 'oil' ? '#00d26a' : '#3dd6a0',
+        blurb: MACHINE_SPECS[kind]?.role,
+        cost: node.nextLevelCost > 0 ? node.nextLevelCost : undefined,
+        detail: `L${node.level} · ${node.productionRate.toFixed(3)} BNTY/s · ${node.componentMultiplier.toFixed(2)}×`,
+      };
+    }),
+    ...inventory.map((item) => {
+      const rarity = COMPONENT_RARITIES[item.rarity as Rarity];
+      return {
+        id: `component:${item.id}`,
+        kind: componentKind(item),
+        label: SLOT_LABELS[item.slot as keyof typeof SLOT_LABELS] ?? 'Instrument',
+        accent: item.rarity === 'divine' ? '#ffdf70' : item.rarity === 'mythic' ? '#ff6ceb' : '#79e0b0',
+        blurb: `${rarity?.label ?? item.rarity} instrument — fit it to a desk to raise its multiplier.`,
+        detail: `${item.multiplier.toFixed(2)}× · ${item.equippedNodeId ? 'fitted' : 'spare'}`,
+      };
+    }),
   ], [inventory, op?.nodes]);
 
   if (!wallet) {
     return (
       <div className="gpu-page mx-auto max-w-[900px]">
-        <section className="fab-floor-gate"><Flask size={38} weight="duotone" /><h1>Walk the floor first.</h1><p>Connect an operator to organize owned production equipment, or enter the wallet-free demo immediately.</p><div><Link href="/demo" className="btn-primary">Play demo</Link><Link href="/start" className="btn-secondary">Link operator</Link></div></section>
+        <section className="fab-floor-gate"><Flask size={38} weight="duotone" /><h1>Walk the floor first.</h1><p>Connect a fund to organize your owned instruments, or enter the wallet-free demo immediately.</p><div><Link href="/demo" className="btn-primary">Play demo</Link><Link href="/start" className="btn-secondary">Link fund</Link></div></section>
       </div>
     );
   }
 
-  if (loading && machines.length === 0) return <div className="fab-floor-loading">Loading owned equipment…</div>;
+  if (loading && machines.length === 0) return <div className="fab-floor-loading">Loading owned instruments…</div>;
   return (
-    <FabSandbox
+    <IsoFloor
       machines={machines}
       wallet={wallet.toLowerCase()}
       storageKey={`gpu:company-floor:${wallet.toLowerCase()}:v1`}

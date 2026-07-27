@@ -10,8 +10,26 @@
 
 import { getDb } from './db';
 import { GameError } from './errors';
+import { recordQuestProgress } from './quests';
+import {
+  COOLANT_REACH,
+  PACKAGING_REACH,
+  CROWDING_DISTANCE,
+  SPINE_HALF_WIDTH,
+  COOLANT_BONUS,
+  PACKAGING_BONUS,
+  SPINE_BONUS,
+  CROWDING_PENALTY,
+  MIN_MULTIPLIER,
+  MAX_MULTIPLIER,
+  componentKind,
+  type MachineKind,
+} from './floor-rules';
 
-export type MachineKind = 'euv' | 'rack' | 'cooling' | 'packaging';
+// Re-exported so existing server callers keep importing these from lib/floor,
+// while the values themselves live in the client-safe rules module.
+export { componentKind };
+export type { MachineKind };
 
 export interface PlacedMachine {
   id: string;
@@ -20,27 +38,19 @@ export interface PlacedMachine {
   rotation: number;
 }
 
-/** Walkable floor extent, matching the warehouse shell in WarehouseEnvironment. */
+/**
+ * The extent the server will accept a machine at.
+ *
+ * Mirrored client-side by BOARD_BOUNDS in components/iso/IsoBoard. If these two
+ * ever disagree, a saved machine can land outside the board and become
+ * unreachable, so they must move together.
+ */
 export const FLOOR_BOUNDS = { minX: -12, maxX: 12, minZ: -20, maxZ: 12 } as const;
 
 /** No wallet can own anywhere near this many machines; it is a payload guard. */
 const MAX_PLACEMENTS = 256;
 
 const ID_PATTERN = /^(line|component):(\d+)$/;
-
-/**
- * Component slot to machine kind.
- *
- * Exported because the client renders from the same mapping — if the two drifted,
- * a player would arrange cooling units against a layout the server scores as
- * something else, and the bonus panel would lie to them.
- */
-export function componentKind(slot: string, family: string): MachineKind {
-  const key = slot.toLowerCase();
-  if (/pipeline|rail|elevator/.test(key)) return 'packaging';
-  if (/flare|drill|pump/.test(key)) return 'cooling';
-  return family === 'oil' ? 'euv' : 'rack';
-}
 
 interface OwnedMachine {
   id: string;
@@ -136,29 +146,16 @@ export function saveLayout(wallet: string, input: unknown): PlacedMachine[] {
          ON CONFLICT(wallet) DO UPDATE SET layout = excluded.layout, updated_at = excluded.updated_at`
     )
     .run(wallet, JSON.stringify(layout), Date.now());
+  // One save is one arrangement action, not one per machine in the payload —
+  // the client debounces and posts the whole floor, so counting rows would
+  // finish a "rearrange 3 desks" daily on the first save of a full floor.
+  recordQuestProgress(wallet, 'place_desk');
   return layout;
 }
 
 // ---------------------------------------------------------------------------
 // Layout economics
 // ---------------------------------------------------------------------------
-
-/** How close two machines must be for a support bonus to apply. */
-const COOLANT_REACH = 4;
-const PACKAGING_REACH = 5;
-/** Closer than this and machines choke each other's airflow. */
-const CROWDING_DISTANCE = 2;
-/** Half-width of the central power spine running down the room. */
-const SPINE_HALF_WIDTH = 2;
-
-const COOLANT_BONUS = 0.06;
-const PACKAGING_BONUS = 0.05;
-const SPINE_BONUS = 0.04;
-const CROWDING_PENALTY = 0.05;
-
-/** Multiplier bounds. A floor can help a lot but never carry a weak operation. */
-const MIN_MULTIPLIER = 0.8;
-const MAX_MULTIPLIER = 1.35;
 
 export interface LayoutEffect {
   key: 'coolant' | 'packaging' | 'spine' | 'crowding';
@@ -222,10 +219,10 @@ export function scoreLayout(layout: PlacedMachine[], kinds: Map<string, MachineK
   // Typed before filtering: `.filter` returns a fresh array, which severs the
   // contextual type and widens `key` back to string.
   const scored: LayoutEffect[] = [
-    { key: 'coolant', label: 'Coolant loop in reach', delta: (coolantLines / lines.length) * COOLANT_BONUS, lines: coolantLines },
-    { key: 'packaging', label: 'Packaging line in reach', delta: (packagingLines / lines.length) * PACKAGING_BONUS, lines: packagingLines },
-    { key: 'spine', label: 'On the power spine', delta: (spineLines / lines.length) * SPINE_BONUS, lines: spineLines },
-    { key: 'crowding', label: 'Airflow choked by crowding', delta: -(crowdedLines / lines.length) * CROWDING_PENALTY, lines: crowdedLines },
+    { key: 'coolant', label: 'Liquidity desk in reach', delta: (coolantLines / lines.length) * COOLANT_BONUS, lines: coolantLines },
+    { key: 'packaging', label: 'Structured desk in reach', delta: (packagingLines / lines.length) * PACKAGING_BONUS, lines: packagingLines },
+    { key: 'spine', label: 'On the main aisle', delta: (spineLines / lines.length) * SPINE_BONUS, lines: spineLines },
+    { key: 'crowding', label: 'Crowded — desks too close', delta: -(crowdedLines / lines.length) * CROWDING_PENALTY, lines: crowdedLines },
   ];
   const effects = scored.filter((effect) => effect.lines > 0);
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GameError } from './game';
+import { DEV_WALLET } from './dev-mode';
 import { verifyPrivyWalletOwner } from './privy-server';
 
 export function ok(data: unknown) {
@@ -38,6 +39,17 @@ export function requireWallet(w: unknown): string {
  * unconfigured server with a 503, which is the safe direction to fail.
  */
 export async function requireAuthenticatedWallet(request: Request, value: unknown): Promise<string> {
+  // Local development without a wallet. DEV_WALLET is null unless the variable
+  // is set AND this is a non-production build AND nothing marks the process as
+  // deployed, so this branch cannot be reached anywhere real — see lib/dev-mode
+  // for why all three conditions are checked rather than just the variable.
+  //
+  // It returns the DEV wallet rather than the requested one on purpose. Honouring
+  // the caller's address would turn the bypass into "act as anybody" even
+  // locally, and a developer testing multi-wallet behaviour would get results
+  // that could never happen once auth is back on.
+  if (DEV_WALLET) return DEV_WALLET;
+
   const wallet = requireWallet(value);
   await verifyPrivyWalletOwner(request, wallet);
   return wallet;

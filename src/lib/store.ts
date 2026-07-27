@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { DEV_WALLET } from './dev-mode';
 
 export type ThemeName = 'sunset' | 'noon' | 'midnight';
 
@@ -21,7 +22,10 @@ export const useWalletStore = create<WalletStore>()(
   persist(
     (set, get) => ({
       termsAcceptedAt: null,
-      wallet: null,
+      // Signed in as the dev wallet from the first render when the bypass is
+      // on, so no screen has to special-case "not connected yet". Null in every
+      // build where DEV_WALLET is null, which is every real one.
+      wallet: DEV_WALLET,
       onboarded: [],
       theme: 'sunset',
       acceptTerms: () => set({ termsAcceptedAt: Date.now() }),
@@ -31,6 +35,21 @@ export const useWalletStore = create<WalletStore>()(
         set((s) => (s.onboarded.includes(w) ? s : { onboarded: [...s.onboarded, w] })),
       setTheme: (theme) => set({ theme }),
     }),
-    { name: 'gpu-wallet-store' }
+    {
+      name: 'gpu-wallet-store',
+      /**
+       * Rehydration must not undo the dev wallet.
+       *
+       * The default above only applies to a first-ever visit. Any developer who
+       * has run this app before has `wallet: null` sitting in localStorage from
+       * a session where they never signed in, and the persisted null would win —
+       * so turning the bypass on would appear to do nothing until they cleared
+       * site data, which is exactly the kind of thing nobody guesses.
+       */
+      merge: (persisted, current) => {
+        const merged = { ...current, ...(persisted as Partial<WalletStore>) };
+        return DEV_WALLET ? { ...merged, wallet: DEV_WALLET } : merged;
+      },
+    }
   )
 );

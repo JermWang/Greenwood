@@ -12,8 +12,39 @@
 import { getDb } from './db';
 import { GameError } from './game';
 import { MARKET_FEE_BPS } from './economy';
+import { recordQuestProgress } from './quests';
+import { cosmeticDef, rankName } from './cosmetics';
 
-export type ItemKind = 'crate' | 'component' | 'node';
+export type ItemKind = 'crate' | 'component' | 'node' | 'cosmetic';
+
+/**
+ * Is this item promised to a buyer right now?
+ *
+ * An open listing has to be a LOCK, not a label. Everything that can move an
+ * item by some other route — equipping it, or selling the thing it is bolted to
+ * — has to consult this first, or the same item can change hands twice: list a
+ * component, fit it to a desk, sell the desk, and the component reaches the
+ * desk's buyer while still sitting on the board for someone else to buy.
+ */
+export function isListed(kind: ItemKind, itemId: number): boolean {
+  const row = getDb()
+    .prepare(`SELECT 1 AS hit FROM listings WHERE item_kind = ? AND item_id = ? AND status = 'open'`)
+    .get(kind, itemId) as { hit: number } | undefined;
+  return Boolean(row);
+}
+
+/** Ids of a node's fitted components that are separately listed. */
+function listedComponentsOn(nodeId: number): number[] {
+  return (
+    getDb()
+      .prepare(
+        `SELECT c.id AS id FROM components c
+           JOIN listings l ON l.item_kind = 'component' AND l.item_id = c.id AND l.status = 'open'
+          WHERE c.equipped_node_id = ?`
+      )
+      .all(nodeId) as unknown as Array<{ id: number }>
+  ).map((r) => r.id);
+}
 
 export interface Listing {
   id: number;
@@ -60,10 +91,33 @@ function assertSellable(wallet: string, kind: ItemKind, itemId: number) {
     }
     return;
   }
+  if (kind === 'cosmetic') {
+    const row = db
+      .prepare('SELECT wallet FROM cosmetics_owned WHERE id = ?')
+      .get(itemId) as { wallet: string } | undefined;
+    if (!row || row.wallet !== wallet) throw new GameError('cosmetic not found in your wardrobe', 404);
+    const worn = db
+      .prepare('SELECT 1 AS hit FROM cosmetics_equipped e JOIN cosmetics_owned o ON o.wallet = e.wallet AND o.cosmetic_key = e.cosmetic_key WHERE o.id = ?')
+      .get(itemId) as { hit: number } | undefined;
+    // Same rule as an equipped instrument: take it off before you sell it, so
+    // nobody is left wearing something they no longer own.
+    if (worn) throw new GameError('take that off before listing it', 400);
+    return;
+  }
+
   const row = db.prepare('SELECT wallet FROM nodes WHERE id = ?').get(itemId) as
     | { wallet: string }
     | undefined;
   if (!row || row.wallet !== wallet) throw new GameError('node not found in your compound', 404);
+  // A desk carries its fitted instruments to the buyer, so it may not be sold
+  // while one of them is promised to somebody else.
+  const conflicts = listedComponentsOn(itemId);
+  if (conflicts.length > 0) {
+    throw new GameError(
+      'an instrument fitted to that desk is listed separately — cancel that listing first',
+      409
+    );
+  }
 }
 
 export function createListing(
@@ -73,7 +127,7 @@ export function createListing(
   priceOsr: number
 ): Listing {
   if (!Number.isFinite(priceOsr) || priceOsr <= 0) {
-    throw new GameError('price must be a positive number of GPU', 400);
+    throw new GameError('price must be a positive number of BNTY', 400);
   }
   assertSellable(wallet, kind, itemId);
 
@@ -88,15 +142,24 @@ export function createListing(
       )
       .run(wallet, kind, itemId, priceOsr, now);
     listingId = Number(result.lastInsertRowid);
-  } catch {
+  } catch (error) {
     // The partial unique index makes double-listing a race-safe failure rather
-    // than something the ownership check above has to win a race against.
-    throw new GameError('that item is already listed', 409);
+    // than something the ownership check above has to win a race against — but
+    // only a UNIQUE violation means that. Reporting every insert failure as
+    // "already listed" hides schema and constraint problems behind a message
+    // that sends whoever is debugging it to look in entirely the wrong place.
+    const message = error instanceof Error ? error.message : String(error);
+    if (/UNIQUE|constraint failed: listings\.item/i.test(message)) {
+      throw new GameError('that item is already listed', 409);
+    }
+    console.error('[market] listing insert failed', error);
+    throw new GameError('could not list that item', 500);
   }
 
   if (kind === 'crate') {
     db.prepare('UPDATE crates SET listing_id = ? WHERE id = ?').run(listingId, itemId);
   }
+  recordQuestProgress(wallet, 'market_list');
   return {
     id: listingId,
     seller: wallet,
@@ -173,12 +236,45 @@ export function transferSoldItem(listingId: number, buyer: string): Listing {
     } else if (row.item_kind === 'component') {
       db.prepare('UPDATE components SET wallet = ?, equipped_node_id = NULL WHERE id = ?')
         .run(buyer, row.item_id);
+    } else if (row.item_kind === 'cosmetic') {
+      const item = db
+        .prepare('SELECT wallet, cosmetic_key FROM cosmetics_owned WHERE id = ?')
+        .get(row.item_id) as { wallet: string; cosmetic_key: string } | undefined;
+      if (!item) throw new GameError('that cosmetic no longer exists', 409);
+      // One copy per wallet is a unique index, so a buyer who already owns this
+      // key would fail the UPDATE with a constraint error and roll the whole
+      // purchase back. Refusing up front says why instead.
+      const dupe = db
+        .prepare('SELECT 1 AS hit FROM cosmetics_owned WHERE wallet = ? AND cosmetic_key = ?')
+        .get(buyer, item.cosmetic_key) as { hit: number } | undefined;
+      if (dupe) throw new GameError('you already own that cosmetic', 409);
+      // Clear the seller's slot before the row moves: cosmetics_equipped is keyed
+      // by (wallet, slot) and would otherwise leave them wearing it.
+      db.prepare('DELETE FROM cosmetics_equipped WHERE wallet = ? AND cosmetic_key = ?')
+        .run(item.wallet, item.cosmetic_key);
+      // upgrade_level rides on the row, so a refined piece stays refined for its
+      // new owner — that is what makes the upgrade track worth spending on.
+      db.prepare('UPDATE cosmetics_owned SET wallet = ? WHERE id = ?').run(buyer, row.item_id);
     } else {
       // A sold node takes its fitted components with it, otherwise the seller
       // would keep gear that is physically bolted to something they no longer own.
+      // assertSellable refuses to list a desk carrying a separately-listed
+      // instrument; this re-checks under the transaction, because the listing
+      // could have been created in the window since.
+      const conflicts = listedComponentsOn(row.item_id);
+      if (conflicts.length > 0) {
+        throw new GameError('an instrument on that desk is listed separately', 409);
+      }
       db.prepare('UPDATE nodes SET wallet = ? WHERE id = ?').run(buyer, row.item_id);
       db.prepare('UPDATE components SET wallet = ? WHERE equipped_node_id = ?')
         .run(buyer, row.item_id);
+    }
+
+    // Whatever moved, it is no longer on the seller's floor. Dropping the id
+    // from their saved layout keeps the stored arrangement honest rather than
+    // relying on every reader to filter out equipment the wallet lost.
+    if (row.item_kind === 'node' || row.item_kind === 'component') {
+      dropFromLayout(row.seller, row.item_kind, row.item_id);
     }
 
     db.prepare(
@@ -192,6 +288,7 @@ export function transferSoldItem(listingId: number, buyer: string): Listing {
     throw error;
   }
 
+  recordQuestProgress(buyer, 'market_buy');
   return {
     id: row.id,
     seller: row.seller,
@@ -201,6 +298,34 @@ export function transferSoldItem(listingId: number, buyer: string): Listing {
     createdAt: row.created_at,
     item: describeItem(row.item_kind, row.item_id),
   };
+}
+
+/**
+ * Remove a sold machine from the seller's saved floor.
+ *
+ * scoreLayout already ignores ids the wallet no longer owns, so the multiplier
+ * was never wrong — but the stored JSON kept naming equipment that had moved on,
+ * and a reader that forgot to filter would quietly pay a bonus for somebody
+ * else's desk. Cheaper to keep the record true than to trust every reader.
+ */
+function dropFromLayout(seller: string, kind: 'node' | 'component', itemId: number) {
+  const db = getDb();
+  const row = db.prepare('SELECT layout FROM floor_layouts WHERE wallet = ?').get(seller) as
+    | { layout: string }
+    | undefined;
+  if (!row) return;
+  const target = `${kind === 'node' ? 'line' : 'component'}:${itemId}`;
+  try {
+    const parsed = JSON.parse(row.layout) as Array<{ id?: string }>;
+    if (!Array.isArray(parsed)) return;
+    const kept = parsed.filter((entry) => entry?.id !== target);
+    if (kept.length === parsed.length) return;
+    db.prepare('UPDATE floor_layouts SET layout = ?, updated_at = ? WHERE wallet = ?')
+      .run(JSON.stringify(kept), Date.now(), seller);
+  } catch {
+    // A layout that will not parse is already being treated as empty everywhere
+    // else; failing the sale over it would be the wrong trade.
+  }
 }
 
 /** What the buyer is actually looking at, so the UI need not re-query per row. */
@@ -220,8 +345,34 @@ function describeItem(kind: ItemKind, itemId: number): Record<string, unknown> |
         | undefined) ?? null
     );
   }
+  if (kind === 'cosmetic') {
+    const row = db
+      .prepare('SELECT cosmetic_key, upgrade_level FROM cosmetics_owned WHERE id = ?')
+      .get(itemId) as { cosmetic_key: string; upgrade_level: number } | undefined;
+    if (!row) return null;
+    // Resolved here rather than in the browser: the cosmetics catalogue is code
+    // on this side, and shipping a second copy of the names to the client is
+    // how a renamed item ends up with two names.
+    const level = row.upgrade_level ?? 0;
+    let name = row.cosmetic_key;
+    let slot = 'avatar';
+    let tier = 'standard';
+    try {
+      const def = cosmeticDef(row.cosmetic_key);
+      name = def.name;
+      slot = def.slot;
+      tier = def.tier;
+    } catch {
+      // A row naming a cosmetic the catalogue has dropped still has to render,
+      // so fall back to the raw key rather than failing the whole board.
+    }
+    return { cosmetic_key: row.cosmetic_key, name, slot, tier, upgrade_level: level, rank: rankName(level) };
+  }
+  // Accrued yield is shown because it transfers with the desk. A buyer paying
+  // for a desk is also buying whatever it has produced and not yet routed, and
+  // pricing that is impossible if the listing does not say how much it is.
   return (
-    (db.prepare('SELECT family, level FROM nodes WHERE id = ?').get(itemId) as
+    (db.prepare('SELECT family, level, accrued FROM nodes WHERE id = ?').get(itemId) as
       | Record<string, unknown>
       | undefined) ?? null
   );

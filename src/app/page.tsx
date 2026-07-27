@@ -5,18 +5,56 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { BookOpenText, CaretRight, Flask, Play, XLogo } from '@phosphor-icons/react';
-import { SHOWROOM_NODES } from '@/components/three/Compound';
+import type { TwinNode } from '@/components/iso/IsoTwin';
 import CopyContract from '@/components/ui/CopyContract';
 import SoundToggle from '@/components/ui/SoundToggle';
 import { X_URL } from '@/lib/config';
 
-const Scene = dynamic(() => import('@/components/three/Scene'), { ssr: false });
+const IsoTwin = dynamic(() => import('@/components/iso/IsoTwin'), { ssr: false });
 
-const MENU = [
-  { label: 'Start / continue', detail: 'Create an operator or resume your company', href: '/start', Icon: Play },
-  { label: 'Play demo', detail: 'Walk the floor without a wallet', href: '/demo', Icon: Flask },
-  { label: 'Fab manual', detail: 'Systems, economy, and safety', href: '/app/docs', Icon: BookOpenText },
+/**
+ * A hand-picked fund for the title screen — a mix of both desk types at high
+ * level, so the board behind the lockup shows the game at its best rather than
+ * an empty floor. Slots are left empty: the title screen is a silhouette, and
+ * instrument detail does not read at this scale.
+ */
+const SHOWROOM_NODES: TwinNode[] = [
+  { id: 'showroom-equity-1', type: 'oil', level: 8, isActive: true, components: [] },
+  { id: 'showroom-treasury-1', type: 'mine', level: 7, isActive: true, components: [] },
+  { id: 'showroom-treasury-2', type: 'mine', level: 5, isActive: true, components: [] },
+  { id: 'showroom-equity-2', type: 'oil', level: 4, isActive: true, components: [] },
+];
+
+/**
+ * The menu, weighted rather than uniform.
+ *
+ * Three identical bars gave the demo and the handbook the same visual weight as
+ * starting the game, which is not how the game is actually shaped: the fund
+ * dashboard is the hub, and the floors hang off it. So the primary action is a
+ * wide card that names the rooms it opens onto — a bare "Start" tells a new
+ * player nothing about what is behind it — and the two supporting entries sit
+ * under it as a pair.
+ */
+const PRIMARY = {
+  label: 'Start / continue',
+  detail: 'Create a fund, or pick up where you left off',
+  href: '/start',
+  Icon: Play,
+  rooms: ['Dashboard', 'Trading Floor', 'Machine Room'],
+} as const;
+
+const SECONDARY = [
+  { label: 'Play demo', detail: 'Walk a built floor, no wallet needed', href: '/demo', Icon: Flask },
+  { label: 'Handbook', detail: 'Systems, economy and safety', href: '/app/docs', Icon: BookOpenText },
 ] as const;
+
+/** Flat order for keyboard navigation: primary first, then the pair. */
+const MENU = [PRIMARY, ...SECONDARY] as ReadonlyArray<{
+  label: string;
+  detail: string;
+  href: string;
+  Icon: typeof Play;
+}>;
 
 export default function Landing() {
   const router = useRouter();
@@ -41,10 +79,15 @@ export default function Landing() {
         return;
       }
       if (!menuOpen) return;
-      if (event.key === 'ArrowUp' || event.key.toLowerCase() === 'w') {
+      // Left/right are aliases for the same step rather than a second axis: the
+      // two supporting entries sit side by side, so reaching for A/D there is
+      // the natural thing to do, and a grid-aware cursor would be more state
+      // than a three-item menu earns.
+      const key = event.key.toLowerCase();
+      if (event.key === 'ArrowUp' || event.key === 'ArrowLeft' || key === 'w' || key === 'a') {
         event.preventDefault();
         setActiveIndex((current) => (current - 1 + MENU.length) % MENU.length);
-      } else if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's') {
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowRight' || key === 's' || key === 'd') {
         event.preventDefault();
         setActiveIndex((current) => (current + 1) % MENU.length);
       } else if (event.key === 'Enter') {
@@ -62,31 +105,31 @@ export default function Landing() {
   return (
     <main className="gpu-title-screen">
       <div className="gpu-title-world">
-        <Scene nodes={SHOWROOM_NODES} preset="sunset" selectedNodeId={null} focusNodeId={null} variant="landing" />
+        <IsoTwin nodes={SHOWROOM_NODES} selectedNodeId={null} />
       </div>
       <div className="gpu-title-vignette" />
       <div className="gpu-title-scanlines" aria-hidden />
 
       <header className="gpu-title-topbar">
-        <Link href="/" className="gpu-title-mark" aria-label="GPU home">
+        <Link href="/" className="gpu-title-mark" aria-label="Greenwood home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/gpu-mark.svg" alt="" />
-          <span>GPU</span>
+          <span>Greenwood</span>
         </Link>
         <div className="gpu-title-top-actions">
           {/* Renders nothing until the token address is configured, so it simply
               appears in the top bar the moment the CA goes live. */}
           <CopyContract />
-          <a href={X_URL} target="_blank" rel="noreferrer" aria-label="GPU on X"><XLogo size={18} weight="fill" /></a>
+          <a href={X_URL} target="_blank" rel="noreferrer" aria-label="Greenwood on X"><XLogo size={18} weight="fill" /></a>
           <SoundToggle />
         </div>
       </header>
 
       <section className={`gpu-title-center ${menuOpen ? 'is-menu' : ''}`}>
         <div className="gpu-title-lockup">
-          <span>GRAPHICS PROCESSING UTILITY</span>
-          <h1>GPU</h1>
-          <p>Build the company. Own the compute.</p>
+          <span>REAL-WORLD YIELD</span>
+          <h1>Greenwood</h1>
+          <p>Build the fund. Own the yield.</p>
         </div>
 
         {!menuOpen ? (
@@ -96,20 +139,49 @@ export default function Landing() {
           </button>
         ) : (
           <nav className="gpu-main-menu" aria-label="Main menu">
-            {MENU.map(({ label, detail, href, Icon }, index) => (
-              <Link
-                key={href}
-                href={href}
-                className={index === activeIndex ? 'is-active' : ''}
-                onMouseEnter={() => setActiveIndex(index)}
-                aria-current={index === activeIndex ? 'true' : undefined}
-              >
-                <Icon size={18} weight={index === activeIndex ? 'fill' : 'duotone'} />
-                <span><b>{label}</b><small>{detail}</small></span>
-                <CaretRight size={17} weight="bold" />
-              </Link>
-            ))}
-            <div className="gpu-menu-controls"><kbd>W</kbd><kbd>S</kbd><span>Navigate</span><kbd>ENTER</kbd><span>Select</span><kbd>ESC</kbd><span>Back</span></div>
+            <Link
+              href={PRIMARY.href}
+              className={`gpu-menu-primary ${activeIndex === 0 ? 'is-active' : ''}`}
+              onMouseEnter={() => setActiveIndex(0)}
+              aria-current={activeIndex === 0 ? 'true' : undefined}
+            >
+              <span className="gpu-menu-icon">
+                <PRIMARY.Icon size={22} weight={activeIndex === 0 ? 'fill' : 'duotone'} />
+              </span>
+              <span>
+                <b>{PRIMARY.label}</b>
+                <small>{PRIMARY.detail}</small>
+                <span className="gpu-menu-rooms">
+                  {PRIMARY.rooms.map((room) => <span key={room}>{room}</span>)}
+                </span>
+              </span>
+              <CaretRight size={17} weight="bold" />
+            </Link>
+
+            <div className="gpu-menu-pair">
+              {SECONDARY.map(({ label, detail, href, Icon }, index) => {
+                const position = index + 1;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`gpu-menu-tile ${position === activeIndex ? 'is-active' : ''}`}
+                    onMouseEnter={() => setActiveIndex(position)}
+                    aria-current={position === activeIndex ? 'true' : undefined}
+                  >
+                    <Icon size={19} weight={position === activeIndex ? 'fill' : 'duotone'} />
+                    <b>{label}</b>
+                    <small>{detail}</small>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="gpu-menu-controls">
+              <kbd>W</kbd><kbd>S</kbd><span>Navigate</span>
+              <kbd>ENTER</kbd><span>Select</span>
+              <kbd>ESC</kbd><span>Back</span>
+            </div>
           </nav>
         )}
       </section>
