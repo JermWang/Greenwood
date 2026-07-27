@@ -5,11 +5,17 @@
 // THE BRIEF IS THE OPPOSITE OF THE GROUNDS.
 //
 // The Grounds are landscaped and organic — grass, scattered trees, a path worn
-// through them. HQ is BUILT: paving to the building line, street furniture on a
-// lattice, and a tower with enough floors that you have to look up. Walking from
-// one to the other should feel like stepping off a lawn onto a concourse, and
-// that contrast is doing the pacing work — this is the last civilised place
-// before the fence starts meaning something.
+// through them. HQ is BUILT: paving to the building line, furniture placed by
+// hand on an axis, and a tower with enough floors that you have to look up.
+// Walking from one to the other should feel like stepping off a lawn onto a
+// concourse, and that contrast is doing the pacing work — this is the last
+// civilised place before the fence starts meaning something.
+//
+// The furniture is a written list in lib/hq-map, not a generator. A generator
+// can make a convincing WOOD, because a wood has no author and its only rule is
+// that trees do not overlap. It cannot make a convincing SQUARE, because every
+// object in a square was put there by somebody for a reason, and the reasons are
+// what the eye reads.
 //
 // The tower is the first thing in this game with real VERTICAL mass. Everything
 // so far has been one storey under an isometric camera, where height is nearly
@@ -20,11 +26,12 @@
 import { memo, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import Layer, { vary } from './instancing';
+import Layer from './instancing';
 import { gridTexture } from './mapkit';
 import { ISO } from './palette';
 import PlaceLabel from './PlaceLabel';
 import { Planter } from './OutdoorDressing';
+import { Bench } from './MapDressing';
 import { BOUNDS, DOORS, FOUNTAIN, TOWER, allProps } from '@/lib/hq-map';
 
 const SKY = '#aebac4';
@@ -278,7 +285,19 @@ const Fountain = memo(function Fountain() {
   );
 });
 
-/** Street furniture, batched where it is worth batching. */
+/**
+ * Street furniture.
+ *
+ * Every piece is placed by hand in lib/hq-map — see PLACED there for the three
+ * composition rules. This file only draws what that list says.
+ *
+ * The bench is the REAL bench, the one the Trading Floor's lounge already uses.
+ * It was an instanced flat box, which is what you reach for when you are
+ * thinking about draw calls instead of about the room: a plank on the ground
+ * with no legs and no back, at the one scale where a player walks right past it.
+ * There are five of them. Instancing five objects saves nothing and cost the
+ * plaza the only piece of furniture anybody actually looks at.
+ */
 const Furniture = memo(function Furniture() {
   const { lamps, benches, planters } = useMemo(() => {
     const props = allProps();
@@ -299,20 +318,10 @@ const Furniture = memo(function Furniture() {
     [lamps]
   );
 
-  const benchPlace = useMemo(
-    () => (i: number, d: THREE.Object3D) => {
-      const p = benches[i];
-      d.position.set(p.x, 0.28, p.z);
-      // Quarter turns only: a plaza is arranged, and a bench at an arbitrary
-      // angle reads as one somebody dragged out of place.
-      d.rotation.set(0, Math.round(vary(p.seed, 1) * 3) * (Math.PI / 2), 0);
-      d.scale.set(1, 1, 1);
-    },
-    [benches]
-  );
-
   return (
     <>
+      {/* Posts stay instanced — there are twenty of them and they are identical
+          cylinders, which is exactly the case instancing is for. */}
       <Layer count={lamps.length} flat={ISO.steelDark} place={lampPost} roughness={0.5} metalness={0.5}>
         <cylinderGeometry args={[0.08, 0.11, 1, 6]} />
       </Layer>
@@ -328,12 +337,14 @@ const Furniture = memo(function Furniture() {
               flatShading
             />
           </mesh>
-          <pointLight color="#ffe4a3" intensity={5} distance={9} decay={2} />
+          <pointLight color="#ffe4a3" intensity={4} distance={8} decay={2} />
         </group>
       ))}
-      <Layer count={benches.length} flat={ISO.wood} place={benchPlace} roughness={0.95}>
-        <boxGeometry args={[1.6, 0.16, 0.5]} />
-      </Layer>
+
+      {benches.map((p) => (
+        <Bench key={`b${p.x}:${p.z}`} position={[p.x, p.z]} rotation={p.rotation} />
+      ))}
+
       {planters.map((p) => (
         <Planter key={`p${p.x}:${p.z}`} position={[p.x, p.z]} seed={p.seed} />
       ))}

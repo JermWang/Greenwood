@@ -56,6 +56,85 @@ describe('the HQ plaza', () => {
   });
 });
 
+describe('the plaza is composed, not generated', () => {
+  const props = allProps();
+
+  /**
+   * Symmetry about the approach.
+   *
+   * The avenue from the south gate to the tower door runs along x = 0, and a
+   * civic building is approached down an axis — breaking that is what makes a
+   * square read as a car park. Anything off the centre line should have a
+   * mirror, and the assertion is here because "I will keep it symmetrical" is
+   * exactly the kind of intention that survives one edit.
+   */
+  it('mirrors the concourse furniture about the tower approach', () => {
+    // Scoped to the concourse PROPER — the formal front, inside the east apron.
+    // The apron and the spur beyond it are deliberately one-sided: they are the
+    // working route to a gate that only exists on that side, and mirroring them
+    // would mean lighting a path to nowhere on the west. Decorum belongs on the
+    // front of a building, not the back of one.
+    const concourse = props.filter((p) => p.x !== 0 && Math.abs(p.x) < 10 && p.z > TOWER.maxZ);
+    expect(concourse.length).toBeGreaterThan(0);
+    for (const p of concourse) {
+      const mirrored = concourse.some((q) => q.x === -p.x && q.z === p.z && q.kind === p.kind);
+      expect(mirrored, `${p.kind} at ${p.x},${p.z} has no mirror`).toBe(true);
+    }
+  });
+
+  /**
+   * Two things on one tile is one thing, silently.
+   *
+   * The furniture is keyed by cell so collision stays a lookup, which means a
+   * duplicate coordinate does not error — the second entry simply replaces the
+   * first and one piece vanishes from the plaza with nothing to say so. That is
+   * exactly what happened on the first pass: a lamp and a planter were both
+   * written at -6,-1.
+   */
+  it('never places two pieces on the same tile', () => {
+    const seen = new Set<string>();
+    for (const p of props) {
+      const key = `${p.x}:${p.z}`;
+      expect(seen.has(key), `two pieces share ${key}`).toBe(false);
+      seen.add(key);
+    }
+  });
+
+  it('leaves the approach itself clear', () => {
+    // A plaza you cannot walk straight across is a plaza with obstacles in it.
+    for (const p of props) {
+      if (Math.abs(p.x) <= 2) {
+        expect(p.z, `${p.kind} blocks the approach at ${p.x},${p.z}`).toBeGreaterThan(8);
+      }
+    }
+  });
+
+  it('faces every bench at the fountain', () => {
+    // People sit looking at something. Seating that faces outward reads as a
+    // bus stop, which is the single fastest way to make a square feel municipal
+    // in the bad sense.
+    for (const p of props.filter((q) => q.kind === 'bench')) {
+      const toFountain = Math.hypot(p.x - FOUNTAIN.x, p.z - FOUNTAIN.z);
+      expect(toFountain, `bench at ${p.x},${p.z} is nowhere near the fountain`).toBeLessThan(10);
+    }
+  });
+
+  it('keeps every piece of furniture on ground you could otherwise walk on', () => {
+    for (const p of props) {
+      expect(onPath(p.x, p.z), `${p.kind} at ${p.x},${p.z} is off the paving`).toBe(true);
+    }
+  });
+
+  it('uses quarter turns only', () => {
+    // A plaza is laid out with set squares. A bench at 37 degrees reads as one
+    // somebody dragged out of place.
+    for (const p of props) {
+      const quarters = p.rotation / (Math.PI / 2);
+      expect(Math.abs(quarters - Math.round(quarters)), `${p.kind} at ${p.x},${p.z}`).toBeLessThan(1e-9);
+    }
+  });
+});
+
 describe('the doors', () => {
   it('every door leads to a region that exists, at the href it publishes', () => {
     for (const door of DOORS) {

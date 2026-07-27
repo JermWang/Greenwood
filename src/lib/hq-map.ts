@@ -181,49 +181,107 @@ export interface MapProp {
   x: number;
   z: number;
   kind: PropKind;
+  /** Quarter turns. Benches face something; a bench facing nothing is litter. */
+  rotation: number;
   seed: number;
   solid: boolean;
 }
 
 /**
- * Street furniture, on a loose lattice rather than a scatter.
+ * The furniture, PLACED rather than generated.
  *
- * A plaza is ARRANGED — somebody chose where the benches go — so the placement
- * is regular where the Grounds' is organic. Same trick as the buildings: the
- * difference between the two regions is legible before you have read a word.
+ * The first pass put props on a lattice with a seeded roll picking what each one
+ * was, and it looked exactly like what it was: a plaza with things on it. A
+ * generator can make a convincing WOOD, because a wood has no author and its
+ * only rule is that trees do not overlap. It cannot make a convincing SQUARE,
+ * because every object in a square was put there by somebody for a reason, and
+ * the reasons are what the eye reads.
+ *
+ * So this is a hand-written list, and it is composed to three rules:
+ *
+ *   SYMMETRY ABOUT THE APPROACH. The avenue from the south gate to the tower
+ *   door runs along x = 0, and everything on it is mirrored. A civic building is
+ *   approached down an axis; breaking that symmetry is what makes a place feel
+ *   like a car park.
+ *
+ *   THE FOUNTAIN IS THE ROOM'S CENTRE, so the benches face it in a ring rather
+ *   than lining the edges. People sit looking at something. Seating that faces
+ *   outward reads as a bus stop.
+ *
+ *   LAMPS MARK THE ROUTE, not the area. They run in pairs down the approach and
+ *   along the service spur to the Treeline gate, so at a glance the lit line
+ *   shows you where you can go. Scattering them evenly would light the plaza and
+ *   tell you nothing.
+ *
+ * Rotation is quarter turns only. A plaza is laid out on a grid by people with
+ * set squares, and a bench at 37 degrees reads as one somebody dragged.
+ */
+const PLACED: Array<Omit<MapProp, 'seed' | 'solid'>> = [
+  // Benches ringing the fountain, each turned to face it.
+  { x: -5, z: 6, kind: 'bench', rotation: Math.PI / 2 },
+  { x: 5, z: 6, kind: 'bench', rotation: -Math.PI / 2 },
+  { x: 0, z: 11, kind: 'bench', rotation: Math.PI },
+  { x: -4, z: 10, kind: 'bench', rotation: Math.PI },
+  { x: 4, z: 10, kind: 'bench', rotation: Math.PI },
+
+  // Planters framing the tower approach, in mirrored pairs stepping north.
+  { x: -4, z: 1, kind: 'planter', rotation: 0 },
+  { x: 4, z: 1, kind: 'planter', rotation: 0 },
+  { x: -6, z: -1, kind: 'planter', rotation: 0 },
+  { x: 6, z: -1, kind: 'planter', rotation: 0 },
+
+  // Planters softening the south entrance, same pairing.
+  { x: -7, z: 15, kind: 'planter', rotation: 0 },
+  { x: 7, z: 15, kind: 'planter', rotation: 0 },
+  { x: -10, z: 17, kind: 'planter', rotation: 0 },
+  { x: 10, z: 17, kind: 'planter', rotation: 0 },
+
+  // Lamps down the approach, in pairs. The lit line IS the route.
+  { x: -4, z: 17, kind: 'lamp', rotation: 0 },
+  { x: 4, z: 17, kind: 'lamp', rotation: 0 },
+  { x: -4, z: 13, kind: 'lamp', rotation: 0 },
+  { x: 4, z: 13, kind: 'lamp', rotation: 0 },
+  { x: -7, z: 6, kind: 'lamp', rotation: 0 },
+  { x: 7, z: 6, kind: 'lamp', rotation: 0 },
+  { x: -8, z: 1, kind: 'lamp', rotation: 0 },
+  { x: 8, z: 1, kind: 'lamp', rotation: 0 },
+
+  /*
+   * The service spur is DELIBERATELY one-sided.
+   *
+   * Everything above is mirrored about the approach, because that is how a
+   * civic front is composed. This is the back of the building: a working route
+   * to a gate, on the east side only, because that is where the gate is. Making
+   * it symmetrical would mean lighting a path to nowhere on the west — decorum
+   * applied where nobody was decorating.
+   *
+   * hq-map.test scopes its symmetry assertion to the concourse for this reason.
+   */
+  { x: 12, z: 2, kind: 'lamp', rotation: 0 },
+  { x: 12, z: -4, kind: 'lamp', rotation: 0 },
+  { x: 14, z: -8, kind: 'lamp', rotation: 0 },
+];
+
+/** Placed furniture, keyed by cell so collision stays a lookup. */
+const PLACED_BY_CELL = new Map(
+  PLACED.map((p) => [
+    `${p.x}:${p.z}`,
+    { ...p, seed: Math.round(hash(p.x, p.z, 3) * 100000), solid: true } as MapProp,
+  ])
+);
+
+/**
+ * What is standing on this tile.
+ *
+ * A lookup rather than a generator now — see PLACED. Still a pure function of
+ * the coordinate, so collision costs nothing and the server could read it.
  */
 export function propAt(x: number, z: number): MapProp | null {
-  const gx = Math.round(x);
-  const gz = Math.round(z);
-  if (!inBounds(gx, gz)) return null;
-  if (inTower(gx, gz) || inFountain(gx, gz)) return null;
-  // Keep thresholds and the fountain surround clear.
-  for (const door of DOORS) {
-    if (Math.hypot(gx - door.x, gz - door.z) < DOOR_HALF + 3) return null;
-  }
-  if (Math.hypot(gx - FOUNTAIN.x, gz - FOUNTAIN.z) < FOUNTAIN.radius + 2) return null;
-  // The central spine stays clear so the tower door is always walkable-to.
-  if (Math.abs(gx) <= 2) return null;
-
-  // Lattice: every fourth tile, offset row to row.
-  const onLattice = ((gx % 5) + 5) % 5 === 0 && ((gz % 4) + 4) % 4 === 0;
-  if (!onLattice) return null;
-  if (!onPath(gx, gz)) return null;
-
-  const roll = hash(gx, gz, 2);
-  const kind: PropKind = roll > 0.62 ? 'lamp' : roll > 0.3 ? 'planter' : 'bench';
-  return { x: gx, z: gz, kind, seed: Math.round(hash(gx, gz, 3) * 100000), solid: true };
+  return PLACED_BY_CELL.get(`${Math.round(x)}:${Math.round(z)}`) ?? null;
 }
 
 export function allProps(): MapProp[] {
-  const out: MapProp[] = [];
-  for (let x = BOUNDS.minX; x <= BOUNDS.maxX; x += 1) {
-    for (let z = BOUNDS.minZ; z <= BOUNDS.maxZ; z += 1) {
-      const prop = propAt(x, z);
-      if (prop) out.push(prop);
-    }
-  }
-  return out;
+  return [...PLACED_BY_CELL.values()];
 }
 
 export function isWalkable(x: number, z: number): boolean {
