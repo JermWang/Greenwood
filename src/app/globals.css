@@ -1565,3 +1565,77 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .desk-here-up:hover:not(:disabled) { border-color: rgba(204, 255, 0, 0.5); color: #fff; }
 .desk-here-up:disabled { opacity: 0.4; cursor: default; }
+
+/* --------------------------------------------------------------------------
+   HUD lives along the BOTTOM edge.
+
+   The room panels were pinned to the top corners, which is the worst place for
+   them in an isometric game: the camera looks down and away, so the top of the
+   frame is where the far half of the room is — the part you are walking toward
+   and the part with the most detail in it. Chrome up there covers the thing you
+   are navigating by. The bottom of the frame is near ground, mostly the tile
+   you are standing on, and it is also where every other overlay in this game
+   already lives: door prompts, conversations, the map, the build panel.
+
+   Layout along that edge, so nothing stacks on anything:
+
+     far left    DESK BOOK          (a tool you keep open)
+     centre      contextual panel   (desk you are at / build prompt)
+     far right   LAYOUT YIELD       (a readout you glance at)
+     bottom rail room name + controls hint
+
+   These come last in the file deliberately: they override the original
+   top-anchored rules rather than editing the minified block they live in.
+   -------------------------------------------------------------------------- */
+
+/* The room-name rail, at the very bottom. */
+.fab-sandbox-top {
+  inset: auto 18px 18px;
+}
+.fab-sandbox-controls {
+  bottom: 74px;
+}
+
+/* Corners, anchored to the bottom and clear of the rail. */
+.fab-build-catalog {
+  top: auto;
+  bottom: 118px;
+  max-height: calc(100% - 210px);
+}
+.fab-yield-panel {
+  top: auto;
+  bottom: 118px;
+}
+
+/*
+ * Contextual panels go bottom-CENTRE, not bottom-left.
+ *
+ * They would otherwise sit on top of the desk book, and unlike the corners
+ * these appear and disappear as you walk — a panel that intermittently covers a
+ * tool is worse than one that is always in the way, because you cannot learn
+ * around it. Centre is also where every other contextual overlay in the game
+ * already is (door prompts, NPC dialogue), so the habit transfers.
+ */
+.build-here,
+.desk-here,
+.build-prompt {
+  left: 50%;
+  bottom: 118px;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 900px) {
+  .fab-build-catalog,
+  .fab-yield-panel {
+    bottom: 108px;
+  }
+  .build-here,
+  .desk-here,
+  .build-prompt {
+    left: 10px;
+    right: 10px;
+    bottom: 108px;
+    width: auto;
+    transform: none;
+  }
+}
