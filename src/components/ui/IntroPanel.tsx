@@ -20,10 +20,13 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check, Sparkle } from '@phosphor-icons/react';
 import { api, type IntroResponse } from '@/lib/api-client';
+import { useOperation } from '@/lib/useOperation';
 
 export default function IntroPanel({ wallet }: { wallet: string | null }) {
   const [data, setData] = useState<IntroResponse | null>(null);
   const [busy, setBusy] = useState(false);
+  /** The live fund, so a step completed on this page is noticed immediately. */
+  const op = useOperation((s) => s.op);
 
   const load = useCallback(() => {
     if (!wallet) { setData(null); return; }
@@ -45,6 +48,25 @@ export default function IntroPanel({ wallet }: { wallet: string | null }) {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [load]);
+
+  /**
+   * Refresh when the fund changes, not only when the tab regains focus.
+   *
+   * Focus alone was not enough and the gap was invisible until somebody walked
+   * the introduction: the FIRST step is "open your first desk", which happens on
+   * this very page. The desk appeared, the server recorded the step, and the
+   * panel carried on saying 0 / 10 — the tab never lost focus, so it never
+   * reloaded. A tutorial that does not acknowledge the thing you just did reads
+   * as broken, and the reward sits uncollected behind it.
+   *
+   * Keyed on the counts a step could plausibly move rather than on `op`
+   * identity, which changes on every fifteen-second poll and would turn this
+   * into a request timer.
+   */
+  const nodeCount = op?.nodes.length ?? 0;
+  const produced = op?.totalProduced ?? 0;
+  const balance = op?.osrBalance ?? 0;
+  useEffect(() => { load(); }, [nodeCount, produced, balance, load]);
 
   if (!data || data.intro.finished) return null;
 
