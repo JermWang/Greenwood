@@ -99,9 +99,19 @@ export const useOperation = create<OperationState>()((set, get) => ({
  * DEV_WALLET is null in every production build and on every deployed
  * environment, so this is a no-op everywhere real.
  */
-if (DEV_WALLET) {
-  useOperation.getState().setWallet(DEV_WALLET);
-}
+/**
+ * The dev wallet, for the mount effect to sign in with.
+ *
+ * This used to call setWallet HERE, at module scope — and that is a store write
+ * during hydration, which React can render straight past. The symptom was the
+ * Machine Room intermittently falling back to its "Walk the floor first" gate
+ * with a dev wallet configured, which reads as the bypass being broken.
+ *
+ * It is the same bug the demo had, found twice for the same reason: signing
+ * somebody in is a MOUNT concern, not an import concern. Both now go through the
+ * effect in DemoButton.
+ */
+export const AUTO_WALLET = DEV_WALLET;
 
 /**
  * The demo account this browser holds a cookie for, if any.

@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Play } from '@phosphor-icons/react';
-import { demoWalletFromCookie, useOperation } from '@/lib/useOperation';
+import { AUTO_WALLET, demoWalletFromCookie, useOperation } from '@/lib/useOperation';
 import { useWalletStore } from '@/lib/store';
 import { isDemoWallet } from '@/lib/demo';
 import { api } from '@/lib/api-client';
@@ -63,6 +63,9 @@ export function DemoButton() {
    */
   useEffect(() => {
     if (wallet) return;
+    // The dev bypass first, so a developer with it configured is never quietly
+    // replaced by a demo cookie left over from testing the demo.
+    if (AUTO_WALLET) { signIn(AUTO_WALLET); return; }
     const demo = demoWalletFromCookie();
     if (demo) signIn(demo);
   }, [wallet, signIn]);
