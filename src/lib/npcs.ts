@@ -268,7 +268,10 @@ export const NPCS: Npc[] = [
     role: 'Retired Operator',
     region: 'grounds',
     x: -2,
-    z: 21,
+    // Four tiles clear of the entrance arch. At 21 her nameplate landed on top
+    // of the GREENWOOD GROUNDS sign — labels are screen-space billboards and do
+    // nothing to avoid each other, so the only fix is distance on the ground.
+    z: 19,
     facing: Math.PI,
     outfit: '#7a3f4a',
     cap: '#6b6963',

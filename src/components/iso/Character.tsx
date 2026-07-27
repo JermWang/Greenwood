@@ -274,6 +274,8 @@ export default function Character({
   positionRef,
 }: CharacterProps) {
   const root = useRef<THREE.Group>(null);
+  /** The footprint square, held square to the grid while the body turns. */
+  const marker = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const legL = useRef<THREE.Group>(null);
   const legR = useRef<THREE.Group>(null);
@@ -334,6 +336,19 @@ export default function Character({
     group.position.set(pos.current.x, TILE_TOP, pos.current.z);
     group.rotation.y = facing.current;
 
+    /*
+     * Hold the footprint square to the GRID while the character turns on it.
+     *
+     * The marker is a child of this group, so it inherited the facing rotation
+     * and span with every turn — a tile-shaped marker sitting at whatever angle
+     * you last walked, permanently a few degrees out of true with the floor. It
+     * looks like a rounding error and it is actually the character's heading.
+     *
+     * Counter-rotating is the fix rather than reparenting: the marker still has
+     * to follow the interpolated position, and this group is what has it.
+     */
+    if (marker.current) marker.current.rotation.y = -facing.current;
+
     // Publish the interpolated position, not the waypoint. Anything that wants
     // to track this character — the camera, the minimap — reads it here and gets
     // every frame of the walk rather than the handful of tiles a route stops at.
@@ -391,7 +406,7 @@ export default function Character({
         comes from components/iso/TileMarker; this is the same geometry, undone.
       */}
       {look.isSelf && (
-        <group scale={1 / 1.55}>
+        <group ref={marker} scale={1 / 1.55}>
           <TileRing x={0} z={0} color={ISO.accent} opacity={0.85} y={0.02} />
         </group>
       )}

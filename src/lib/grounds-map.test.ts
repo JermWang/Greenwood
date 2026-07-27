@@ -9,7 +9,9 @@ import {
   FENCE_Z,
   FORECOURT_HALF,
   FORECOURT_Z,
+  DOOR_HALF,
   allProps,
+  doorCells,
   buildingAt,
   doorAt,
   isWalkable,
@@ -128,11 +130,11 @@ describe('doors', () => {
   /**
    * Where you land when you come back OUT of a door.
    *
-   * The Grounds page spawns two tiles outward — outside DOOR_RADIUS, so the
-   * first thing a player sees on stepping outside is not a prompt asking whether
-   * they would like to go back in. Both properties matter and both are one prop
-   * roll away from breaking, with no error if they do: you would simply arrive
-   * standing in a tree.
+   * The Grounds page spawns two tiles outward, clear of the threshold — which
+   * matters far more now that standing in a doorway transitions you. Land on one
+   * and you would be sent straight back where you came from, in a loop, with no
+   * way to break it. The walkability half is one prop roll away from breaking
+   * with no error if it does: you would simply arrive standing in a tree.
    */
   it('leaves somewhere to stand two tiles out of every doorway', () => {
     for (const door of DOORS) {
@@ -142,13 +144,51 @@ describe('doors', () => {
     }
   });
 
-  it('never puts two doorways within reach of each other', () => {
-    // doorAt returns the FIRST match, so overlapping doorways would make one of
-    // them unreachable — and which one would depend on array order.
-    for (const a of DOORS) {
-      for (const b of DOORS) {
-        if (a === b) continue;
-        expect(Math.hypot(a.x - b.x, a.z - b.z), `${a.id} / ${b.id}`).toBeGreaterThan(2);
+  it('never lets two doorways share a tile', () => {
+    // doorAt returns the FIRST match, so overlapping thresholds would make one
+    // of them unreachable — and which one would depend on array order.
+    const seen = new Set<string>();
+    for (const door of DOORS) {
+      for (const cell of doorCells(door)) {
+        const key = `${cell.x}:${cell.z}`;
+        expect(seen.has(key), `${door.id} overlaps another door at ${key}`).toBe(false);
+        seen.add(key);
+      }
+    }
+  });
+
+  /**
+   * A threshold is three tiles wide, matching the room doors in
+   * components/iso/portals. A one-tile door is something you have to hit rather
+   * than something you walk into, and walking into one is now the entire
+   * interaction — there is no confirm step behind it to catch a near miss.
+   */
+  it('makes every threshold three tiles wide and all of it walkable', () => {
+    for (const door of DOORS) {
+      const cells = doorCells(door);
+      expect(cells.length, door.id).toBe(DOOR_HALF * 2 + 1);
+      for (const cell of cells) {
+        const at = `${door.id} at ${cell.x},${cell.z}`;
+        expect(isWalkable(cell.x, cell.z), at).toBe(true);
+        expect(doorAt(cell.x, cell.z)?.id, at).toBe(door.id);
+        expect(onPath(cell.x, cell.z), at).toBe(true);
+      }
+    }
+  });
+
+  /**
+   * A threshold has width but no DEPTH.
+   *
+   * The old test was a radius, which made the tile in front of a door count as
+   * being in it. Harmless while a door needed a button press; not now that
+   * walking onto one transitions you, because a player crossing the forecourt
+   * would be taken somewhere they were only walking past.
+   */
+  it('does not trigger from the tile in front of a door', () => {
+    for (const door of DOORS) {
+      for (const dz of [-1, 1]) {
+        const at = doorAt(door.x, door.z + dz);
+        expect(at?.id, `${door.id} fires from z=${door.z + dz}`).not.toBe(door.id);
       }
     }
   });

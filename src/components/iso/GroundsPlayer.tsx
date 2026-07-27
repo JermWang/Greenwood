@@ -27,7 +27,15 @@ import Character, { lookFor } from './Character';
 import { findPathWhere, smoothPath, type Cell } from './pathing';
 import { DoorTile, TileFill, TileRing } from './TileMarker';
 import { ISO } from './palette';
-import { ARRIVAL, BOUNDS, DOORS, doorAt, isWalkable, type Doorway } from '@/lib/grounds-map';
+import {
+  ARRIVAL,
+  BOUNDS,
+  DOORS,
+  doorAt,
+  doorCells,
+  isWalkable,
+  type Doorway,
+} from '@/lib/grounds-map';
 
 /** The click surface, sized and placed to cover exactly the playable rectangle. */
 const PLANE = {
@@ -220,15 +228,18 @@ export default function GroundsPlayer({
         outlined square. A door is somewhere you GO, so it gets the fill that
         means ground-you-can-act-on. Brighter when you are standing in it.
       */}
-      {DOORS.map((d) => (
-        <DoorTile
-          key={d.id}
-          x={d.x}
-          z={d.z}
-          color={ISO.accent}
-          opacity={position.x === d.x && position.z === d.z ? 0.6 : 0.32}
-        />
-      ))}
+      {DOORS.flatMap((d) => {
+        const standing = doorAt(position.x, position.z)?.id === d.id;
+        return doorCells(d).map((c) => (
+          <DoorTile
+            key={`${d.id}:${c.x}:${c.z}`}
+            x={c.x}
+            z={c.z}
+            color={ISO.accent}
+            opacity={standing ? 0.6 : 0.32}
+          />
+        ));
+      })}
     </>
   );
 }

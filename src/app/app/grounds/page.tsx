@@ -22,7 +22,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Lock, Backpack } from '@phosphor-icons/react';
+import { Lock, Backpack } from '@phosphor-icons/react';
 import { Canvas } from '@react-three/fiber';
 import { IsoRig } from '@/components/iso/IsoScene';
 import type { DragState } from '@/components/iso/IsoBoard';
@@ -122,6 +122,20 @@ export default function GroundsPage() {
     setHere(cell);
     setTalking((current) => (current && !npcAt('grounds', cell.x, cell.z) ? null : current));
   }, []);
+  /**
+   * Stepped onto a threshold.
+   *
+   * WALKING THROUGH IS WHAT OPENS A DOOR. There is no confirm step, and that
+   * matches how the rooms have always worked — you walk into the Machine Room's
+   * north door and you are on the Trading Floor. A button here made the Grounds
+   * the one place in the game where a doorway asked permission first, which is
+   * both inconsistent and a worse thing to do: the whole point of navigating in
+   * the world is that arriving somewhere is a consequence of walking there.
+   *
+   * The prompt survives only for a door that will NOT open. A refusal has to be
+   * read, and it is the one case where stopping the player is the correct
+   * outcome rather than an extra click.
+   */
   const onDoor = useCallback((d: Doorway | null) => {
     setDoor(d);
     setError(null);
@@ -140,6 +154,9 @@ export default function GroundsPage() {
     () => (door ? regions?.regions.find((r) => r.id === door.region) ?? null : null),
     [door, regions]
   );
+
+  /** True while the door under the player is one they may actually walk through. */
+  const doorOpen = door != null && (verdict == null || verdict.allowed);
 
   /**
    * Go through.
@@ -180,6 +197,27 @@ export default function GroundsPage() {
     },
     [wallet, entering, router, load]
   );
+
+  /**
+   * Standing in an open doorway takes you through it.
+   *
+   * An effect rather than a call inside `onDoor`, because whether the door opens
+   * depends on the region verdicts, which arrive asynchronously — a player who
+   * walks onto a threshold before that response lands would otherwise be stuck
+   * there until they stepped off and back on. This re-evaluates when either the
+   * door or the verdict changes, so it fires as soon as both are known.
+   *
+   * `entering` guards it: setting state from inside the transition would
+   * otherwise re-run this and post the same door twice.
+   */
+  useEffect(() => {
+    if (!doorOpen || !door || entering) return;
+    void enter(door);
+    // `enter` is intentionally out of the dependency list — it closes over
+    // `entering`, so including it would re-run this the instant the flag flips
+    // and fire a second transition.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doorOpen, door, entering]);
 
   /**
    * Buy the pack the gate is asking for, without leaving the gate.
@@ -276,23 +314,24 @@ export default function GroundsPage() {
         onClose={() => setTalking(null)}
       />
 
-      {/* Standing in a doorway. Contextual, because a HUD that always shows
-          every action teaches players to stop reading it. */}
-      {/* Hidden while talking: both live bottom-centre, and a door prompt
-          stacked on a conversation is two things shouting from one spot. */}
-      {door && !talking && (
-        <div className={`gr-door${verdict && !verdict.allowed ? ' is-locked' : ''}`}>
+      {/*
+        A REFUSAL, not a confirmation.
+
+        This only appears for a door that will not open — an open one takes you
+        through the moment you stand in it, so there is nothing to say about it.
+        Being stopped is the one case where interrupting the player is the right
+        outcome rather than an extra click, because the reason has to be read and
+        the fix is usually something they can do right here.
+
+        Hidden while talking: both live bottom-centre, and a refusal stacked on a
+        conversation is two things shouting from one spot.
+      */}
+      {door && !doorOpen && !talking && (
+        <div className="gr-door is-locked">
           <b>{door.label}</b>
-          <span>{verdict && !verdict.allowed ? verdict.reason : door.blurb}</span>
+          <span>{verdict?.reason ?? door.blurb}</span>
 
           {error && <em className="gr-door-error">{error}</em>}
-
-          {/* Open: go through. */}
-          {(!verdict || verdict.allowed) && (
-            <button className="gr-door-go" onClick={() => void enter(door)} disabled={entering}>
-              {entering ? '…' : <>Enter <ArrowRight size={13} weight="bold" /></>}
-            </button>
-          )}
 
           {/* Locked on a pack, and one is affordable: sell it here. */}
           {verdict?.code === 'pack' && pack?.nextTier && (

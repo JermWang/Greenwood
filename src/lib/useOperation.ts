@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { api, type UserOperation, type ProtocolOverview } from './api-client';
 import { DEV_WALLET } from './dev-mode';
+import { DEMO_COOKIE, isDemoWallet } from './demo';
 
 // Polls the game API (operation every 15s, overview every 30s — same cadence
 // as the original) and exposes shared state + refresh triggers.
@@ -100,4 +101,27 @@ export const useOperation = create<OperationState>()((set, get) => ({
  */
 if (DEV_WALLET) {
   useOperation.getState().setWallet(DEV_WALLET);
+}
+
+/**
+ * Resume a demo session on load.
+ *
+ * The cookie is the source of truth for which demo account a browser is, and it
+ * is deliberately readable from JS so this can happen without a round trip —
+ * otherwise every reload would flash the connect screen before the demo came
+ * back, which reads as having been signed out.
+ *
+ * Runs after the DEV_WALLET branch and only when that did not fire, so a
+ * developer with the bypass on does not have it silently replaced by a demo
+ * cookie left over from testing the demo.
+ */
+if (!DEV_WALLET && typeof document !== 'undefined') {
+  const cookie = document.cookie
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${DEMO_COOKIE}=`))
+    ?.slice(DEMO_COOKIE.length + 1);
+  if (cookie && isDemoWallet(cookie)) {
+    useOperation.getState().setWallet(cookie.toLowerCase());
+  }
 }

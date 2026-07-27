@@ -29,6 +29,7 @@ import {
   type Spawn,
 } from './creatures';
 import { DEV_WALLET_BYPASS } from './dev-mode';
+import { isDemoWallet } from './demo';
 import {
   assertCanUpgradePack,
   hasPack,
@@ -182,6 +183,23 @@ export function entryCheckFor(wallet: string, regionId: string): EntryCheck {
    * real gate.
    */
   if (!check.allowed && DEV_WALLET_BYPASS) {
+    return { allowed: true, reason: null, code: 'ok' };
+  }
+
+  /*
+   * A demo can walk anywhere.
+   *
+   * The point of the demo is to SEE the game, and a gate that hides two thirds
+   * of it behind ten levels of progression is a gate that hides two thirds of
+   * the reason anybody would play. Levels still accrue and the introduction
+   * still runs — nothing is handed over — but the doors are open.
+   *
+   * Safe because a demo account is not competing with anyone: it holds no key,
+   * cannot sign, and every financial path is gated behind a signature it cannot
+   * produce. What it can do is die in the Deep Forest and lose fake Scrip, which
+   * is exactly the experience being demonstrated.
+   */
+  if (!check.allowed && isDemoWallet(wallet)) {
     return { allowed: true, reason: null, code: 'ok' };
   }
   return check;

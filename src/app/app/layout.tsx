@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Cpu, Lightning, Radio } from '@phosphor-icons/react';
 import WalletButton from '@/components/ui/WalletButton';
+import { DemoBanner, DemoButton } from '@/components/ui/DemoButton';
 import MarketHud from '@/components/ui/MarketHud';
 import { useOperation } from '@/lib/useOperation';
 import DeployNotice from '@/components/ui/DeployNotice';
@@ -70,8 +71,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            {/* Beside Connect, not on a landing page of its own. The thing
+                standing between a curious person and this game IS the connect
+                step, so the alternative belongs in the same place. */}
+            <DemoBanner />
             <GpuBalanceModule />
             <SoundToggle />
+            <DemoButton />
             <WalletButton />
           </div>
         </header>

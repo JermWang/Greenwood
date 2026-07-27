@@ -49,8 +49,26 @@ export const BOUNDS = { minX: -22, maxX: 22, minZ: -20, maxZ: 24 } as const;
 /** Seeds the scatter. Constant, so everyone walks the same Grounds forever. */
 export const MAP_SEED = 0x67726e64; // "grnd"
 
-/** Standing this close to a doorway is standing in it. */
-export const DOOR_RADIUS = 1;
+/**
+ * Tiles either side of a doorway's centre. 1 gives a three-tile threshold.
+ *
+ * Doors used to be a single cell, which made them something you had to hit
+ * rather than something you walk into — and a one-tile target on a map you
+ * navigate by clicking is a target you miss. Three matches the room doors in
+ * components/iso/portals, which have always been `half: 1`, so a threshold is
+ * the same width everywhere in the game.
+ */
+export const DOOR_HALF = 1;
+
+/**
+ * Slack ACROSS the threshold, in tiles.
+ *
+ * Zero: you are in the doorway or you are not. Walking through is what opens a
+ * door now, so a tile of tolerance in front of it would fire the transition
+ * while you were still approaching, and a player would be taken somewhere they
+ * were only walking past.
+ */
+export const DOOR_DEPTH = 0;
 
 const inBounds = (x: number, z: number) =>
   x >= BOUNDS.minX && x <= BOUNDS.maxX && z >= BOUNDS.minZ && z <= BOUNDS.maxZ;
@@ -124,9 +142,18 @@ export const ARRIVAL = { x: 0, z: BOUNDS.maxZ - 3 } as const;
 
 export interface Doorway {
   id: string;
-  /** The tile a player stands on to use it. */
+  /** Centre tile of the threshold. It spans DOOR_HALF either side along `axis`. */
   x: number;
   z: number;
+  /**
+   * Which way the opening runs.
+   *
+   * 'x' for a door in a wall that runs east-west — which is all of them so far,
+   * because the buildings face the forecourt and the fence runs across the north
+   * end. Stated per-door anyway so the first door in a side wall does not need
+   * new machinery, the same way portals derives it from `side`.
+   */
+  axis: 'x' | 'z';
   /** Facing, for the arch model. 0 looks down +Z. */
   rotation: number;
   label: string;
@@ -172,6 +199,7 @@ export interface Doorway {
 export const DOORS: Doorway[] = [
   {
     id: 'machine-room',
+    axis: 'x',
     x: -12,
     z: 16,
     rotation: 0,
@@ -183,6 +211,7 @@ export const DOORS: Doorway[] = [
   },
   {
     id: 'trading-floor',
+    axis: 'x',
     x: 12,
     z: 16,
     rotation: 0,
@@ -194,6 +223,7 @@ export const DOORS: Doorway[] = [
   },
   {
     id: 'treeline',
+    axis: 'x',
     x: 0,
     z: FENCE_Z + 1,
     rotation: Math.PI,
@@ -286,7 +316,7 @@ export function propAt(x: number, z: number): MapProp | null {
   // Nothing grows immediately outside a doorway or the entrance arch, or either
   // could be walled in by its own landscaping.
   for (const door of DOORS) {
-    if (Math.hypot(gx - door.x, gz - door.z) < DOOR_RADIUS + 2) return null;
+    if (Math.hypot(gx - door.x, gz - door.z) < DOOR_HALF + 3) return null;
   }
   if (Math.hypot(gx - ENTRANCE.x, gz - ENTRANCE.z) < 4) return null;
   // Keep the strip in front of the fence clear so the fence is READ as a fence
@@ -359,7 +389,30 @@ export function isWalkable(x: number, z: number): boolean {
   return !prop || !prop.solid;
 }
 
-/** The doorway this position is standing in, if any. */
+/** Every tile a threshold covers. Three, centred on the doorway. */
+export function doorCells(door: Doorway): Array<{ x: number; z: number }> {
+  const out: Array<{ x: number; z: number }> = [];
+  for (let o = -DOOR_HALF; o <= DOOR_HALF; o += 1) {
+    out.push(door.axis === 'x' ? { x: door.x + o, z: door.z } : { x: door.x, z: door.z + o });
+  }
+  return out;
+}
+
+/**
+ * The doorway this position is standing in, if any.
+ *
+ * Rectangular rather than a radius: a door is a gap in a wall, so it is wide
+ * along the wall and has no depth at all. The old circular test made the tile
+ * directly IN FRONT of a door count as being in it, which was harmless while a
+ * door needed a button press and is not now that walking through one is what
+ * opens it — you would be taken somewhere you were only walking past.
+ */
 export function doorAt(x: number, z: number): Doorway | null {
-  return DOORS.find((d) => Math.hypot(x - d.x, z - d.z) <= DOOR_RADIUS) ?? null;
+  return (
+    DOORS.find((d) =>
+      d.axis === 'x'
+        ? Math.abs(x - d.x) <= DOOR_HALF && Math.abs(z - d.z) <= DOOR_DEPTH
+        : Math.abs(z - d.z) <= DOOR_HALF && Math.abs(x - d.x) <= DOOR_DEPTH
+    ) ?? null
+  );
 }

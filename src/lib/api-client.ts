@@ -747,6 +747,15 @@ export const api = {
   quests: (wallet: string) => request<QuestsResponse>(`/quests/${wallet}`),
   regions: (wallet: string) => request<RegionsResponse>(`/regions/${wallet}`),
   /**
+   * Start (or resume) a demo session. Returns the throwaway account it minted.
+   *
+   * No wallet argument: the server decides which account this is, from the
+   * cookie it set. A client that could name its own demo address could name
+   * somebody else's.
+   */
+  startDemo: () =>
+    post<{ wallet: string; resumed: boolean; scrip?: number }>('/demo/start', {}),
+  /**
    * Walk through a door. Throws with the gate's own sentence when refused.
    *
    * The client already knows the verdict from `regions`, which is what lets a

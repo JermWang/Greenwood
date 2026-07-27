@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GameError } from './game';
 import { DEV_WALLET } from './dev-mode';
+import { DEMO_COOKIE, isDemoWallet } from './demo';
 import { verifyPrivyWalletOwner } from './privy-server';
 
 export function ok(data: unknown) {
@@ -51,6 +52,36 @@ export async function requireAuthenticatedWallet(request: Request, value: unknow
   if (DEV_WALLET) return DEV_WALLET;
 
   const wallet = requireWallet(value);
+
+  /*
+   * Demo accounts authenticate with the cookie that created them.
+   *
+   * There is no signature to check because there is no key — nobody owns a demo
+   * address. What the cookie proves is the only thing that needs proving: that
+   * this browser is the one this throwaway account was minted for, so two demo
+   * players cannot drive each other's fund.
+   *
+   * The prefix check runs against the REQUESTED wallet and the cookie has to
+   * match it exactly. Accepting any demo-prefixed address on sight would let
+   * anyone act as any demo account, and taking the cookie's word for which
+   * account this is without comparing would let a real address be driven by a
+   * demo cookie. Both halves are load-bearing.
+   *
+   * A demo account cannot sign, and every financial path is gated behind a
+   * signature and NEXT_PUBLIC_ONCHAIN, so this widens the door to game state
+   * only — never to money.
+   */
+  if (isDemoWallet(wallet)) {
+    const cookie = request.headers
+      .get('cookie')
+      ?.split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith(`${DEMO_COOKIE}=`))
+      ?.slice(DEMO_COOKIE.length + 1);
+    if (cookie && cookie.toLowerCase() === wallet) return wallet;
+    throw new GameError('This demo session has expired. Start a new one.', 401);
+  }
+
   await verifyPrivyWalletOwner(request, wallet);
   return wallet;
 }
