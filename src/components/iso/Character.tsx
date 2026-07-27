@@ -15,10 +15,11 @@ import { memo, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { ISO, TILE_TOP } from './palette';
+import { ISO, OUTFITS, TILE_TOP } from './palette';
 import { TileRing } from './TileMarker';
 import type { Cell } from './pathing';
 import { AVATAR_SKINS, HAND, BOOT } from './avatar-skins';
+export { OUTFITS } from './palette';
 
 // Re-exported so existing importers of Character keep working unchanged.
 export { AVATAR_SKINS };
@@ -53,8 +54,6 @@ export interface CharacterLook {
   isSelf?: boolean;
 }
 
-/** Ordinary clothing colours, so a crowd does not read as one uniform. */
-export const OUTFITS = ['#3f5c86', '#7a3f4a', '#4a5a48', '#6b5b3e', '#4b4459', '#2f5c5c'];
 
 export function lookFor(who: {
   wallet: string;

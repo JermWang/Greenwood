@@ -62,6 +62,24 @@ export interface Npc {
   outfit: string;
   /** Cap colour. Staff wear the brand; residents do not. */
   cap: string;
+  /**
+   * Trim, gloves and boots — what makes a resident not read as another player.
+   *
+   * Players get their jacket from a hash of their wallet out of a six-colour
+   * list, and bare hands and boots unless a cosmetic overrides them. So a crowd
+   * of players is a crowd of plain two-tone figures, and an NPC built the same
+   * way is indistinguishable from one until you are close enough to read the
+   * nameplate.
+   *
+   * Every resident therefore wears something a player CANNOT: a contrasting
+   * trim plus coloured gloves and boots, in a combination picked for the job
+   * rather than from the player palette. It reads as a uniform, which is what
+   * these people are wearing, and it means "that is staff" is a silhouette
+   * judgement at any distance.
+   */
+  trim: string;
+  hand: string;
+  boot: string;
   lines: NpcLine[];
 }
 
@@ -80,11 +98,14 @@ export const NPCS: Npc[] = [
     name: 'Dez Okafor',
     role: 'Floor Technician',
     region: 'grounds',
-    x: -13,
-    z: 18,
+    x: -16,
+    z: 17,
     facing: 0,
-    outfit: '#4a5a48',
-    cap: '#ccff00',
+    outfit: '#2e3a30',
+    cap: '#e0a34a',
+    trim: '#e0a34a',
+    hand: '#3a3831',
+    boot: '#2f2d28',
     lines: [
       {
         kind: 'tip',
@@ -128,11 +149,14 @@ export const NPCS: Npc[] = [
     name: 'Marta Vane',
     role: 'Quartermaster',
     region: 'grounds',
-    x: 13,
-    z: 18,
+    x: 16,
+    z: 17,
     facing: 0,
-    outfit: '#6b5b3e',
-    cap: '#ccff00',
+    outfit: '#5a4632',
+    cap: '#8a6743',
+    trim: '#c8a86a',
+    hand: '#5f4830',
+    boot: '#3d3226',
     lines: [
       {
         kind: 'tip',
@@ -177,10 +201,13 @@ export const NPCS: Npc[] = [
     role: 'Perimeter Watch',
     region: 'grounds',
     x: 2,
-    z: -14,
+    z: -13,
     facing: 0,
-    outfit: '#3f5c86',
-    cap: '#a09e99',
+    outfit: '#2b3d5c',
+    cap: '#6b6963',
+    trim: '#a9c4e0',
+    hand: '#2a2f38',
+    boot: '#23262c',
     lines: [
       {
         kind: 'tip',
@@ -224,11 +251,14 @@ export const NPCS: Npc[] = [
     name: 'Iris Sunna',
     role: 'Exchange Clerk',
     region: 'grounds',
-    x: 2,
+    x: 8,
     z: 18,
     facing: 0,
-    outfit: '#4b4459',
-    cap: '#ccff00',
+    outfit: '#3d3550',
+    cap: '#8c7fa6',
+    trim: '#cfc3e4',
+    hand: '#d8ccc0',
+    boot: '#312c3a',
     lines: [
       {
         kind: 'tip',
@@ -268,13 +298,13 @@ export const NPCS: Npc[] = [
     role: 'Retired Operator',
     region: 'grounds',
     x: -2,
-    // Four tiles clear of the entrance arch. At 21 her nameplate landed on top
-    // of the GREENWOOD GROUNDS sign — labels are screen-space billboards and do
-    // nothing to avoid each other, so the only fix is distance on the ground.
-    z: 19,
+    z: 8,
     facing: Math.PI,
-    outfit: '#7a3f4a',
-    cap: '#6b6963',
+    outfit: '#5e3238',
+    cap: '#9c8f86',
+    trim: '#d6c2b4',
+    hand: '#c9b6a6',
+    boot: '#4a3b34',
     lines: [
       {
         kind: 'tip',

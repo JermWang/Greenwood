@@ -116,3 +116,16 @@ export interface PlacedIsoMachine {
   z: number;
   rotation: number;
 }
+
+/**
+ * Player jacket colours.
+ *
+ * A character's shell is hashed out of this list from their wallet, so every
+ * player is one of these six unless a cosmetic overrides it.
+ *
+ * Lives here rather than in Character.tsx because it is DATA that other things
+ * need to reason about — lib/npcs is checked against it so a resident can never
+ * be dressed as a player — and a plain module can be imported from a test that
+ * has no JSX transform.
+ */
+export const OUTFITS = ['#3f5c86', '#7a3f4a', '#4a5a48', '#6b5b3e', '#4b4459', '#2f5c5c'];

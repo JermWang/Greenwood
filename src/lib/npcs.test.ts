@@ -9,6 +9,11 @@
 import { describe, expect, it } from 'vitest';
 import { NPCS, greetingFor, linesFor, npcAt, npcsIn, TALK_RADIUS } from './npcs';
 import { isWalkable, onPath } from './grounds-map';
+// The player palette, so a resident can be checked against it rather than
+// against a copy that would drift the first time somebody added a colour.
+// Imported from palette rather than from Character: this test runs in a node
+// environment with no JSX transform, so pulling in a .tsx would fail to parse.
+import { OUTFITS } from '../components/iso/palette';
 import { MAX_TOTAL_LEVEL } from './progression';
 
 /**
@@ -57,6 +62,32 @@ describe('the cast', () => {
         expect(Math.hypot(a.x - b.x, a.z - b.z), `${a.id} / ${b.id}`).toBeGreaterThan(TALK_RADIUS * 2);
       }
     }
+  });
+
+  /**
+   * A resident must not be mistakable for another player.
+   *
+   * Players get a jacket hashed out of a fixed six-colour list, with bare hands
+   * and boots unless a cosmetic overrides them — so a crowd of players is a
+   * crowd of plain two-tone figures. An NPC assembled the same way is
+   * indistinguishable from one until you are close enough to read a nameplate,
+   * which defeats the point of putting people in the world.
+   */
+  it('dresses everybody in something no player can be wearing', () => {
+    for (const npc of NPCS) {
+      expect(OUTFITS, `${npc.id} wears a player jacket colour`).not.toContain(npc.outfit);
+      // Trim, gloves and boots together are the uniform; a missing one reads as
+      // a half-dressed player rather than as staff.
+      for (const part of ['trim', 'hand', 'boot'] as const) {
+        expect(npc[part], `${npc.id} has no ${part}`).toMatch(/^#[0-9a-f]{6}$/i);
+      }
+    }
+  });
+
+  it('gives each of them a different look', () => {
+    // Five people in one square wearing one uniform reads as a bug.
+    const looks = NPCS.map((n) => `${n.outfit}|${n.cap}|${n.trim}`);
+    expect(new Set(looks).size).toBe(NPCS.length);
   });
 
   it('finds the person you are standing next to', () => {

@@ -43,7 +43,15 @@ export default memo(function NpcField({
         return (
           <group key={npc.id}>
             <Character
-              look={{ body: npc.outfit, cap: npc.cap }}
+              look={{
+                body: npc.outfit,
+                cap: npc.cap,
+                // The uniform. See the Npc type for why residents wear trim,
+                // gloves and boots that a player's generated look never has.
+                trim: npc.trim,
+                hand: npc.hand,
+                boot: npc.boot,
+              }}
               target={{ x: npc.x, z: npc.z }}
               spawn={{ x: npc.x, z: npc.z }}
               // Faces the way players arrive from. A row of people all looking
@@ -62,14 +70,31 @@ export default memo(function NpcField({
               opacity={near ? 0.85 : 0.3}
             />
 
-            {/* Hitbox, so clicking anywhere on a person starts the conversation
-                rather than only their torso. Transparent rather than invisible:
-                three.js skips invisible objects when raycasting, which would
-                make this a click target nothing can click. */}
-            <mesh position={[npc.x, 0.9, npc.z]} onClick={(e) => click(e, npc)}>
-              <boxGeometry args={[1.1, 2, 1.1]} />
-              <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-            </mesh>
+            {/*
+              CLICKABLE ONLY WHEN YOU ARE STANDING THERE.
+
+              Talking used to work from anywhere on the map, which made these
+              people menus that happened to be rendered in 3D — you could read
+              every hint in the game from the entrance without walking a step.
+              Requiring the walk is most of what makes them feel like residents
+              rather than kiosks, and it is the same rule every other
+              interaction in this world already follows: doors open when you
+              stand in them, desks are worked at, loot is read from beside it.
+
+              The hitbox is simply not rendered when far, so a distant click
+              falls through to the ground and walks you there instead — which is
+              exactly what somebody clicking a person across the square meant.
+
+              Transparent rather than invisible: three.js skips invisible
+              objects when raycasting, which would make this a click target
+              nothing can click.
+            */}
+            {near && (
+              <mesh position={[npc.x, 0.9, npc.z]} onClick={(e) => click(e, npc)}>
+                <boxGeometry args={[1.1, 2, 1.1]} />
+                <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+              </mesh>
+            )}
           </group>
         );
       })}
