@@ -183,7 +183,7 @@ export default function GroundsPage() {
   if (!wallet && !DEV_WALLET_BYPASS) {
     return (
       <div className="df-gate">
-        <p>Connect a fund to step outside.</p>
+        <p>Connect your wallet to step outside.</p>
       </div>
     );
   }

@@ -166,7 +166,7 @@ export default function DeepForestPage() {
 
   // The bypass short-circuits the connect prompt as well as the region gate.
   if (!wallet && !DEV_WALLET_BYPASS) {
-    return <div className="df-gate"><p>Connect a fund to go outside.</p></div>;
+    return <div className="df-gate"><p>Connect your wallet to go outside.</p></div>;
   }
 
   if (state && !open) {
