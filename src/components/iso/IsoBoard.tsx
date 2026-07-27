@@ -56,6 +56,15 @@ interface BoardProps {
   selectedId: string | null;
   onTileClick: (x: number, z: number) => void;
   onDeskClick: (id: string) => void;
+  /**
+   * The tile the player is standing on, reported as they arrive.
+   *
+   * Building a desk happens where you STAND, not where you click — a click with
+   * nothing in hand already means "walk there", and overloading it would make
+   * every step across the room a decision about whether you meant to build. So
+   * the floor watches where you end up instead.
+   */
+  onPlayerMove?: (cell: Cell) => void;
   dragRef: MutableRefObject<DragState>;
   /** Compact boards (the dashboard twin) pass their own extent. */
   bounds?: BoardBounds;
@@ -110,6 +119,7 @@ export default function IsoBoard({
   selectedId,
   onTileClick,
   onDeskClick,
+  onPlayerMove,
   dragRef,
   bounds = BOARD_BOUNDS,
   dressed = false,
@@ -137,6 +147,16 @@ export default function IsoBoard({
     setPosition(cell);
     setHasWalked(true);
   }, []);
+
+  /**
+   * Report where the player is standing, including on arrival.
+   *
+   * Watches `position` rather than firing inside `arrive`, so the spawn counts:
+   * somebody who walks into the room and builds without taking a step would
+   * otherwise never have told the floor where they are, and the build affordance
+   * would not appear until their second move.
+   */
+  useEffect(() => { onPlayerMove?.(position); }, [onPlayerMove, position]);
 
   const cells = useMemo(() => {
     const out: Array<{ x: number; z: number }> = [];

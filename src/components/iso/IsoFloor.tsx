@@ -18,6 +18,8 @@ import { type IsoMachine, type MachineKind, type PlacedIsoMachine } from './pale
 import MachineSpec from '@/components/ui/MachineSpec';
 import { LAYOUT_RULES } from '@/lib/floor-rules';
 import { api, type FloorBonus } from '@/lib/api-client';
+import { useOperation } from '@/lib/useOperation';
+import BuildPrompt, { type DeskFamily } from './BuildPrompt';
 
 export type { MachineKind, IsoMachine };
 
@@ -68,6 +70,13 @@ export default function IsoFloor({
   const [holdingId, setHoldingId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  /** The empty tile a build was started on. Null when no prompt is open. */
+  const [buildAt, setBuildAt] = useState<{ x: number; z: number } | null>(null);
+  const [building, setBuilding] = useState(false);
+  const [buildError, setBuildError] = useState<string | null>(null);
+  /** Live fund, for what a desk costs against and to refresh after building. */
+  const op = useOperation((s) => s.op);
+  const refresh = useOperation((s) => s.refresh);
   const [bonus, setBonus] = useState<FloorBonus | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
   // Both HUD panels fold to their title bar. On a board you are constantly
@@ -240,9 +249,10 @@ export default function IsoFloor({
 
   const onTileClick = useCallback((x: number, z: number) => {
     if (!holdingId) return;
+    const taken = layout.find((p) => p.x === x && p.z === z);
+
     // Refuse a drop onto a cell another desk already holds; the server would
     // reject it anyway and the board already shows the cell in red.
-    const taken = layout.find((p) => p.x === x && p.z === z);
     if (taken && taken.id !== holdingId) return;
     setLayout((cur) =>
       cur.some((p) => p.id === holdingId)
@@ -252,6 +262,64 @@ export default function IsoFloor({
     setSelectedId(holdingId);
     setHoldingId(null);
   }, [holdingId, layout]);
+
+  /**
+   * Where the player is standing, and whether they could build there.
+   *
+   * BUILDING HAPPENS WHERE YOU STAND, not where you click.
+   *
+   * Click-to-build was the obvious first attempt and it is wrong: a click with
+   * nothing in hand already means "walk there", so overloading it would turn
+   * every step across the room into a decision about whether you meant to move
+   * or to spend a thousand BNTY. Walking to the spot and building there is also
+   * simply the more truthful version of the interaction — it is how the doors in
+   * the Grounds work, and it is the reason to have a room at all.
+   */
+  const [standingAt, setStandingAt] = useState<{ x: number; z: number } | null>(null);
+  const onPlayerMove = useCallback((cell: { x: number; z: number }) => {
+    setStandingAt(cell);
+    // Moving cancels a build you had not confirmed. A prompt that followed you
+    // across the floor would have detached from the tile it was about.
+    setBuildAt(null);
+  }, []);
+
+  const canBuildHere =
+    !demo &&
+    !!wallet &&
+    !holdingId &&
+    !!standingAt &&
+    !layout.some((p) => p.x === standingAt.x && p.z === standingAt.z);
+
+  /**
+   * Build the chosen desk, then put it on the tile that was clicked.
+   *
+   * Placed optimistically from the id the mint returns rather than waiting for
+   * the next operation poll: the point of building in the room is that the desk
+   * appears where you asked for it, and a fifteen-second gap before it shows up
+   * would make the spot feel like a coincidence.
+   */
+  const build = useCallback(
+    async (family: DeskFamily) => {
+      if (!buildAt || !wallet || building) return;
+      setBuilding(true);
+      setBuildError(null);
+      try {
+        const result = await api.mintNode(wallet, family.key);
+        const id = `line:${result.node.id}`;
+        setLayout((cur) => [...cur.filter((p) => p.id !== id), { id, ...buildAt, rotation: 0 }]);
+        setSelectedId(id);
+        setBuildAt(null);
+        // The dashboard reads the same store, so refreshing here keeps the
+        // balance and the desk count honest everywhere at once.
+        void refresh();
+      } catch (e) {
+        setBuildError(e instanceof Error ? e.message : 'That did not go through.');
+      } finally {
+        setBuilding(false);
+      }
+    },
+    [buildAt, wallet, building, refresh]
+  );
 
   const selectedMachine = selectedId ? machines.find((m) => m.id === selectedId) : null;
 
@@ -267,8 +335,28 @@ export default function IsoFloor({
         holdingId={holdingId}
         selectedId={selectedId}
         onTileClick={onTileClick}
-        onDeskClick={(id) => { setSelectedId(id); setHoldingId(null); }}
-        onBackgroundClick={() => { setSelectedId(null); setHoldingId(null); }}
+        onDeskClick={(id) => { setSelectedId(id); setHoldingId(null); setBuildAt(null); }}
+        onPlayerMove={onPlayerMove}
+        onBackgroundClick={() => { setSelectedId(null); setHoldingId(null); setBuildAt(null); }}
+      />
+
+      {/* The affordance: stand on bare floor and this appears. Deliberately a
+          small button rather than the panel itself — the panel is the decision,
+          and opening it should be something you chose to do. */}
+      {canBuildHere && !buildAt && standingAt && (
+        <button className="build-here" onClick={() => setBuildAt(standingAt)}>
+          + Build a desk here
+          <em>{standingAt.x}, {standingAt.z}</em>
+        </button>
+      )}
+
+      <BuildPrompt
+        cell={buildAt}
+        balance={op?.osrBalance ?? 0}
+        busy={building}
+        error={buildError}
+        onBuild={build}
+        onClose={() => { setBuildAt(null); setBuildError(null); }}
       />
 
       <header className="fab-sandbox-top">

@@ -259,6 +259,8 @@ export interface IsoSceneProps {
   selectedId: string | null;
   onTileClick: (x: number, z: number) => void;
   onDeskClick: (id: string) => void;
+  /** Forwarded to IsoBoard: the tile the player is standing on. */
+  onPlayerMove?: (cell: { x: number; z: number }) => void;
   onBackgroundClick?: () => void;
   /** Compact boards (the dashboard twin) pass their own extent and framing. */
   bounds?: BoardBounds;
