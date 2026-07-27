@@ -34,6 +34,8 @@ import {
   type Doorway,
 } from '@/lib/hq-map';
 import WorldMap from '@/components/ui/WorldMap';
+import LiftPanel from '@/components/ui/LiftPanel';
+import { type Floor } from '@/lib/hq-floors';
 import { api, type RegionsResponse } from '@/lib/api-client';
 
 /** Module-level: an inline literal makes R3F re-apply the camera every render. */
@@ -96,13 +98,52 @@ export default function HqPage() {
     [wallet, entering, router, load]
   );
 
+  /**
+   * The tower door opens the LIFT, not a region.
+   *
+   * Every other threshold in this game leads to exactly one place, so walking
+   * onto it can just take you there. The tower leads to a building with floors,
+   * and which floor is a choice that cannot be made by the doorway — so standing
+   * in it produces the directory instead.
+   *
+   * This is also why the lift panel does not violate the no-nav-rail rule: it is
+   * unreachable from anywhere except standing at the lifts. A menu you can only
+   * open by being somewhere is a place, not a menu.
+   */
+  const atLift = door?.id === 'lobby';
+
   // An effect rather than a call inside onDoor: whether a door opens depends on
   // the region verdicts, which arrive asynchronously. See the Grounds page.
   useEffect(() => {
-    if (!doorOpen || !door || entering) return;
+    if (atLift || !doorOpen || !door || entering) return;
     void enter(door);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doorOpen, door, entering]);
+  }, [atLift, doorOpen, door, entering]);
+
+  /**
+   * Ride to a floor.
+   *
+   * Ends in the same enterRegion call a doorway does — the vertical move is a
+   * different way of CHOOSING a destination, not a different way of arriving at
+   * one. The gate, the quest signal and the arrival cell all behave identically.
+   */
+  const ride = useCallback(
+    async (floor: Floor) => {
+      if (!wallet || entering) return;
+      setEntering(true);
+      setError(null);
+      try {
+        const result = await api.enterRegion(wallet, floor.region);
+        router.push(result.region.href);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'That floor is not answering.');
+        load();
+      } finally {
+        setEntering(false);
+      }
+    },
+    [wallet, entering, router, load]
+  );
 
   if (!wallet && !DEV_WALLET_BYPASS) {
     return <div className="df-gate"><p>Connect your wallet to visit HQ.</p></div>;
@@ -146,9 +187,19 @@ export default function HqPage() {
 
       <WorldMap wallet={wallet} at="greenwood-hq" position={here} />
 
+      <LiftPanel
+        open={atLift}
+        at="greenwood-hq"
+        regions={regions?.regions ?? []}
+        busy={entering}
+        error={error}
+        onRide={(f) => void ride(f)}
+        onClose={() => setDoor(null)}
+      />
+
       {/* A refusal, not a confirmation — an open door takes you through the
           moment you stand in it. */}
-      {door && !doorOpen && (
+      {door && !atLift && !doorOpen && (
         <div className="gr-door is-locked">
           <b>{door.label}</b>
           <span>{verdict?.reason ?? door.blurb}</span>

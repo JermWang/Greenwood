@@ -19,6 +19,7 @@ export type RegionId =
   | 'grounds'
   | 'greenwood-hq'
   | 'hq-lobby'
+  | 'hq-lounge'
   | 'treeline'
   | 'deep-forest';
 
@@ -203,6 +204,26 @@ export const REGIONS: Region[] = [
     lighting: 'interior-neutral',
     bounds: { minX: -14, maxX: 14, minZ: -14, maxZ: 14 },
     blurb: 'Reception, the boards, and the lifts.',
+  },
+  {
+    /**
+     * The lounge, three floors up. No scene yet.
+     *
+     * Declared for the same reason the lobby is: the lift directory lists it, so
+     * the gate can refuse it with a sentence. A directory that hides its
+     * unfinished floors is a directory that lies about how big the building is.
+     */
+    id: 'hq-lounge',
+    name: 'The Lounge',
+    href: '/app/hq/lounge',
+    minTotalLevel: 3,
+    minDeskLevel: 0,
+    pvp: false,
+    hostiles: false,
+    requiresPack: false,
+    lighting: 'interior-neutral',
+    bounds: { minX: -12, maxX: 12, minZ: -12, maxZ: 12 },
+    blurb: 'Where the floor goes when the numbers are in.',
   },
   {
     id: 'treeline',
