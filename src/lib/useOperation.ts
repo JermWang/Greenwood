@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { api, type UserOperation, type ProtocolOverview } from './api-client';
 import { DEV_WALLET } from './dev-mode';
 import { DEMO_COOKIE, isDemoWallet } from './demo';
+import { useWalletStore } from './store';
 
 // Polls the game API (operation every 15s, overview every 30s — same cadence
 // as the original) and exposes shared state + refresh triggers.
@@ -122,6 +123,10 @@ if (!DEV_WALLET && typeof document !== 'undefined') {
     .find((c) => c.startsWith(`${DEMO_COOKIE}=`))
     ?.slice(DEMO_COOKIE.length + 1);
   if (cookie && isDemoWallet(cookie)) {
-    useOperation.getState().setWallet(cookie.toLowerCase());
+    const wallet = cookie.toLowerCase();
+    useOperation.getState().setWallet(wallet);
+    // Both stores, or the dashboard sits on FUND UPLINK OFFLINE while the demo
+    // banner insists a session is running. See useSignIn in DemoButton.
+    useWalletStore.getState().setWallet(wallet);
   }
 }

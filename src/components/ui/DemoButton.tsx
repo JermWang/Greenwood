@@ -15,11 +15,37 @@
 import { useCallback, useState } from 'react';
 import { Play } from '@phosphor-icons/react';
 import { useOperation } from '@/lib/useOperation';
+import { useWalletStore } from '@/lib/store';
 import { isDemoWallet } from '@/lib/demo';
 import { api } from '@/lib/api-client';
 
+/**
+ * Sign in, into BOTH wallet stores.
+ *
+ * There are two — `useWalletStore` for the connected address and `useOperation`
+ * for the fund state and its polling timers — and a session that sets only one
+ * of them half-works in a way that looks like a hung request: the demo starts,
+ * the banner appears, and the dashboard sits on FUND UPLINK OFFLINE forever
+ * because the panel it renders reads the store that was never told.
+ *
+ * This exact trap has now caught the dev-wallet bypass and the demo. Anything
+ * that signs a player in goes through here.
+ */
+function useSignIn() {
+  const setStoreWallet = useWalletStore((s) => s.setWallet);
+  const setOpWallet = useOperation((s) => s.setWallet);
+  return useCallback(
+    (wallet: string | null) => {
+      setStoreWallet(wallet);
+      setOpWallet(wallet);
+    },
+    [setStoreWallet, setOpWallet]
+  );
+}
+
 export function DemoButton() {
-  const { wallet, setWallet } = useOperation();
+  const wallet = useOperation((s) => s.wallet);
+  const signIn = useSignIn();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,16 +55,13 @@ export function DemoButton() {
     setError(null);
     try {
       const { wallet: demo } = await api.startDemo();
-      // setWallet rather than seeding state directly: it is what starts the
-      // polling timers, and without them the dashboard holds an address it
-      // never fetches anything for, which looks exactly like a hung request.
-      setWallet(demo);
+      signIn(demo);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not start the demo.');
     } finally {
       setBusy(false);
     }
-  }, [busy, setWallet]);
+  }, [busy, signIn]);
 
   // Nothing to offer once somebody is playing, demo or otherwise.
   if (wallet) return null;
@@ -59,7 +82,8 @@ export function DemoButton() {
  * mistaking a sandbox for their actual holdings.
  */
 export function DemoBanner() {
-  const { wallet, setWallet } = useOperation();
+  const wallet = useOperation((s) => s.wallet);
+  const signIn = useSignIn();
   if (!isDemoWallet(wallet)) return null;
   return (
     <span className="demo-flag">
@@ -70,7 +94,7 @@ export function DemoBanner() {
           // Clear the cookie as well as the store, or the next load resumes the
           // session that was just exited.
           document.cookie = 'greenwood_demo=; Max-Age=0; path=/';
-          setWallet(null);
+          signIn(null);
         }}
       >
         Exit
