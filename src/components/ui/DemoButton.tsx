@@ -12,9 +12,9 @@
 // was never real, which is a worse experience than not offering one — so it says
 // so, permanently, and offers the way out.
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Play } from '@phosphor-icons/react';
-import { useOperation } from '@/lib/useOperation';
+import { demoWalletFromCookie, useOperation } from '@/lib/useOperation';
 import { useWalletStore } from '@/lib/store';
 import { isDemoWallet } from '@/lib/demo';
 import { api } from '@/lib/api-client';
@@ -48,6 +48,24 @@ export function DemoButton() {
   const signIn = useSignIn();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Come back to the session this browser already has.
+   *
+   * In an EFFECT, not at module scope. Resuming used to happen when
+   * lib/useOperation was first imported, which is during hydration — and a store
+   * written before React has mounted is a store React renders straight past. The
+   * cookie was there, the fund was not, and the connect button was back. A
+   * refresh losing ten minutes of someone's demo is close to the worst thing a
+   * demo can do, and it is invisible until you actually reload the page.
+   *
+   * Guarded on `wallet` so it never fights a real connected account.
+   */
+  useEffect(() => {
+    if (wallet) return;
+    const demo = demoWalletFromCookie();
+    if (demo) signIn(demo);
+  }, [wallet, signIn]);
 
   const start = useCallback(async () => {
     if (busy) return;

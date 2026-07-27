@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowLeft, Circuitry } from '@phosphor-icons/react';
+import AssetMark from '@/components/ui/AssetMark';
 
 interface PageShellProps {
   title: string;
@@ -45,15 +46,17 @@ export default function PageShell({ title, subtitle, backHref, backLabel, maxWid
           <h1 className="mt-3 max-w-4xl text-[clamp(2rem,5vw,4.25rem)] font-semibold leading-[.92] tracking-[-.055em] text-white">{title}</h1>
           {subtitle && <p className="mt-4 max-w-2xl text-sm leading-6 text-emerald-100/58 md:text-[15px]">{subtitle}</p>}
         </div>
-        {/* A live market tape: bars rising and falling on a baseline. Replaces the
-            old rotating radar sweep, which belonged to a scanning/telemetry theme
-            this game no longer has. */}
-        <div className="gpu-page-tape" aria-hidden>
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <span key={i} className="gpu-page-tape-bar" style={{ '--i': i } as React.CSSProperties} />
-          ))}
-          <span className="gpu-page-tape-line" />
-        </div>
+        {/*
+          An actual desk from the game, not an abstraction of one.
+
+          This was an animated bar chart, which had itself replaced a rotating
+          radar sweep — both of them motion standing in for a brand, and both CSS
+          that could belong to any product with a green accent. The model is the
+          same component the Machine Room renders, so it cannot drift from the
+          game, and it is the one thing in this header that could not possibly
+          belong to anything else. See AssetMark for why it is not a GLB.
+        */}
+        <AssetMark kind="rack" />
       </header>
       <div className="gpu-page-content">{children}</div>
     </main>

@@ -4,7 +4,6 @@ import { create } from 'zustand';
 import { api, type UserOperation, type ProtocolOverview } from './api-client';
 import { DEV_WALLET } from './dev-mode';
 import { DEMO_COOKIE, isDemoWallet } from './demo';
-import { useWalletStore } from './store';
 
 // Polls the game API (operation every 15s, overview every 30s — same cadence
 // as the original) and exposes shared state + refresh triggers.
@@ -105,28 +104,24 @@ if (DEV_WALLET) {
 }
 
 /**
- * Resume a demo session on load.
+ * The demo account this browser holds a cookie for, if any.
  *
- * The cookie is the source of truth for which demo account a browser is, and it
- * is deliberately readable from JS so this can happen without a round trip —
- * otherwise every reload would flash the connect screen before the demo came
- * back, which reads as having been signed out.
+ * A getter rather than a module-level side effect. Resuming used to happen here,
+ * at import time, and it did not survive a reload: this module is evaluated
+ * during hydration, and a store written before React has mounted is a store
+ * React then renders past — the demo cookie was present, the fund was gone, and
+ * the connect button was back. A refresh losing the fund somebody has spent ten
+ * minutes building is about the worst thing a demo can do.
  *
- * Runs after the DEV_WALLET branch and only when that did not fire, so a
- * developer with the bypass on does not have it silently replaced by a demo
- * cookie left over from testing the demo.
+ * The resume now runs in an effect (see DemoSession in DemoButton), which is
+ * ordered against mount rather than against module evaluation.
  */
-if (!DEV_WALLET && typeof document !== 'undefined') {
+export function demoWalletFromCookie(): string | null {
+  if (typeof document === 'undefined') return null;
   const cookie = document.cookie
     .split(';')
     .map((c) => c.trim())
     .find((c) => c.startsWith(`${DEMO_COOKIE}=`))
     ?.slice(DEMO_COOKIE.length + 1);
-  if (cookie && isDemoWallet(cookie)) {
-    const wallet = cookie.toLowerCase();
-    useOperation.getState().setWallet(wallet);
-    // Both stores, or the dashboard sits on FUND UPLINK OFFLINE while the demo
-    // banner insists a session is running. See useSignIn in DemoButton.
-    useWalletStore.getState().setWallet(wallet);
-  }
+  return cookie && isDemoWallet(cookie) ? cookie.toLowerCase() : null;
 }

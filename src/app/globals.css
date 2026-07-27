@@ -177,12 +177,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* Market tape: eight bars breathing on a baseline. Replaces the old rotating
    radar sweep — this game is a trading floor, not a scanner. Bars are staggered
    off a shared --i index so the row reads as live data rather than a loop. */
-.gpu-page-tape { position: absolute; right: clamp(-70px, 2vw, 44px); top: 50%; display: flex; align-items: flex-end; gap: 9px; height: 190px; padding: 0 6px 18px; transform: translateY(-50%); opacity: .8; pointer-events: none; }
-.gpu-page-tape-bar { width: 16px; border-radius: 4px 4px 2px 2px; background: linear-gradient(180deg, var(--accent), rgba(204, 255, 0, .16)); box-shadow: 0 0 22px rgba(204, 255, 0, .16); animation: gpu-tape-rise 3.6s ease-in-out infinite; animation-delay: calc(var(--i) * -.45s); will-change: transform; transform-origin: bottom; }
-.gpu-page-tape-bar:nth-child(3n) { background: linear-gradient(180deg, var(--fab-down), rgba(255, 107, 94, .14)); box-shadow: 0 0 22px rgba(255, 107, 94, .14); }
-.gpu-page-tape-line { position: absolute; right: 0; bottom: 18px; left: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(212, 210, 207, .3), transparent); }
-@keyframes gpu-tape-rise { 0%, 100% { height: 26%; } 28% { height: 74%; } 52% { height: 44%; } 76% { height: 92%; } }
-@media(prefers-reduced-motion:reduce){.gpu-page-tape-bar{animation:none;height:56%}}
 
 @media (prefers-reduced-motion: reduce) {
   .gpu-page-wafer::before,
@@ -1361,3 +1355,28 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .demo-flag button:hover { background: rgba(255, 255, 255, 0.2); color: #fff; }
 @media (max-width: 760px) { .demo-flag span { display: none; } }
+
+/* --------------------------------------------------------------------------
+   The asset mark in a page header.
+
+   Holds the slot the animated tape used to occupy. No animation: a moving
+   object beside a heading pulls the eye off the heading, which is what the tape
+   got wrong. The model earns its place by being the real thing rather than by
+   moving. See components/ui/AssetMark.
+   -------------------------------------------------------------------------- */
+.gpu-page-mark {
+  position: absolute;
+  right: clamp(-40px, 2vw, 40px);
+  top: 50%;
+  width: 210px;
+  height: 190px;
+  transform: translateY(-50%);
+  opacity: 0.92;
+  pointer-events: none;
+  /* Sits behind the heading, which can overrun it on a narrow desktop. */
+  z-index: 0;
+}
+.gpu-page-mark canvas { display: block; }
+/* Below the point where the heading needs the whole width, it is decoration in
+   the way. A 3D canvas is also the most expensive thing on a phone page. */
+@media (max-width: 900px) { .gpu-page-mark { display: none; } }
