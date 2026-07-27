@@ -6,8 +6,23 @@ import PrivyAppProvider from '@/components/providers/PrivyAppProvider';
 const displayFont = Space_Grotesk({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
 const monoFont = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
-// Placeholder marketing domain — swap for the project's real domain before launch.
-const SITE_URL = 'https://greenwood.fun';
+/**
+ * Where this deployment actually lives.
+ *
+ * metadataBase resolves relative asset paths to absolute URLs, which Open Graph
+ * and Twitter both require — so if it points at a domain that is not serving
+ * this build, every share card asks for its image from a host that does not have
+ * it. That is precisely what a hardcoded marketing domain does before the domain
+ * is pointed anywhere: the metadata reads correctly and the image 404s.
+ *
+ * So it is a variable, with Railway's own generated domain as the automatic
+ * fallback. Cards work on the deploy that exists today, and pointing them at the
+ * marketing domain later is one environment variable rather than a code change.
+ */
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null) ??
+  'https://greenwood.fun';
 
 /**
  * The share copy, and the line it deliberately walks.
@@ -65,15 +80,10 @@ export const metadata: Metadata = {
     title: `Greenwood — ${TAGLINE}`,
     description: DESCRIPTION,
     locale: 'en_GB',
-    images: [
-      {
-        url: '/share.svg',
-        width: 1200,
-        height: 630,
-        // Alt text is read aloud and indexed, so it holds the line too.
-        alt: 'Greenwood — an isometric settlement of desks and generators under a lit perimeter.',
-      },
-    ],
+    // No `images` here on purpose: src/app/opengraph-image.tsx supplies it, and
+    // listing one as well would override the generated PNG with whatever is
+    // named here. X, Facebook and LinkedIn all reject SVG, so the generated
+    // raster is the only version that actually renders where it matters.
   },
   twitter: {
     // summary_large_image now that there is art to put in it. A large card is
@@ -84,7 +94,7 @@ export const metadata: Metadata = {
     creator: '@greenwood_rwa',
     title: `Greenwood — ${TAGLINE}`,
     description: DESCRIPTION,
-    images: ['/share.svg'],
+    // Also omitted: the generated opengraph-image is picked up for both.
   },
   robots: { index: true, follow: true },
 };
