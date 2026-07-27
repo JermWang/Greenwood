@@ -16,6 +16,7 @@ import { memo, useCallback, useState } from 'react';
 import { ThreeEvent } from '@react-three/fiber';
 import Character from './Character';
 import { TileRing } from './TileMarker';
+import type { HatStyle } from './avatar-skins';
 import { ISO } from './palette';
 import { npcsIn, TALK_RADIUS, type Npc } from '@/lib/npcs';
 
@@ -56,6 +57,8 @@ export default memo(function NpcField({
                 trim: npc.trim,
                 hand: npc.hand,
                 boot: npc.boot,
+                skin: npc.skin,
+                hat: npc.hat as HatStyle,
               }}
               target={{ x: npc.x, z: npc.z }}
               spawn={{ x: npc.x, z: npc.z }}

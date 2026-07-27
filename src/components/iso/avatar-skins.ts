@@ -60,3 +60,69 @@ export const AVATAR_SKINS: Record<string, AvatarSkin> = {
  */
 export const HAND = { kind: 'hand', color: ISO.pale } as const;
 export const BOOT = { kind: 'boot', color: '#26251f' } as const;
+
+/**
+ * Head shapes. The catalogue side of the Hat component in Character.
+ *
+ * Silhouette is the cheapest identity available in a game drawn from flat-shaded
+ * boxes: a hard hat and a beanie read as different people at a distance where a
+ * jacket colour has already washed out. Everybody wearing the same peaked cap
+ * made the head — the first place the eye lands — the one part of the model that
+ * could not tell two characters apart.
+ */
+export type HatStyle = 'cap' | 'beanie' | 'hardhat' | 'visor' | 'bucket' | 'bare';
+
+export interface HatOption {
+  id: HatStyle;
+  name: string;
+  /** One line for the closet. What it says about the wearer. */
+  blurb: string;
+}
+
+export const HAT_STYLES: HatOption[] = [
+  { id: 'cap', name: 'Field Cap', blurb: 'Standard issue. Flat crown, forward peak.' },
+  { id: 'beanie', name: 'Watch Cap', blurb: 'For the night shift and the north end.' },
+  { id: 'hardhat', name: 'Hard Hat', blurb: 'Site kit. Nobody asks what you are doing in one.' },
+  { id: 'visor', name: 'Dealer Visor', blurb: 'Trading floor habit. Keeps the strip lights off the numbers.' },
+  { id: 'bucket', name: 'Bucket Hat', blurb: 'Wide brim, low brim, no explanation.' },
+  { id: 'bare', name: 'Bare Head', blurb: 'Nothing at all.' },
+];
+
+/**
+ * Skin tones.
+ *
+ * FREE, and never sold. This is identity rather than drip — a player choosing
+ * what they look like should not be a purchase, and putting a paywall between
+ * somebody and their own face is the kind of decision a game only gets to make
+ * once. Hats, jackets, trims and boots are the sellable part; this is not.
+ *
+ * The first entry is the historical default, so every character that predates
+ * this list is unchanged by it.
+ *
+ * A deliberately wide range rather than three shades of the same beige. Ordered
+ * light to deep so a picker reads as a spectrum instead of as a ranking.
+ */
+export interface SkinTone {
+  id: string;
+  name: string;
+  hex: string;
+}
+
+export const SKIN_TONES: SkinTone[] = [
+  { id: 'porcelain', name: 'Porcelain', hex: '#d4d2cf' },
+  { id: 'ivory', name: 'Ivory', hex: '#e8d5c0' },
+  { id: 'sand', name: 'Sand', hex: '#e0be9a' },
+  { id: 'honey', name: 'Honey', hex: '#cfa070' },
+  { id: 'amber', name: 'Amber', hex: '#b8834f' },
+  { id: 'clay', name: 'Clay', hex: '#9c6640' },
+  { id: 'umber', name: 'Umber', hex: '#7a4d30' },
+  { id: 'cocoa', name: 'Cocoa', hex: '#5e3a24' },
+  { id: 'espresso', name: 'Espresso', hex: '#42281a' },
+];
+
+const TONES_BY_ID = new Map(SKIN_TONES.map((t) => [t.id, t]));
+
+/** A tone by id, falling back to the default rather than to nothing. */
+export function skinToneHex(id: string | null | undefined): string {
+  return (id ? TONES_BY_ID.get(id)?.hex : undefined) ?? SKIN_TONES[0].hex;
+}

@@ -14,6 +14,7 @@ import { isWalkable, onPath } from './grounds-map';
 // Imported from palette rather than from Character: this test runs in a node
 // environment with no JSX transform, so pulling in a .tsx would fail to parse.
 import { OUTFITS } from '../components/iso/palette';
+import { HAT_STYLES, SKIN_TONES } from '../components/iso/avatar-skins';
 import { MAX_TOTAL_LEVEL } from './progression';
 
 /**
@@ -88,6 +89,60 @@ describe('the cast', () => {
     // Five people in one square wearing one uniform reads as a bug.
     const looks = NPCS.map((n) => `${n.outfit}|${n.cap}|${n.trim}`);
     expect(new Set(looks).size).toBe(NPCS.length);
+  });
+
+  /**
+   * The head is where the eye lands first, and it was the one part of the model
+   * that could not tell two characters apart — everybody wore the same peaked
+   * cap over the same hardcoded pale. Silhouette and skin are the cheapest
+   * identity available in a game drawn from flat-shaded boxes.
+   */
+  it('gives every resident a real skin tone and hat', () => {
+    const tones = new Set(SKIN_TONES.map((t) => t.hex));
+    const hats = new Set(HAT_STYLES.map((h) => h.id as string));
+    for (const npc of NPCS) {
+      expect(tones.has(npc.skin), `${npc.id} skin ${npc.skin} is not a tone`).toBe(true);
+      expect(hats.has(npc.hat), `${npc.id} hat ${npc.hat} is not a style`).toBe(true);
+    }
+  });
+
+  it('does not put the whole cast in one hat or one skin', () => {
+    expect(new Set(NPCS.map((n) => n.hat)).size).toBeGreaterThan(3);
+    expect(new Set(NPCS.map((n) => n.skin)).size).toBe(NPCS.length);
+  });
+});
+
+describe('the avatar closet', () => {
+  /**
+   * Skin tone is IDENTITY, not drip.
+   *
+   * A player choosing what they look like should never be a purchase — putting
+   * a paywall between somebody and their own face is a decision a game only
+   * gets to make once. Hats, jackets, trims and boots are the sellable part.
+   * This assertion is here so that stays true when the closet grows.
+   */
+  it('offers a wide range of tones, and never as a cosmetic id', () => {
+    expect(SKIN_TONES.length).toBeGreaterThanOrEqual(8);
+    for (const tone of SKIN_TONES) {
+      expect(tone.hex).toMatch(/^#[0-9a-f]{6}$/i);
+      // Cosmetic keys in this game are prefixed `avatar_`; a tone must not be
+      // reachable that way.
+      expect(tone.id.startsWith('avatar_')).toBe(false);
+    }
+    expect(new Set(SKIN_TONES.map((t) => t.hex)).size).toBe(SKIN_TONES.length);
+  });
+
+  it('keeps the default tone first, so old characters are unchanged', () => {
+    // Character falls back to SKIN_TONES[0] when no skin is set, and that has to
+    // be the pale the model has always used or every existing avatar shifts.
+    expect(SKIN_TONES[0].hex).toBe('#d4d2cf');
+  });
+
+  it('offers distinct hat styles with the default first', () => {
+    expect(HAT_STYLES.length).toBeGreaterThanOrEqual(5);
+    expect(HAT_STYLES[0].id).toBe('cap');
+    expect(new Set(HAT_STYLES.map((h) => h.id)).size).toBe(HAT_STYLES.length);
+    for (const hat of HAT_STYLES) expect(hat.blurb.length).toBeGreaterThan(0);
   });
 
   it('finds the person you are standing next to', () => {

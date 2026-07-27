@@ -18,11 +18,11 @@ import { Html } from '@react-three/drei';
 import { ISO, OUTFITS, TILE_TOP } from './palette';
 import { TileRing } from './TileMarker';
 import type { Cell } from './pathing';
-import { AVATAR_SKINS, HAND, BOOT } from './avatar-skins';
+import { AVATAR_SKINS, HAND, BOOT, SKIN_TONES, type HatStyle } from './avatar-skins';
 export { OUTFITS } from './palette';
 
 // Re-exported so existing importers of Character keep working unchanged.
-export { AVATAR_SKINS };
+export { AVATAR_SKINS, SKIN_TONES, HAT_STYLES, skinToneHex } from './avatar-skins';
 export type { AvatarSkin } from './avatar-skins';
 
 /** Tiles per second. Slow enough to read as walking, quick enough to not annoy. */
@@ -39,6 +39,13 @@ export interface CharacterLook {
   hand?: string;
   /** Boot colour, when a cosmetic overrides the default. */
   boot?: string;
+  /**
+   * Head colour. Identity, never sold — see SKIN_TONES in avatar-skins.
+   * Defaults to the historical pale so existing callers are unchanged.
+   */
+  skin?: string;
+  /** Head shape. Silhouette is the cheapest identity in a box-built game. */
+  hat?: HatStyle;
   /** Eye colour. Laser Eyes is the reason this exists. */
   eyes?: string;
   /** Jacket / body colour. */
@@ -127,9 +134,13 @@ const Body = memo(function Body({ look }: { look: CharacterLook }) {
         </mesh>
       )}
 
+      {/*
+        The head, in whatever skin was chosen.
+        Defaults to the old hardcoded pale so every existing caller is unchanged.
+      */}
       <mesh position={[0, 0.98, 0]} castShadow>
         <boxGeometry args={[0.3, 0.3, 0.3]} />
-        {surface(ISO.pale)}
+        {surface(look.skin ?? SKIN_TONES[0].hex)}
       </mesh>
       {/*
         Eyes: two blocks, not one bar.
@@ -153,18 +164,119 @@ const Body = memo(function Body({ look }: { look: CharacterLook }) {
           {surface(look.eyes ?? '#2b2a24', look.eyes, look.eyes ? 2.2 : 0)}
         </mesh>
       ))}
-      <mesh position={[0, 1.19, 0]} castShadow>
-        <boxGeometry args={[0.36, 0.1, 0.36]} />
-        {surface(look.cap, look.cap, 0.5)}
-      </mesh>
-      {/* Cap peak, also forward-facing. */}
-      <mesh position={[0, 1.17, 0.21]}>
-        <boxGeometry args={[0.3, 0.05, 0.12]} />
-        {surface(look.cap, look.cap, 0.35)}
-      </mesh>
+      <Hat style={look.hat ?? 'cap'} color={look.cap} />
     </>
   );
 });
+
+/**
+ * Headwear.
+ *
+ * Everybody wore the same peaked cap, which made the head the one part of the
+ * model that could not tell two characters apart — and the head is where the eye
+ * lands first. Silhouette is the cheapest identity there is in a game drawn from
+ * flat-shaded boxes: a hard hat and a beanie read as different people at a
+ * distance where a jacket colour has already washed out.
+ *
+ * Every style is built from the same primitives as the rest of the set, so a new
+ * one is a few boxes rather than an asset. See HAT_STYLES in avatar-skins for
+ * the catalogue side.
+ */
+function Hat({ style, color }: { style: HatStyle; color: string }) {
+  // Lit, because the cap is the one branded piece by default — the same reason
+  // it is Robin Neon on your own character.
+  const mat = (i = 0.5) => surface(color, color, i);
+  switch (style) {
+    case 'bare':
+      return null;
+
+    case 'beanie':
+      // Taller, rounder, no peak. Sits down over the ears, so the head reads as
+      // shorter — which is most of what makes it a different silhouette.
+      return (
+        <>
+          <mesh position={[0, 1.17, 0]} castShadow>
+            <boxGeometry args={[0.33, 0.16, 0.33]} />
+            {mat(0.4)}
+          </mesh>
+          <mesh position={[0, 1.27, 0]} castShadow>
+            <boxGeometry args={[0.2, 0.08, 0.2]} />
+            {mat(0.4)}
+          </mesh>
+        </>
+      );
+
+    case 'hardhat':
+      // Wide brim all the way round plus a raised crown rib. Site kit — the
+      // shape says "works here" before any colour does.
+      return (
+        <>
+          <mesh position={[0, 1.16, 0]} castShadow>
+            <boxGeometry args={[0.44, 0.05, 0.44]} />
+            {mat(0.35)}
+          </mesh>
+          <mesh position={[0, 1.22, 0]} castShadow>
+            <boxGeometry args={[0.32, 0.14, 0.32]} />
+            {mat(0.45)}
+          </mesh>
+          <mesh position={[0, 1.3, 0]} castShadow>
+            <boxGeometry args={[0.08, 0.05, 0.3]} />
+            {mat(0.5)}
+          </mesh>
+        </>
+      );
+
+    case 'visor':
+      // A band and a peak, with the crown open. Reads as a dealer's eyeshade
+      // from the front and as almost nothing from behind, which is exactly the
+      // asymmetry that makes facing legible.
+      return (
+        <>
+          <mesh position={[0, 1.16, 0]} castShadow>
+            <boxGeometry args={[0.34, 0.07, 0.34]} />
+            {mat(0.5)}
+          </mesh>
+          <mesh position={[0, 1.15, 0.22]}>
+            <boxGeometry args={[0.32, 0.04, 0.14]} />
+            {mat(0.35)}
+          </mesh>
+        </>
+      );
+
+    case 'bucket':
+      // Brim low and level. The only style with a wider brim than crown, which
+      // is what stops it reading as a smaller hard hat.
+      return (
+        <>
+          <mesh position={[0, 1.14, 0]} castShadow>
+            <boxGeometry args={[0.5, 0.04, 0.5]} />
+            {mat(0.3)}
+          </mesh>
+          <mesh position={[0, 1.2, 0]} castShadow>
+            <boxGeometry args={[0.32, 0.12, 0.32]} />
+            {mat(0.4)}
+          </mesh>
+        </>
+      );
+
+    case 'cap':
+    default:
+      // The original: flat crown, forward peak. Kept as the default so every
+      // character that has never chosen anything looks exactly as it did.
+      return (
+        <>
+          <mesh position={[0, 1.19, 0]} castShadow>
+            <boxGeometry args={[0.36, 0.1, 0.36]} />
+            {mat(0.5)}
+          </mesh>
+          <mesh position={[0, 1.17, 0.21]}>
+            <boxGeometry args={[0.3, 0.05, 0.12]} />
+            {mat(0.35)}
+          </mesh>
+        </>
+      );
+  }
+}
 
 /**
  * One limb, pivoting at its top so it swings from the joint, not the middle.

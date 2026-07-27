@@ -80,6 +80,10 @@ export interface Npc {
   trim: string;
   hand: string;
   boot: string;
+  /** Head colour, from SKIN_TONES. The cast is not all one shade. */
+  skin: string;
+  /** Head shape, from HAT_STYLES. Silhouette does most of the telling-apart. */
+  hat: string;
   lines: NpcLine[];
 }
 
@@ -106,6 +110,8 @@ export const NPCS: Npc[] = [
     trim: '#e0a34a',
     hand: '#3a3831',
     boot: '#2f2d28',
+    skin: '#7a4d30',
+    hat: 'hardhat',
     lines: [
       {
         kind: 'tip',
@@ -157,6 +163,8 @@ export const NPCS: Npc[] = [
     trim: '#c8a86a',
     hand: '#5f4830',
     boot: '#3d3226',
+    skin: '#e0be9a',
+    hat: 'bucket',
     lines: [
       {
         kind: 'tip',
@@ -208,6 +216,8 @@ export const NPCS: Npc[] = [
     trim: '#a9c4e0',
     hand: '#2a2f38',
     boot: '#23262c',
+    skin: '#5e3a24',
+    hat: 'beanie',
     lines: [
       {
         kind: 'tip',
@@ -259,6 +269,8 @@ export const NPCS: Npc[] = [
     trim: '#cfc3e4',
     hand: '#d8ccc0',
     boot: '#312c3a',
+    skin: '#cfa070',
+    hat: 'visor',
     lines: [
       {
         kind: 'tip',
@@ -305,6 +317,8 @@ export const NPCS: Npc[] = [
     trim: '#d6c2b4',
     hand: '#c9b6a6',
     boot: '#4a3b34',
+    skin: '#e8d5c0',
+    hat: 'bare',
     lines: [
       {
         kind: 'tip',
