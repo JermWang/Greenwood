@@ -1484,3 +1484,71 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: rgba(226, 235, 239, 0.45);
 }
 @media (max-width: 760px) { .build-here { left: 10px; bottom: 58px; } }
+
+/* --------------------------------------------------------------------------
+   Standing at a desk.
+
+   Same corner as the build affordance — they are mutually exclusive, since you
+   are either beside a desk or on bare floor.
+   -------------------------------------------------------------------------- */
+.desk-here {
+  position: absolute;
+  z-index: 8;
+  left: 18px;
+  bottom: 18px;
+  display: grid;
+  gap: 6px;
+  width: 244px;
+  padding: 11px 13px;
+  border: 1px solid rgba(212, 210, 207, 0.2);
+  border-radius: 12px;
+  background: rgba(12, 14, 10, 0.92);
+  backdrop-filter: blur(9px);
+}
+/* Full desks earn nothing. The border is the ambient signal; the bar below is
+   the detail. */
+.desk-here.is-ready { border-color: rgba(204, 255, 0, 0.5); }
+.desk-here-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.desk-here-head b { font-size: 12px; color: #fff; }
+.desk-here-head em {
+  font: 700 8.5px var(--font-mono), monospace;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  color: rgba(226, 235, 239, 0.5);
+}
+.desk-here-bar {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(212, 210, 207, 0.16);
+}
+.desk-here-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a3cc00, var(--robin-neon, #ccff00));
+}
+.desk-here-amount {
+  font: 700 12px var(--font-mono), monospace;
+  color: var(--robin-neon, #ccff00);
+}
+.desk-here-amount small { font-size: 8.5px; color: rgba(226, 235, 239, 0.4); }
+.desk-here-error { font-size: 10px; font-style: normal; color: #ff8f7a; }
+.desk-here-go {
+  margin-top: 2px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--robin-neon, #ccff00);
+  font: 700 10.5px var(--font-mono), monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #17160f;
+  cursor: pointer;
+}
+.desk-here-go:disabled {
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(226, 235, 239, 0.45);
+  cursor: default;
+}
+@media (max-width: 760px) { .desk-here { left: 10px; right: 10px; bottom: 58px; width: auto; } }

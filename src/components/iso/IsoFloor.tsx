@@ -74,6 +74,8 @@ export default function IsoFloor({
   const [buildAt, setBuildAt] = useState<{ x: number; z: number } | null>(null);
   const [building, setBuilding] = useState(false);
   const [buildError, setBuildError] = useState<string | null>(null);
+  const [routing, setRouting] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
   /** Live fund, for what a desk costs against and to refresh after building. */
   const op = useOperation((s) => s.op);
   const refresh = useOperation((s) => s.refresh);
@@ -283,6 +285,53 @@ export default function IsoFloor({
     setBuildAt(null);
   }, []);
 
+  /**
+   * The desk you are standing next to, and what it is holding.
+   *
+   * ROUTING YIELD IS A DESK INTERACTION, not a fund-wide button.
+   *
+   * On the dashboard this was one control that drained every desk at once, which
+   * made the floor decorative: where a desk stood, whether it was full, whether
+   * it had been sitting at its ceiling all night — none of it was visible at the
+   * moment you collected, so none of it felt like it mattered. Walking to a full
+   * desk and taking what it made is the same transaction with the information
+   * put back in.
+   *
+   * Adjacent rather than on top of, because a desk occupies its tile. Chebyshev,
+   * matching every other adjacency rule in this game.
+   */
+  const nearbyDesk = useMemo(() => {
+    if (!standingAt || holdingId) return null;
+    for (const placed of layout) {
+      if (Math.max(Math.abs(placed.x - standingAt.x), Math.abs(placed.z - standingAt.z)) > 1) continue;
+      const nodeId = Number(placed.id.replace('line:', ''));
+      const node = op?.nodes.find((n) => Number(n.id) === nodeId);
+      if (node) return { placed, node };
+    }
+    return null;
+  }, [standingAt, holdingId, layout, op?.nodes]);
+
+  /**
+   * Collect from the desk you are standing at.
+   *
+   * The engine and the route have always taken an optional nodeId — the
+   * dashboard simply never passed one. So this is the same settlement path a
+   * fund-wide claim uses, aimed at a single desk.
+   */
+  const routeYield = useCallback(async () => {
+    if (!nearbyDesk || !wallet || routing) return;
+    setRouting(true);
+    setRouteError(null);
+    try {
+      await api.claim(wallet, nearbyDesk.node.id);
+      void refresh();
+    } catch (e) {
+      setRouteError(e instanceof Error ? e.message : 'That did not go through.');
+    } finally {
+      setRouting(false);
+    }
+  }, [nearbyDesk, wallet, routing, refresh]);
+
   const canBuildHere =
     !demo &&
     !!wallet &&
@@ -340,10 +389,60 @@ export default function IsoFloor({
         onBackgroundClick={() => { setSelectedId(null); setHoldingId(null); setBuildAt(null); }}
       />
 
+      {/*
+        Standing at a desk: what it has made, and taking it.
+
+        Takes the same corner as the build affordance because they are mutually
+        exclusive — you are either next to a desk or on bare floor, never both.
+      */}
+      {nearbyDesk && !buildAt && (
+        <div className={`desk-here${nearbyDesk.node.pendingOsr > 0 ? ' is-ready' : ''}`}>
+          <span className="desk-here-head">
+            <b>{nearbyDesk.node.type === 'oil' ? 'Equity Desk' : 'Treasury Desk'}</b>
+            <em>L{nearbyDesk.node.level}</em>
+          </span>
+
+          {/*
+            The storage bar is the reason this belongs in the room.
+
+            Yield stops accruing at the ceiling, and on the dashboard that fact
+            was a number in a list nobody read — you found out you had been
+            earning nothing overnight after the fact, if at all. A desk standing
+            in front of you with a full bar is the same information as a thing
+            you can see.
+          */}
+          <span className="desk-here-bar">
+            <i
+              style={{
+                width: `${Math.min(100, (nearbyDesk.node.pendingOsr / Math.max(1, nearbyDesk.node.storageCap)) * 100)}%`,
+              }}
+            />
+          </span>
+          <span className="desk-here-amount">
+            {nearbyDesk.node.pendingOsr.toFixed(2)}
+            <small> / {Math.round(nearbyDesk.node.storageCap)} BNTY</small>
+          </span>
+
+          {routeError && <em className="desk-here-error">{routeError}</em>}
+
+          <button
+            className="desk-here-go"
+            onClick={() => void routeYield()}
+            disabled={routing || nearbyDesk.node.pendingOsr <= 0}
+          >
+            {routing
+              ? 'Routing…'
+              : nearbyDesk.node.pendingOsr > 0
+                ? `Route ${nearbyDesk.node.pendingOsr.toFixed(2)} BNTY`
+                : 'Nothing to route yet'}
+          </button>
+        </div>
+      )}
+
       {/* The affordance: stand on bare floor and this appears. Deliberately a
           small button rather than the panel itself — the panel is the decision,
           and opening it should be something you chose to do. */}
-      {canBuildHere && !buildAt && standingAt && (
+      {canBuildHere && !nearbyDesk && !buildAt && standingAt && (
         <button className="build-here" onClick={() => setBuildAt(standingAt)}>
           + Build a desk here
           <em>{standingAt.x}, {standingAt.z}</em>
