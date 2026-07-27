@@ -34,6 +34,9 @@ import { DEV_WALLET_BYPASS } from '@/lib/dev-mode';
 import { ARRIVAL, BOUNDS, DOORS, type Doorway } from '@/lib/grounds-map';
 import { rememberExit, takeArrival } from '@/components/iso/portals';
 import WorldMap from '@/components/ui/WorldMap';
+import NpcField from '@/components/iso/NpcField';
+import NpcDialogue from '@/components/ui/NpcDialogue';
+import { npcAt, type Npc } from '@/lib/npcs';
 import { api, type RegionsResponse } from '@/lib/api-client';
 
 /**
@@ -85,6 +88,8 @@ export default function GroundsPage() {
   const [spawn] = useState(spawnCell);
   const [here, setHere] = useState<{ x: number; z: number }>(spawn);
   const [door, setDoor] = useState<Doorway | null>(null);
+  /** Who you are talking to. Null closes the panel. */
+  const [talking, setTalking] = useState<Npc | null>(null);
   const [buying, setBuying] = useState(false);
   const [entering, setEntering] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +112,16 @@ export default function GroundsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const onMove = useCallback((cell: { x: number; z: number }) => setHere(cell), []);
+  /**
+   * Walking away ends the conversation.
+   *
+   * Without this the panel follows you across the map, which turns a person you
+   * were talking to into a UI element that has detached from them.
+   */
+  const onMove = useCallback((cell: { x: number; z: number }) => {
+    setHere(cell);
+    setTalking((current) => (current && !npcAt('grounds', cell.x, cell.z) ? null : current));
+  }, []);
   const onDoor = useCallback((d: Doorway | null) => {
     setDoor(d);
     setError(null);
@@ -237,6 +251,7 @@ export default function GroundsPage() {
           followRef={livePos}
         />
         <GroundsScene />
+        <NpcField region="grounds" playerAt={here} onTalk={setTalking} />
         {(wallet || DEV_WALLET_BYPASS) && (
           <GroundsPlayer
             wallet={wallet ?? 'dev'}
@@ -253,9 +268,19 @@ export default function GroundsPage() {
           anywhere, it just tells you what is next to what. See WorldMap. */}
       <WorldMap wallet={wallet} at="grounds" position={here} />
 
+      {/* Which lines exist depends on Total Level, so the same five people say
+          different things as you get further in. `regions` already carries it. */}
+      <NpcDialogue
+        npc={talking}
+        totalLevel={regions?.totalLevel ?? 0}
+        onClose={() => setTalking(null)}
+      />
+
       {/* Standing in a doorway. Contextual, because a HUD that always shows
           every action teaches players to stop reading it. */}
-      {door && (
+      {/* Hidden while talking: both live bottom-centre, and a door prompt
+          stacked on a conversation is two things shouting from one spot. */}
+      {door && !talking && (
         <div className={`gr-door${verdict && !verdict.allowed ? ' is-locked' : ''}`}>
           <b>{door.label}</b>
           <span>{verdict && !verdict.allowed ? verdict.reason : door.blurb}</span>

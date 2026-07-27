@@ -8,8 +8,36 @@ const monoFont = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', d
 
 // Placeholder marketing domain — swap for the project's real domain before launch.
 const SITE_URL = 'https://greenwood.fun';
+
+/**
+ * The share copy, and the line it deliberately walks.
+ *
+ * A share card is the FIRST thing anybody sees, and for most people it is the
+ * only thing — so it has to sell the game that is actually on the tin (an idle
+ * DeFi yield game) without lying, and without giving away the turn.
+ *
+ * The rule from docs/greenwood-turn.md holds here more than anywhere: the reveal
+ * is environmental, it lands between levels three and ten, and it is worthless
+ * the moment a player arrives already knowing. So nothing here says zombie,
+ * survival, apocalypse, or horror. Not one word.
+ *
+ * What it DOES do is refuse to be entirely reassuring. "One of the last lit
+ * settlements" reads as branding on a first pass and as a fact on a second.
+ * "The desks run day and night. Something has to keep the lights on." is a
+ * yield-farming boast that is also, literally, the plot. Anyone who plays and
+ * comes back to re-read this should find the answer was sitting here the whole
+ * time — which is the only kind of foreshadowing worth writing.
+ *
+ * If you are tempted to add "…but not everything out there is friendly", don't.
+ * That is the sentence that turns a hint into a spoiler.
+ */
 const DESCRIPTION =
-  'Open equity and treasury desks, upgrade your portfolio, unlock allocations, and earn BNTY yield from tokenized real-world assets on Robinhood Chain.';
+  'An idle yield game on Robinhood Chain. Open desks, fit instruments, compound BNTY, ' +
+  'and take what you earn out past the fence. The desks run day and night — something has ' +
+  'to keep the lights on.';
+
+/** Shorter, for cards that truncate. Carries the same double meaning. */
+const TAGLINE = 'One of the last lit settlements. Yield never sleeps.';
 
 export const metadata: Metadata = {
   // metadataBase resolves relative asset paths to absolute URLs, which Open
@@ -20,23 +48,45 @@ export const metadata: Metadata = {
   // image still renders as a title/description summary, which beats shipping
   // artwork from the previous theme.
   metadataBase: new URL(SITE_URL),
-  title: 'Greenwood — Real-World Yield',
+  title: {
+    default: 'Greenwood — Real-World Yield',
+    // Sub-pages get "Trading Floor — Greenwood" rather than repeating the
+    // tagline, so a shared deep link says which room it is.
+    template: '%s — Greenwood',
+  },
   description: DESCRIPTION,
-  icons: { icon: '/gpu-mark.svg' },
+  applicationName: 'Greenwood',
+  keywords: ['Greenwood', 'BNTY', 'Robinhood Chain', 'idle game', 'yield', 'RWA', 'DeFi'],
+  icons: { icon: '/gpu-mark.svg', apple: '/gpu-mark.svg' },
   openGraph: {
     type: 'website',
     url: SITE_URL,
-    siteName: 'Greenwood — Real-World Yield',
-    title: 'Greenwood — Real-World Yield',
+    siteName: 'Greenwood',
+    title: `Greenwood — ${TAGLINE}`,
     description: DESCRIPTION,
+    locale: 'en_GB',
+    images: [
+      {
+        url: '/share.svg',
+        width: 1200,
+        height: 630,
+        // Alt text is read aloud and indexed, so it holds the line too.
+        alt: 'Greenwood — an isometric settlement of desks and generators under a lit perimeter.',
+      },
+    ],
   },
   twitter: {
-    card: 'summary',
+    // summary_large_image now that there is art to put in it. A large card is
+    // roughly twice the click-through of a summary and this game is entirely
+    // carried by how it looks.
+    card: 'summary_large_image',
     site: '@greenwood_rwa',
     creator: '@greenwood_rwa',
-    title: 'Greenwood — Real-World Yield',
+    title: `Greenwood — ${TAGLINE}`,
     description: DESCRIPTION,
+    images: ['/share.svg'],
   },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {

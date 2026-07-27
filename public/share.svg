@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Greenwood — one of the last lit settlements">
+  <!--
+    The share card.
+
+    Drawn rather than rendered so it stays a 6KB file that never goes stale when
+    the scene changes, and so it can be edited in a diff.
+
+    It is composed to be read twice. First pass: a tidy isometric settlement at
+    dusk, two lit buildings, a fence, some trees — corporate, calm, on-brand.
+    Second pass, for somebody who has played: the floodlights on that fence all
+    point AWAY from the buildings, the treeline past it is much darker than the
+    sky should allow, and the only warm light in the entire image is inside the
+    perimeter. Nothing here states the turn. Everything here is consistent with
+    it. See docs/greenwood-turn.md.
+  -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14202b"/>
+      <stop offset="0.55" stop-color="#243642"/>
+      <stop offset="1" stop-color="#3d4a3a"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#46583a"/>
+      <stop offset="1" stop-color="#2c3826"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ccff00" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ccff00" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lamp" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffe9b0" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#ffe9b0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#sky)"/>
+  <rect y="300" width="1200" height="330" fill="url(#ground)"/>
+
+  <!-- The dark past the fence. Deliberately heavier than the sky above it. -->
+  <path d="M0 300 L1200 300 L1200 372 L0 372 Z" fill="#1b241d" opacity="0.85"/>
+
+  <!-- Treeline, beyond the perimeter. Silhouettes only. -->
+  <g fill="#151d18">
+    <path d="M60 300 l26 -58 26 58 z"/><path d="M150 300 l22 -48 22 48 z"/>
+    <path d="M232 300 l30 -66 30 66 z"/><path d="M330 300 l20 -44 20 44 z"/>
+    <path d="M410 300 l27 -60 27 60 z"/><path d="M508 300 l23 -50 23 50 z"/>
+    <path d="M596 300 l29 -64 29 64 z"/><path d="M700 300 l21 -46 21 46 z"/>
+    <path d="M782 300 l28 -62 28 62 z"/><path d="M880 300 l24 -52 24 52 z"/>
+    <path d="M968 300 l30 -66 30 66 z"/><path d="M1072 300 l22 -48 22 48 z"/>
+    <path d="M1150 300 l26 -56 26 56 z"/>
+  </g>
+
+  <!-- The perimeter fence, with its lights thrown outward, away from the yard. -->
+  <g>
+    <rect x="0" y="356" width="1200" height="5" fill="#5d6259"/>
+    <g fill="#4a4f47">
+      <rect x="120" y="330" width="6" height="34"/><rect x="330" y="330" width="6" height="34"/>
+      <rect x="540" y="330" width="6" height="34"/><rect x="750" y="330" width="6" height="34"/>
+      <rect x="960" y="330" width="6" height="34"/>
+    </g>
+    <!-- Lamp heads and their cones, all facing up-frame into the trees. -->
+    <g>
+      <ellipse cx="123" cy="316" rx="86" ry="46" fill="url(#lamp)"/>
+      <ellipse cx="543" cy="316" rx="86" ry="46" fill="url(#lamp)"/>
+      <ellipse cx="963" cy="316" rx="86" ry="46" fill="url(#lamp)"/>
+      <g fill="#ffe9b0">
+        <rect x="118" y="324" width="10" height="4" rx="1"/>
+        <rect x="538" y="324" width="10" height="4" rx="1"/>
+        <rect x="958" y="324" width="10" height="4" rx="1"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Two buildings, warm inside. The only comfortable light in the picture. -->
+  <g>
+    <ellipse cx="360" cy="500" rx="215" ry="86" fill="url(#glow)"/>
+    <ellipse cx="855" cy="516" rx="205" ry="82" fill="url(#glow)"/>
+
+    <!-- Machine Room -->
+    <path d="M232 470 L360 404 L488 470 L360 536 Z" fill="#59564f"/>
+    <path d="M232 470 L360 536 L360 578 L232 512 Z" fill="#3f3d38"/>
+    <path d="M488 470 L360 536 L360 578 L488 512 Z" fill="#4b4943"/>
+    <g fill="#ccff00">
+      <rect x="286" y="492" width="26" height="9" transform="rotate(27 286 492)" opacity="0.95"/>
+      <rect x="404" y="500" width="26" height="9" transform="rotate(-27 404 500)" opacity="0.95"/>
+    </g>
+    <rect x="342" y="392" width="36" height="16" fill="#6b6963"/>
+
+    <!-- Trading Floor -->
+    <path d="M735 486 L855 424 L975 486 L855 548 Z" fill="#5f5b53"/>
+    <path d="M735 486 L855 548 L855 588 L735 526 Z" fill="#433f3a"/>
+    <path d="M975 486 L855 548 L855 588 L975 526 Z" fill="#4f4b45"/>
+    <g fill="#ccff00">
+      <rect x="786" y="506" width="24" height="8" transform="rotate(27 786 506)" opacity="0.95"/>
+      <rect x="898" y="514" width="24" height="8" transform="rotate(-27 898 514)" opacity="0.95"/>
+    </g>
+  </g>
+
+  <!-- Wordmark. -->
+  <g>
+    <text x="600" y="152" text-anchor="middle" font-family="'Space Grotesk','Segoe UI',system-ui,sans-serif"
+          font-size="108" font-weight="700" letter-spacing="14" fill="#ffffff">GREENWOOD</text>
+    <text x="600" y="204" text-anchor="middle" font-family="'JetBrains Mono',ui-monospace,monospace"
+          font-size="22" font-weight="700" letter-spacing="9" fill="#ccff00">REAL-WORLD YIELD · $BNTY</text>
+    <text x="600" y="248" text-anchor="middle" font-family="'Space Grotesk','Segoe UI',system-ui,sans-serif"
+          font-size="25" fill="#cfd8d2" opacity="0.82">One of the last lit settlements. Yield never sleeps.</text>
+  </g>
+</svg>
