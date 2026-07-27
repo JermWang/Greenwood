@@ -90,6 +90,15 @@ export default function GroundsPage() {
   const [error, setError] = useState<string | null>(null);
   /** Shared with IsoRig so a pan that ends over a tile is not read as a click. */
   const dragRef = useRef<DragState>({ dragging: false, moved: 0 });
+  /**
+   * The character's live position, written every frame by Character.
+   *
+   * Kept out of React state on purpose. `here` below still exists — the door
+   * prompt and the map want a tile, not a fractional position — but the CAMERA
+   * reads this, so it travels with the walk instead of being told where the
+   * character finished arriving once per waypoint.
+   */
+  const livePos = useRef<{ x: number; z: number } | null>(null);
 
   const load = useCallback(() => {
     if (!wallet) return;
@@ -217,7 +226,16 @@ export default function GroundsPage() {
             release — the map is far larger than the viewport, and a camera
             parked wherever you last dragged it means walking off the edge of
             your own view. */}
-        <IsoRig dragRef={dragRef} interactive bounds={WORLD} zoom={26} follow={here} />
+        <IsoRig
+          dragRef={dragRef}
+          interactive
+          bounds={WORLD}
+          zoom={26}
+          // `follow` is the fallback for the first frames, before the character
+          // has written a live position; `followRef` takes over from then on.
+          follow={here}
+          followRef={livePos}
+        />
         <GroundsScene />
         {(wallet || DEV_WALLET_BYPASS) && (
           <GroundsPlayer
@@ -226,13 +244,14 @@ export default function GroundsPage() {
             dragRef={dragRef}
             onMove={onMove}
             onDoor={onDoor}
+            positionRef={livePos}
           />
         )}
       </Canvas>
 
       {/* Where you are, and which way home. Not a nav rail — it never walks you
           anywhere, it just tells you what is next to what. See WorldMap. */}
-      <WorldMap wallet={wallet} at="grounds" />
+      <WorldMap wallet={wallet} at="grounds" position={here} />
 
       {/* Standing in a doorway. Contextual, because a HUD that always shows
           every action teaches players to stop reading it. */}

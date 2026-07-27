@@ -91,9 +91,16 @@ export interface DeepForestPlayerProps {
   /** Other players, which move independently of anything this client does. */
   onPlayers: (players: PlayerView[]) => void;
   onMove: (cell: Cell) => void;
+  /**
+   * Handed to Character, which writes the live interpolated position into it
+   * every frame so the camera can travel with the walk. Especially wanted out
+   * here: steps are paced to a server round trip, so a camera driven by arrivals
+   * moves in visible lurches.
+   */
+  positionRef?: React.MutableRefObject<{ x: number; z: number } | null>;
 }
 
-export default function DeepForestPlayer({ wallet, start, dragRef, onPiles, onCreatures, onPlayers, onMove }: DeepForestPlayerProps) {
+export default function DeepForestPlayer({ wallet, start, dragRef, onPiles, onCreatures, onPlayers, onMove, positionRef }: DeepForestPlayerProps) {
   const [position, setPosition] = useState<Cell>(start);
   const [route, setRoute] = useState<Cell[]>([]);
   const walking = useRef(false);
@@ -231,7 +238,13 @@ export default function DeepForestPlayer({ wallet, start, dragRef, onPiles, onCr
         Derived from the spawn gate rather than hardcoded, so the North, East
         and West gates are right the day they are used as entrances.
       */}
-      <Character look={look} target={position} spawn={start} spawnFacing={spawnFacing} />
+      <Character
+        look={look}
+        target={position}
+        spawn={start}
+        spawnFacing={spawnFacing}
+        positionRef={positionRef}
+      />
 
       {/*
         Hover tile. Green when you can walk there, red when you cannot.

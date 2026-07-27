@@ -84,6 +84,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .gpu-stage { min-height: 100vh; }
 .gpu-stage-content { min-height: calc(100vh - 70px); padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+/*
+ * A full-bleed PLACE gets the exact remaining height and no dock padding.
+ *
+ * The 90px bottom padding above is for the mobile dock, and on a document page
+ * it is correct. On a place it is 90px of nothing below the viewport: the page
+ * scrolls, which no screen in this game is supposed to do, and anything anchored
+ * to the bottom (the world map) is pushed off the edge. Scoped with :has() so
+ * the document pages keep their padding untouched.
+ */
+.gpu-stage-content:has(> .df-page) {
+  min-height: 0;
+  height: calc(100vh - 70px);
+  padding-bottom: 0;
+  overflow: hidden;
+}
 
 .fab-topbar {
   position: sticky;
@@ -900,7 +915,26 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
    this one is a place, so the canvas takes the viewport and the only overlay is
    the thing you must not forget — that you can be killed here.
    -------------------------------------------------------------------------- */
-.df-page { position: relative; width: 100%; height: 100vh; background: #0b1014; }
+/*
+ * A place fills what is LEFT of the viewport, not the whole of it.
+ *
+ * This was 100vh, and it sits below the top bar — so the page ran a top-bar's
+ * height past the bottom of the screen. The canvas got away with it because
+ * nothing lives at its very bottom edge, but anything anchored there (the world
+ * map panel) was clipped by exactly that overhang, and the page could scroll,
+ * which every screen in this game is supposed not to.
+ *
+ * `100%` of the flex stage is the honest measure. The vh fallback keeps it
+ * sane if this class is ever used outside that stage.
+ */
+.df-page {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100%;
+  min-height: 0;
+  background: #0b1014;
+}
 .df-page canvas { display: block; }
 .df-hud {
   position: absolute;
@@ -1028,11 +1062,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* --------------------------------------------------------------------------
-   World map — the diagram on the wall.
+   World map — a picture of the world, not a sitemap.
 
-   Bottom-right, opposite the Exchange tab, so the two never fight for the same
-   corner. Collapsed to a compass rose: the thing you glance at stays visible and
-   the detail is one click away.
+   Bottom-right, opposite the Exchange tab, so the two never fight for a corner.
+   Collapsed to a compass rose: the thing you glance at stays visible, the map is
+   one click away. The regions are tinted the colour each place actually is, so
+   somewhere you have been is recognisable without reading its label.
    -------------------------------------------------------------------------- */
 .wm-tab, .wm-panel {
   position: absolute;
@@ -1043,8 +1078,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .wm-tab {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 11px;
+  gap: 8px;
+  padding: 6px 13px 6px 7px;
   border: 1px solid rgba(212, 210, 207, 0.2);
   border-radius: 999px;
   background: rgba(6, 10, 13, 0.86);
@@ -1052,362 +1087,95 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: var(--heather-2, #b1afac);
   cursor: pointer;
 }
-.wm-tab:hover { border-color: rgba(204, 255, 0, 0.5); color: #fff; }
-/* North is always up: the isometric camera never rotates, so this is true
-   forever rather than being a lie that happens to hold at the moment. */
-.wm-rose {
-  display: grid;
-  place-items: center;
-  width: 19px;
-  height: 19px;
-  border: 1px solid rgba(204, 255, 0, 0.55);
-  border-radius: 50%;
-  font: 700 8px var(--font-mono), monospace;
-  color: var(--robin-neon, #ccff00);
+.wm-tab svg { width: 26px; height: 26px; }
+.wm-tab span {
+  font: 700 9.5px var(--font-mono), monospace;
+  letter-spacing: 0.18em;
 }
+.wm-tab:hover { border-color: rgba(204, 255, 0, 0.55); color: #fff; }
+.wm-tab:hover .wm-rose-ring { stroke: rgba(204, 255, 0, 0.75); }
+
+.wm-rose-ring { fill: rgba(255, 255, 255, 0.04); stroke: rgba(212, 210, 207, 0.4); stroke-width: 1.5; }
+.wm-rose-tick { stroke: rgba(212, 210, 207, 0.45); stroke-width: 1.5; }
+.wm-rose-n { stroke: var(--robin-neon, #ccff00); stroke-width: 2; }
+.wm-rose-needle { fill: var(--robin-neon, #ccff00); }
+.wm-rose-hub { fill: rgba(6, 10, 13, 0.9); stroke: rgba(212, 210, 207, 0.5); stroke-width: 1; }
+
 .wm-panel {
-  padding: 12px;
+  padding: 12px 12px 10px;
   border: 1px solid rgba(212, 210, 207, 0.18);
-  border-radius: 12px;
-  background: rgba(6, 10, 13, 0.92);
-  backdrop-filter: blur(8px);
+  border-radius: 14px;
+  background: rgba(6, 10, 13, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
 }
-.wm-panel header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.wm-panel header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .wm-kicker {
   font: 700 9px var(--font-mono), monospace;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--robin-neon, #ccff00);
 }
 .wm-close {
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border: 0;
-  border-radius: 5px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.08);
   color: var(--heather-2, #b1afac);
+  font-size: 10px;
+  line-height: 1;
   cursor: pointer;
 }
-.wm-close:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.wm-close:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
 
-.wm-diagram { position: relative; margin: 10px 0 4px; }
-/* Links are rotated bars between node centres — crisper than SVG at this size
-   and it keeps the whole panel as plain DOM. */
-.wm-link {
-  position: absolute;
-  height: 2px;
-  background: rgba(212, 210, 207, 0.22);
-  transform-origin: 0 50%;
+.wm-svg { display: block; margin: 8px 0 2px; overflow: visible; }
+/* Roads read as roads: pale, wide, and under everything. */
+.wm-road { stroke: rgba(212, 210, 207, 0.26); stroke-width: 6; stroke-linecap: round; }
+
+.wm-region-edge { stroke-width: 1.4; }
+.wm-region.is-here .wm-region-edge { stroke-width: 2.2; }
+.wm-region.is-here { filter: drop-shadow(0 0 7px rgba(204, 255, 0, 0.4)); }
+/* Dimmed, never hidden — see the component. */
+.wm-region.is-locked { opacity: 0.4; }
+
+.wm-label {
+  fill: rgba(226, 235, 239, 0.72);
+  font: 600 8.5px var(--font-sans, inherit);
+  text-anchor: middle;
 }
-.wm-node {
-  position: absolute;
-  display: grid;
-  justify-items: center;
-  gap: 1px;
-  padding: 5px 8px;
-  border: 1px solid rgba(212, 210, 207, 0.28);
-  border-radius: 7px;
-  background: rgba(20, 24, 26, 0.96);
-  transform: translate(-50%, -50%);
-  white-space: nowrap;
-  font-size: 10px;
-  color: var(--heather-2, #b1afac);
+.wm-region.is-here .wm-label { fill: #fff; }
+
+.wm-danger circle { fill: rgba(226, 60, 45, 0.92); }
+.wm-danger text {
+  fill: #fff;
+  font: 700 8px var(--font-sans, inherit);
+  text-anchor: middle;
 }
-.wm-node b { font-weight: 600; font-size: 10px; }
-.wm-node em {
-  font-style: normal;
-  font: 700 7.5px var(--font-mono), monospace;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--robin-neon, #ccff00);
+.wm-lock rect { fill: rgba(232, 230, 226, 0.85); }
+.wm-lock path { stroke: rgba(232, 230, 226, 0.85); stroke-width: 1.6; }
+
+/* You. The pulse is what makes the eye land here first, which is the whole
+   point of opening the map. */
+.wm-you-dot { fill: var(--robin-neon, #ccff00); stroke: #17160f; stroke-width: 1.5; }
+.wm-you-pulse { fill: rgba(204, 255, 0, 0.3); animation: wm-pulse 2s ease-out infinite; }
+@keyframes wm-pulse {
+  0% { r: 4; opacity: 0.75; }
+  100% { r: 13; opacity: 0; }
 }
-.wm-node.is-here {
-  border-color: var(--robin-neon, #ccff00);
-  box-shadow: 0 0 0 3px rgba(204, 255, 0, 0.14);
-  color: #fff;
+/* Respect a reduced-motion preference: the marker still reads without moving. */
+@media (prefers-reduced-motion: reduce) {
+  .wm-you-pulse { animation: none; opacity: 0.35; }
 }
-/* Locked is dimmed, never hidden. A gate you cannot see is a gate you cannot
-   work toward, and the Deep Forest existing at all is most of what makes level
-   10 worth reaching. */
-.wm-node.is-locked { opacity: 0.42; }
+
 .wm-home {
-  max-width: 240px;
-  padding-top: 8px;
+  max-width: 250px;
+  padding-top: 9px;
   border-top: 1px solid rgba(212, 210, 207, 0.12);
   font-size: 10.5px;
   line-height: 1.5;
   color: rgba(226, 235, 239, 0.6);
 }
 .wm-home b { color: var(--robin-neon, #ccff00); font-weight: 600; }
-
-/* --------------------------------------------------------------------------
-   Exchange HUD — the one menu.
-   Collapsed to a tab by default; opens over the game rather than replacing it.
-   -------------------------------------------------------------------------- */
-.mkt-hud-tab {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  transform: translateY(-50%);
-  padding: 10px 13px;
-  border: 1px solid rgba(204, 255, 0, 0.4);
-  border-right: 0;
-  border-radius: 12px 0 0 12px;
-  background: rgba(9, 14, 17, 0.9);
-  backdrop-filter: blur(6px);
-  color: var(--accent, #ccff00);
-  font: 700 10px var(--font-mono), monospace;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.mkt-hud-tab:hover { background: rgba(204, 255, 0, 0.12); }
-
-.mkt-hud {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  z-index: 60;
-  width: 268px;
-  transform: translateY(-50%);
-  padding: 13px 15px 15px;
-  border: 1px solid rgba(204, 255, 0, 0.4);
-  border-right: 0;
-  border-radius: 12px 0 0 12px;
-  background: rgba(9, 14, 17, 0.94);
-  backdrop-filter: blur(10px);
-}
-.mkt-hud header { display: flex; align-items: center; justify-content: space-between; }
-.mkt-hud header b {
-  color: var(--accent, #ccff00);
-  font: 700 10px var(--font-mono), monospace;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-.mkt-hud header button {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border: 0;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #cfcdc8;
-  cursor: pointer;
-}
-.mkt-hud ul { margin: 10px 0 0; padding: 0; list-style: none; }
-.mkt-hud li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  border-top: 1px solid rgba(212, 210, 207, 0.09);
-  padding: 7px 0;
-}
-.mkt-hud li:first-child { border-top: 0; }
-.mkt-hud li span { font-size: 11px; color: rgba(226, 235, 239, 0.6); }
-.mkt-hud li b { font: 600 12px var(--font-mono), monospace; color: #fff; }
-.mkt-hud-empty { margin-top: 10px; font-size: 11px; color: rgba(226, 235, 239, 0.4); }
-.mkt-hud-full {
-  display: block;
-  margin-top: 11px;
-  padding-top: 9px;
-  border-top: 1px solid rgba(212, 210, 207, 0.1);
-  color: var(--accent, #ccff00);
-  font-size: 11px;
-  text-decoration: none;
-}
-
-/* --------------------------------------------------------------------------
-   Fixed-viewport shell.
-
-   The page itself never scrolls. That frees the wheel for map zoom — a page
-   that scrolls AND a map that zooms fight over the same gesture, and the page
-   always wins because it is the outer scroller.
-
-   Panels that genuinely hold more than a screen scroll INTERNALLY instead, so
-   nothing is lost; what changes is that the chrome stays put and only the
-   content area moves. Anything still overflowing after this needs its content
-   cut, not a taller page.
-   -------------------------------------------------------------------------- */
-html, body {
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-.gpu-os { height: 100vh; height: 100dvh; overflow: hidden; }
-.gpu-stage { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 0; }
-.gpu-stage-content {
-  flex: 1;
-  min-height: 0;
-  /* auto, not scroll: a page that fits shows no bar at all, and a page that
-     does not still reaches its content rather than clipping it. */
-  overflow-y: auto;
-  padding-bottom: 0;
-}
-/* The dock is gone, so the old reserved footer space is dead height. */
-@media (max-width: 760px) { .gpu-stage-content { padding-bottom: 0; } }
-
-/* Full-bleed 3D pages manage their own height and must not double-scroll. */
-.df-page, .fab-sandbox { height: 100%; overflow: hidden; }
-
-/* --------------------------------------------------------------------------
-   Expedition HUD — health, quick slots, held item, bag.
-   Bottom-left, out of the way of the centre where the player stands.
-   -------------------------------------------------------------------------- */
-.xhud {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  z-index: 25;
-  display: grid;
-  gap: 8px;
-  width: 258px;
-  padding: 11px 13px;
-  border: 1px solid rgba(212, 210, 207, 0.14);
-  border-radius: 12px;
-  background: rgba(6, 10, 13, 0.84);
-  backdrop-filter: blur(8px);
-}
-.xhud-health { display: flex; align-items: center; gap: 8px; color: #e35a4a; }
-.xhud-bar { flex: 1; height: 7px; overflow: hidden; border-radius: 4px; background: rgba(255,255,255,.09); }
-.xhud-bar i { display: block; height: 100%; border-radius: 4px; transition: width .25s ease, background .25s ease; }
-.xhud-health b { min-width: 26px; font: 700 12px var(--font-mono), monospace; color: #fff; text-align: right; }
-
-.xhud-slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
-.xhud-slot {
-  position: relative;
-  aspect-ratio: 1;
-  border: 1px solid rgba(212, 210, 207, 0.18);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-}
-.xhud-slot.is-on { border-color: var(--accent, #ccff00); background: rgba(204, 255, 0, 0.14); }
-.xhud-slot.is-empty { opacity: 0.45; }
-.xhud-slot span {
-  position: absolute;
-  top: 2px;
-  left: 4px;
-  font: 700 8px var(--font-mono), monospace;
-  color: rgba(226, 235, 239, 0.45);
-}
-.xhud-slot.is-on span { color: var(--accent, #ccff00); }
-.xhud-slot em {
-  position: absolute;
-  right: 4px;
-  bottom: 2px;
-  font: 700 10px var(--font-mono), monospace;
-  font-style: normal;
-  color: #fff;
-}
-
-.xhud-held { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.xhud-held small {
-  font: 700 7.5px var(--font-mono), monospace;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(226, 235, 239, 0.4);
-}
-.xhud-held b { font-size: 12px; color: #fff; }
-
-.xhud-bag {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border: 1px solid rgba(212, 210, 207, 0.16);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #cfcdc8;
-  cursor: pointer;
-}
-.xhud-bag span { flex: 1; font-size: 11px; text-align: left; }
-.xhud-bag b { font: 700 12px var(--font-mono), monospace; color: #fff; }
-.xhud-bag b.is-full { color: #e35a4a; }
-.xhud-bag.is-open svg:last-child { transform: rotate(180deg); }
-
-.xhud-bag-open { max-height: 190px; overflow-y: auto; }
-.xhud-bag-open ul { margin: 0; padding: 0; list-style: none; }
-.xhud-bag-open li {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  border-top: 1px solid rgba(212, 210, 207, 0.08);
-  padding: 6px 2px;
-}
-.xhud-bag-open li:first-child { border-top: 0; }
-.xhud-bag-open li span { font-size: 11px; color: rgba(226, 235, 239, 0.62); }
-.xhud-bag-open li b { font: 600 11px var(--font-mono), monospace; color: #fff; }
-.xhud-bag-open p { padding: 6px 2px; font-size: 11px; color: rgba(226, 235, 239, 0.4); }
-.xhud-bag-open .xhud-full { color: #e35a4a; }
-
-/* Dismiss button on a contextual prompt.
-   No position override here: .df-prompt is already absolute, which is itself a
-   positioning context. Re-declaring it as relative later in the sheet won the
-   cascade and dropped the prompt out of its centred absolute placement, so it
-   stretched the full width of the screen. */
-.df-prompt-close {
-  position: absolute;
-  top: 6px;
-  right: 7px;
-  display: grid;
-  place-items: center;
-  width: 19px;
-  height: 19px;
-  border: 0;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(226, 235, 239, 0.55);
-  cursor: pointer;
-}
-.df-prompt-close:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
-
-/* Place tag: plain text, no plate.
-   It had a pill, a border and a translucent background — chrome that made a
-   location read as a button rather than as a name on the world. Bare type with
-   a shadow to hold it off the background is what was there originally and what
-   reads best over a dark scene. */
-.iso-place-tag {
-  font: 700 10px var(--font-mono), monospace;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--accent, #ccff00);
-  /* Two shadows: a tight dark one for contrast against pale geometry, and a
-     wide soft one so the text still separates from a bright gate wash. */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 14px rgba(0, 0, 0, 0.7);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-/* Another player's nameplate, with their health under it. Always visible —
-   whether to commit to a fight turns on how hurt they already are. */
-.pvp-tag {
-  min-width: 84px;
-  padding: 3px 7px 5px;
-  border-radius: 6px;
-  background: rgba(6, 10, 13, 0.82);
-  text-align: center;
-  pointer-events: none;
-}
-.pvp-tag span {
-  display: block;
-  font: 700 8px var(--font-mono), monospace;
-  letter-spacing: 0.1em;
-  color: var(--accent, #ccff00);
-}
-.pvp-tag i {
-  display: block;
-  height: 3px;
-  margin-top: 3px;
-  border-radius: 2px;
-  background: #e35a4a;
-  transition: width 0.2s ease;
-}

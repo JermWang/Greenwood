@@ -250,6 +250,16 @@ export interface CharacterProps {
    * Someone arriving through a door was therefore left looking back out of it.
    */
   spawnFacing?: number;
+  /**
+   * Written every frame with where this character actually is.
+   *
+   * For the camera, which must not learn the position from `onStep` — that
+   * fires on waypoints, so a camera driven by it lurches between the few points
+   * a smoothed route has rather than travelling with you. A ref keeps it off the
+   * React path entirely: the scene re-renders on position changes and the camera
+   * has no reason to be part of that.
+   */
+  positionRef?: React.MutableRefObject<{ x: number; z: number } | null>;
 }
 
 export default function Character({
@@ -261,6 +271,7 @@ export default function Character({
   name,
   spawn,
   spawnFacing = 0,
+  positionRef,
 }: CharacterProps) {
   const root = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
@@ -322,6 +333,11 @@ export default function Character({
 
     group.position.set(pos.current.x, TILE_TOP, pos.current.z);
     group.rotation.y = facing.current;
+
+    // Publish the interpolated position, not the waypoint. Anything that wants
+    // to track this character — the camera, the minimap — reads it here and gets
+    // every frame of the walk rather than the handful of tiles a route stops at.
+    if (positionRef) positionRef.current = { x: pos.current.x, z: pos.current.z };
 
     const moving = speed > 0.15;
     // Phase advances with DISTANCE, not time, so the stride never slides: a

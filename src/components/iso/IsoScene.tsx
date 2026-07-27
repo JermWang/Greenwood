@@ -39,6 +39,7 @@ export function IsoRig({
   bounds,
   zoom,
   follow,
+  followRef,
 }: {
   dragRef: React.MutableRefObject<DragState>;
   interactive: boolean;
@@ -57,6 +58,26 @@ export function IsoRig({
    * so looking around never fights you and never jars on the way back.
    */
   follow?: { x: number; z: number } | null;
+  /**
+   * The character's LIVE position, as a ref written every frame.
+   *
+   * Prefer this over `follow` for anything that walks, and the difference is the
+   * whole feel of movement.
+   *
+   * `follow` is React state, and the only thing that updates it is `onStep` —
+   * which fires when a WAYPOINT is reached. So the camera was not following the
+   * character at all: it was being told, a few times per walk, where the
+   * character had just finished arriving, and gliding there after the fact.
+   * Path smoothing made that far worse rather than better, because collapsing a
+   * staircase into three long legs means three camera updates across a walk that
+   * used to have thirty. The result reads as the camera catching up at the end
+   * instead of travelling with you.
+   *
+   * A ref fixes it without a re-render per frame, which is the reason not to
+   * just push position into state at 60Hz: this scene re-renders on every
+   * position change, and the camera does not need React to know anything.
+   */
+  followRef?: React.MutableRefObject<{ x: number; z: number } | null>;
 }) {
   const { camera, gl, size } = useThree();
   /**
@@ -178,9 +199,14 @@ export function IsoRig({
     // Written to the DESIRED position rather than straight to the target, so it
     // goes through the same damping a drag does — the return is a glide, not a
     // cut.
-    if (follow && !dragRef.current.dragging) {
-      desired.current.x = follow.x;
-      desired.current.z = follow.z;
+    //
+    // The live ref wins when there is one. It is sampled every frame, so the
+    // camera travels WITH the character for the whole walk; `follow` is the
+    // waypoint-rate fallback for callers that have no live position to give.
+    const aim = followRef?.current ?? follow;
+    if (aim && !dragRef.current.dragging) {
+      desired.current.x = aim.x;
+      desired.current.z = aim.z;
     }
     target.current.x = THREE.MathUtils.damp(target.current.x, desired.current.x, 12, delta);
     target.current.z = THREE.MathUtils.damp(target.current.z, desired.current.z, 12, delta);

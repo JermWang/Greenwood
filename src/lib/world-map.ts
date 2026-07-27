@@ -69,6 +69,31 @@ export const MAP_LINKS: Array<[RegionId, RegionId]> = [
  */
 export const HOME: RegionId = 'grounds';
 
+/**
+ * How each region LOOKS on the map.
+ *
+ * Derived from the region's lighting profile rather than invented, so the
+ * diagram is tinted the colour the place actually is: the Grounds are overcast
+ * green, the rooms are interior grey, the Treeline is amber dusk and the Deep
+ * Forest is moonlit blue. A player who has been somewhere recognises it on the
+ * map without reading the label, which is the entire difference between a map
+ * and a list of names.
+ *
+ * `motif` picks the fill pattern — trees for the wooded regions, a floor grid
+ * for the interiors. At this size that reads as texture rather than as detail,
+ * and texture is what stops five rectangles looking like five buttons.
+ */
+export const REGION_STYLE: Record<
+  RegionId,
+  { fill: string; edge: string; motif: 'grid' | 'trees' | 'dense' }
+> = {
+  'machine-room': { fill: '#3a3a34', edge: '#6f6d64', motif: 'grid' },
+  'trading-floor': { fill: '#43403a', edge: '#7d786e', motif: 'grid' },
+  grounds: { fill: '#4a5c3c', edge: '#7d9a63', motif: 'trees' },
+  treeline: { fill: '#4d3f2c', edge: '#a8763f', motif: 'trees' },
+  'deep-forest': { fill: '#1e2b33', edge: '#4a648a', motif: 'dense' },
+};
+
 export interface MapNode {
   id: RegionId;
   name: string;
@@ -81,6 +106,11 @@ export interface MapNode {
   open: boolean;
   /** Why not, when they cannot. */
   locked: string | null;
+  /** Drawn as a warning pip. Somewhere that can hurt you should look like it. */
+  dangerous: boolean;
+  fill: string;
+  edge: string;
+  motif: 'grid' | 'trees' | 'dense';
 }
 
 /**
@@ -153,6 +183,8 @@ export function mapNodes(
       // walk that ends in a polite refusal at the gate.
       open: verdict ? verdict.allowed : true,
       locked: verdict && !verdict.allowed ? verdict.reason : null,
+      dangerous: region.pvp || region.hostiles,
+      ...REGION_STYLE[region.id],
     };
   });
 }

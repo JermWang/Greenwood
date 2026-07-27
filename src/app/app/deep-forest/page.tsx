@@ -88,6 +88,8 @@ export default function DeepForestPage() {
   const [dismissed, setDismissed] = useState<string[]>([]);
   /** Shared with IsoRig so a pan that ends over a tile is not read as a click. */
   const dragRef = useRef<DragState>({ dragging: false, moved: 0 });
+  /** Live character position for the camera. See IsoRig's `followRef`. */
+  const livePos = useRef<{ x: number; z: number } | null>(null);
 
   useEffect(() => {
     if (!wallet) return;
@@ -222,7 +224,14 @@ export default function DeepForestPage() {
           another chance to get it wrong. With the shared rig there is no offset
           at all — world x/z ARE map x/z.
         */}
-        <IsoRig dragRef={dragRef} interactive bounds={BOUNDS} zoom={30} follow={here} />
+        <IsoRig
+          dragRef={dragRef}
+          interactive
+          bounds={BOUNDS}
+          zoom={30}
+          follow={here}
+          followRef={livePos}
+        />
         <DeepForestScene />
         {piles.map((p) => (
           <Pile key={p.id} pile={p} />
@@ -238,6 +247,7 @@ export default function DeepForestPage() {
             onPiles={onPiles}
             onCreatures={onCreatures}
             onPlayers={onPlayers}
+            positionRef={livePos}
           />
         )}
       </Canvas>
@@ -249,7 +259,7 @@ export default function DeepForestPage() {
       {/* Orientation matters most where it is easiest to lose: fog hides the far
           half of this map, so "which way is the settlement" is a real question
           out here in a way it never is indoors. */}
-      <WorldMap wallet={wallet} at="deep-forest" />
+      <WorldMap wallet={wallet} at="deep-forest" position={here} />
 
       {/* Contextual prompts, only when they apply. A HUD that always shows every
           action teaches players to stop reading it. */}

@@ -67,9 +67,21 @@ export interface GroundsPlayerProps {
   onMove: (cell: Cell) => void;
   /** Fired when the player stops on a doorway tile. */
   onDoor: (door: Doorway | null) => void;
+  /**
+   * Handed straight to Character, which writes the live interpolated position
+   * into it every frame. The camera reads it — see IsoRig's `followRef`.
+   */
+  positionRef?: React.MutableRefObject<{ x: number; z: number } | null>;
 }
 
-export default function GroundsPlayer({ wallet, start, dragRef, onMove, onDoor }: GroundsPlayerProps) {
+export default function GroundsPlayer({
+  wallet,
+  start,
+  dragRef,
+  onMove,
+  onDoor,
+  positionRef,
+}: GroundsPlayerProps) {
   // Read once. `start` is a mount-time decision — re-reading it would snap a
   // walking character back to the door they came in through.
   const [spawn] = useState<Cell>(() => start ?? { ...ARRIVAL });
@@ -168,6 +180,7 @@ export default function GroundsPlayer({ wallet, start, dragRef, onMove, onDoor }
         onStep={step}
         spawn={spawn}
         spawnFacing={spawn.z === ARRIVAL.z && spawn.x === ARRIVAL.x ? Math.PI : 0}
+        positionRef={positionRef}
       />
 
       {/* Hover tile: green where you can walk, red where you cannot. Showing the
