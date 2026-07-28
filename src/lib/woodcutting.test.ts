@@ -30,6 +30,21 @@ describe('the species ladder', () => {
    * being foolish — which is the difference between a ladder and a single
    * correct answer.
    */
+  /**
+   * The top of the ladder has to stay somewhere you can wait out.
+   *
+   * The first pass ran to 700 seconds, and twelve minutes is not tension — it is
+   * the player alt-tabbing, and a gathering skill dies the moment the reason to
+   * stand there is gone. The shape of the curve matters; the absolute numbers
+   * only have to stay inside a session.
+   */
+  it('keeps every respawn inside a few minutes', () => {
+    for (const s of ALL_SPECIES) {
+      expect(s.respawn, `${s.id} is too slow to be worth waiting for`).toBeLessThanOrEqual(180);
+    }
+    expect(Math.min(...ALL_SPECIES.map((s) => s.respawn))).toBeGreaterThanOrEqual(30);
+  });
+
   it('makes better wood slower to come back', () => {
     const byTier = [...ALL_SPECIES].sort((a, b) => a.tier - b.tier);
     for (let i = 1; i < byTier.length; i += 1) {

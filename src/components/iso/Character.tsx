@@ -32,7 +32,39 @@ const ARRIVE_EPS = 0.06;
 /** Radians per second the body turns. A snap-turn reads as a glitch. */
 const TURN_RATE = 9;
 
-export type CharacterAction = 'idle' | 'interact';
+export type CharacterAction = 'idle' | 'interact' | 'chop';
+
+/**
+ * Swings per second while felling.
+ *
+ * Slow enough to read as WORK. The temptation with a repeating action is to
+ * speed it up until it feels responsive, and that is the wrong instinct here —
+ * a fast chop reads as a machine, and the whole appeal of a gathering skill is
+ * that a person is doing something effortful. Just over one swing a second is
+ * about where a real axe lands.
+ */
+const CHOP_HZ = 1.15;
+
+/**
+ * The swing curve: a long wind-up and a short strike.
+ *
+ * Returns the arm angle for a phase 0..1 through one swing.
+ *
+ * A sine would be the obvious thing and it is exactly wrong — it spends equal
+ * time going up and coming down, which reads as waving rather than chopping.
+ * The force in an axe swing is all in the last third: the arms travel back
+ * slowly, then the head comes down fast and stops dead. So the wind-up takes
+ * 62% of the cycle at a constant rate, and the strike covers more angle in the
+ * remaining 38% with a square-root ease so it is quickest at the start.
+ */
+function chopArm(phase: number): number {
+  const WIND = 0.62;
+  const BACK = -2.5;
+  const THROUGH = 0.55;
+  if (phase < WIND) return BACK * (phase / WIND);
+  const t = (phase - WIND) / (1 - WIND);
+  return BACK + (THROUGH - BACK) * Math.sqrt(t);
+}
 
 export interface CharacterLook {
   /** Glove colour, when a cosmetic overrides bare hands. */
@@ -486,7 +518,38 @@ export default function Character({
     if (legR.current) legR.current.rotation.x = -swing * 0.75;
 
     if (body.current) {
-      if (action === 'interact' && !moving) {
+      if (action === 'chop' && !moving) {
+        /*
+         * Felling. Both arms together, because an axe is two-handed.
+         *
+         * The parts that make it read as effort rather than as an arm moving:
+         *
+         *   THE TORSO FOLLOWS THE ARMS, slightly behind them. A character whose
+         *   body is still while their shoulders swing looks like a doll with a
+         *   hinge. Pitching forward on the strike is where the weight comes
+         *   from.
+         *
+         *   IT RISES ON THE WIND-UP. Half a centimetre, but going up onto the
+         *   balls of the feet before coming down is most of what sells a
+         *   downward blow.
+         *
+         *   THE LEGS ARE PLANTED. Nothing below the hip moves — a stance that
+         *   shifts would read as stumbling. That is why this branch overwrites
+         *   the leg rotations the walk cycle set above.
+         */
+        const t = state.clock.elapsedTime;
+        const p = (t * CHOP_HZ) % 1;
+        const arm = chopArm(p);
+        if (armR.current) armR.current.rotation.x = arm;
+        // A hair out of phase, so the two arms are gripping one haft rather
+        // than moving as a mirrored pair.
+        if (armL.current) armL.current.rotation.x = arm + 0.08;
+        // Follows the arms into the strike and unwinds on the wind-up.
+        body.current.rotation.x = p < 0.62 ? -0.06 : 0.34 * Math.sqrt((p - 0.62) / 0.38);
+        body.current.position.y = p < 0.62 ? 0.05 * (p / 0.62) : 0;
+        if (legL.current) legL.current.rotation.x = 0.12;
+        if (legR.current) legR.current.rotation.x = -0.1;
+      } else if (action === 'interact' && !moving) {
         // Lean in over the counter and keep the reach alive with a slow bob,
         // so a character working a stall is not a statue with one arm up.
         const t = state.clock.elapsedTime;

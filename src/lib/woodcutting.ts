@@ -64,8 +64,15 @@ export interface Species {
  * The species ladder.
  *
  * Respawn climbs with tier, which is what stops the best tree being the only
- * tree anybody cuts: an ironbark is worth four pines and makes you wait eight
- * times as long, so a player clearing a stand of pine is not being foolish.
+ * tree anybody cuts: an ironbark is worth four pines and makes you wait six
+ * times as long, so a player working a stand of pine is not being foolish.
+ *
+ * The whole curve was cut by roughly two thirds after playing it. The first
+ * pass ran 45s to 700s and the top end was simply dead air — a twelve-minute
+ * wait is not tension, it is the player alt-tabbing, and a gathering skill dies
+ * the moment the reason to stay is gone. 30s to 180s keeps the same SHAPE, so
+ * the trade between a fast common and a slow rare is unchanged, while leaving
+ * the top of the ladder somewhere you can still be standing when it comes back.
  *
  * XP climbs faster than logs do. Logs are the economy and XP is the progression,
  * and they should not be the same curve — otherwise the fastest way to level is
@@ -78,7 +85,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     tier: 1,
     logs: 1,
     xp: 12,
-    respawn: 45,
+    respawn: 30,
     needle: '#4a6b3c',
     bark: '#4a3b2c',
     blurb: 'Soft, fast, everywhere. What the Grounds are planted with.',
@@ -89,7 +96,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     tier: 1,
     logs: 1,
     xp: 18,
-    respawn: 60,
+    respawn: 38,
     needle: '#6d8a4a',
     bark: '#b8b2a4',
     blurb: 'Pale bark, burns hot and quick. Worth more than it looks.',
@@ -100,7 +107,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     tier: 2,
     logs: 2,
     xp: 42,
-    respawn: 150,
+    respawn: 60,
     needle: '#3f5a33',
     bark: '#5f4830',
     blurb: 'Dense and slow. The first tree that needs a real axe.',
@@ -111,7 +118,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     tier: 3,
     logs: 3,
     xp: 95,
-    respawn: 320,
+    respawn: 105,
     needle: '#2b3a2c',
     bark: '#33302a',
     blurb: 'Grows where the light does not reach. Heavier than it should be.',
@@ -122,7 +129,7 @@ export const SPECIES: Record<SpeciesId, Species> = {
     tier: 4,
     logs: 4,
     xp: 220,
-    respawn: 700,
+    respawn: 180,
     needle: '#3a4a44',
     // Deliberately metallic. It is the one tree that does not look like a tree,
     // and nothing in the game explains why.

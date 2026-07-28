@@ -599,3 +599,67 @@ export function RockCluster({ position, seed = 0 }: { position: [number, number]
     </group>
   );
 }
+
+/**
+ * A stump, where a tree used to be.
+ *
+ * The single most important prop in woodcutting, because it is the only
+ * FEEDBACK the skill has. A felled tree that simply vanished would make the
+ * forest read as buggy — things do not blink out — and would leave a player no
+ * way to tell a patch they have worked from one they have not. A stump says
+ * "this was yours, and it is coming back".
+ *
+ * Deliberately still readable as the species it was: the same bark colour, so a
+ * ring of pale birch stumps looks different from a stand of ironbark ones and a
+ * player can plan a route by what they cut last time.
+ */
+export function Stump({
+  position,
+  bark = '#4a3b2c',
+  seed = 0,
+  /** 0..1 toward regrowth. Drives the shoot that pushes out of the top. */
+  regrow = 0,
+}: {
+  position: [number, number];
+  bark?: string;
+  seed?: number;
+  regrow?: number;
+}) {
+  const lean = (hash2(seed, 3) - 0.5) * 0.06;
+  return (
+    <group position={[position[0], 0, position[1]]} rotation={[lean, hash2(seed, 2) * Math.PI * 2, 0]}>
+      {/* The cut trunk. Short and wide — a stump left tall reads as a broken
+          tree rather than a felled one. */}
+      <mesh position={[0, 0.16, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.17, 0.21, 0.32, 6]} />
+        {flat(bark, 0.98)}
+      </mesh>
+      {/* The cut face, a shade paler. This is the detail that makes it read as
+          CUT rather than snapped, and it is the only part visible from directly
+          above — which under an isometric camera is most of what you see. */}
+      <mesh position={[0, 0.325, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.17, 6]} />
+        {flat('#c9ad82', 0.9)}
+      </mesh>
+      {/*
+        Regrowth, as a shoot that grows out of the cut.
+
+        A countdown number would be more precise and far worse: it turns a forest
+        into a spreadsheet, and the player would read the digits instead of the
+        wood. A shoot tells you the same thing at a glance from across a
+        clearing, and it rewards knowing the map rather than reading it.
+      */}
+      {regrow > 0.05 && (
+        <mesh position={[0, 0.34 + regrow * 0.3, 0]} castShadow>
+          <coneGeometry args={[0.1 + regrow * 0.12, 0.2 + regrow * 0.5, 5]} />
+          {flat(NEEDLE[Math.floor(hash2(seed, 4) * NEEDLE.length)], 0.95)}
+        </mesh>
+      )}
+      {/* Chips and a fallen offcut, so the ground shows the work happened. */}
+      <mesh position={[0.42, 0.05, 0.18]} rotation={[0, hash2(seed, 5) * Math.PI, 0.08]} castShadow>
+        <boxGeometry args={[0.5, 0.1, 0.14]} />
+        {flat(bark, 0.98)}
+      </mesh>
+    </group>
+  );
+}
