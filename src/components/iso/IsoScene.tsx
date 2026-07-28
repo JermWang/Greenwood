@@ -287,6 +287,16 @@ export interface IsoSceneProps {
   avatar?: { look: CharacterLook; name?: string } | null;
   /** Desk and plinth cosmetics, applied to every desk on this floor. */
   livery?: DeskLivery;
+  /**
+   * Anything else that belongs in this room's 3D scene.
+   *
+   * Rendered inside the Canvas, which is the only reason this exists: the room
+   * owns its own Canvas, so a caller cannot put a mesh in it from outside. The
+   * Machine Room needs it for the residents standing on the floor — they are
+   * scene content, not a board concern, and threading them through IsoBoard
+   * would make the board know about people it does not otherwise care about.
+   */
+  children?: React.ReactNode;
 }
 
 export default function IsoScene({
@@ -296,6 +306,7 @@ export default function IsoScene({
   dressed = false,
   avatar = null,
   livery,
+  children,
   ...props
 }: IsoSceneProps) {
   const dragRef = useRef<DragState>({ dragging: false, moved: 0 });
@@ -332,6 +343,7 @@ export default function IsoScene({
         livery={livery}
         dragRef={dragRef}
       />
+      {children}
     </Canvas>
   );
 }

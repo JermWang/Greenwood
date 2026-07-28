@@ -33,6 +33,9 @@ import {
   isWalkable,
   type Doorway,
 } from '@/lib/hq-map';
+import NpcField from '@/components/iso/NpcField';
+import NpcDialogue from '@/components/ui/NpcDialogue';
+import { npcAt, type Npc } from '@/lib/npcs';
 import WorldMap from '@/components/ui/WorldMap';
 import LiftPanel from '@/components/ui/LiftPanel';
 import { type Floor } from '@/lib/hq-floors';
@@ -70,7 +73,19 @@ export default function HqPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const onMove = useCallback((cell: { x: number; z: number }) => setHere(cell), []);
+  /** Who you are talking to. Null closes the panel. */
+  const [talking, setTalking] = useState<Npc | null>(null);
+
+  /*
+   * Walking away ends the conversation — same rule as the Grounds.
+   *
+   * Without it the panel follows you across the plaza, which turns a person
+   * you were talking to into a UI element that has detached from them.
+   */
+  const onMove = useCallback((cell: { x: number; z: number }) => {
+    setHere(cell);
+    setTalking((current) => (current && !npcAt('greenwood-hq', cell.x, cell.z) ? null : current));
+  }, []);
   const onDoor = useCallback((d: Doorway | null) => { setDoor(d); setError(null); }, []);
 
   const verdict = useMemo(
@@ -170,6 +185,7 @@ export default function HqPage() {
           minZoom={14}
         />
         <HqScene />
+        <NpcField region="greenwood-hq" playerAt={here} onTalk={setTalking} />
         {(wallet || DEV_WALLET_BYPASS) && (
           <RegionPlayer
             wallet={wallet ?? 'dev'}
@@ -184,6 +200,8 @@ export default function HqPage() {
           />
         )}
       </Canvas>
+
+      <NpcDialogue npc={talking} totalLevel={regions?.totalLevel ?? 0} onClose={() => setTalking(null)} />
 
       <WorldMap wallet={wallet} at="greenwood-hq" position={here} />
 

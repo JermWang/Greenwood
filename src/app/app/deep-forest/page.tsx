@@ -26,11 +26,15 @@ import {
   type CreatureView,
   type ExpeditionState,
   type PlayerView,
+  type RegionsResponse,
   type VisiblePile,
 } from '@/lib/api-client';
 import { gateAt, allProps as forestProps } from '@/lib/deep-forest-map';
 import { type AxeId } from '@/lib/woodcutting';
 import CreatureField from '@/components/iso/CreatureField';
+import NpcField from '@/components/iso/NpcField';
+import NpcDialogue from '@/components/ui/NpcDialogue';
+import { npcAt, type Npc } from '@/lib/npcs';
 import TreeField from '@/components/iso/TreeField';
 import PlayerField from '@/components/iso/PlayerField';
 import ExpeditionHud from '@/components/ui/ExpeditionHud';
@@ -126,7 +130,30 @@ export default function DeepForestPage() {
       .catch(() => setState(null));
   }, [wallet]);
 
-  const onMove = useCallback((cell: { x: number; z: number }) => setPosition(cell), []);
+  /*
+   * Total Level, purely so the two people at the gate say the right things.
+   *
+   * Every other region already had this to hand for its door prompts; this one
+   * never needed it, because the gate that let you out here had already been
+   * checked server-side. Fetching it rather than assuming a high level keeps
+   * one definition of which lines a player has earned.
+   */
+  const [regions, setRegions] = useState<RegionsResponse | null>(null);
+  useEffect(() => {
+    if (!wallet) return;
+    void api.regions(wallet).then(setRegions).catch(() => setRegions(null));
+  }, [wallet]);
+
+  /** Who you are talking to. Null closes the panel. */
+  const [talking, setTalking] = useState<Npc | null>(null);
+
+  /* Walking away ends it, same as everywhere else — and out here it matters
+     more, because a dialogue panel left open over a zone with hostiles in it
+     is covering the thing you need to be looking at. */
+  const onMove = useCallback((cell: { x: number; z: number }) => {
+    setPosition(cell);
+    setTalking((current) => (current && !npcAt('deep-forest', cell.x, cell.z) ? null : current));
+  }, []);
   const onPiles = useCallback((next: VisiblePile[]) => setPiles(next), []);
   const onCreatures = useCallback((next: CreatureView[]) => setCreatures(next), []);
   const onPlayers = useCallback((next: PlayerView[]) => setPlayers(next), []);
@@ -314,6 +341,9 @@ export default function DeepForestPage() {
           busyAt={chopping}
           onChop={chop}
         />
+        {/* Two of them, at the south gate. See the note in lib/npcs — a crowd
+            out here would undo the one region whose point is that it is empty. */}
+        <NpcField region="deep-forest" playerAt={here} onTalk={setTalking} />
         <CreatureField creatures={creatures} playerAt={here} onAttack={onAttack} />
         <PlayerField players={players} onStrike={onStrike} />
         {wallet && state && (
@@ -330,6 +360,8 @@ export default function DeepForestPage() {
           />
         )}
       </Canvas>
+
+      <NpcDialogue npc={talking} totalLevel={regions?.totalLevel ?? 0} onClose={() => setTalking(null)} />
 
       {/* What the last swing was worth, or why it was refused. */}
       {woodNote && <div className="chop-note">{woodNote}</div>}

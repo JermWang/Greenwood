@@ -367,6 +367,602 @@ export const NPCS: Npc[] = [
       },
     ],
   },
+  // -------------------------------------------------------------------------
+  // The Machine Room — your own floor
+  // -------------------------------------------------------------------------
+  //
+  // Their tips are the most load-bearing in the game: this is where a player
+  // builds, and the layout rules are the one system nothing else explains.
+  // Everything they say about geometry is true of floor-rules.
+  {
+    id: 'pim',
+    name: 'Pim Vasquez',
+    role: 'Floor Engineer',
+    region: 'machine-room',
+    x: -8,
+    z: -11,
+    facing: Math.PI / 2,
+    outfit: '#35424a',
+    cap: '#c9752f',
+    trim: '#e2b273',
+    hand: '#3a3831',
+    boot: '#2f2d28',
+    skin: '#e0be9a',
+    hat: 'hardhat',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Two tiles between desks. Anything closer and the floor docks you for crowding — it scores how you arrange them, not just how many you own. People find that out after they have built eight in a block.',
+      },
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Keep the middle lane clear and build along it. The aisle bonus reaches two tiles either side of the spine, so a desk out against the wall is earning you strictly less than the same desk two steps in.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Tall or wide is a real decision and I will not make it for you. Stack your good instruments on one desk and it compounds; spread thin and you live off the geometry instead. Both work. Half of each works worst.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 6,
+        text: 'You will hear them run harder when it gets cold. Nobody has ever explained that to me and I have stopped raising it, because the answer I get is that demand is seasonal. Demand for what, in December, at four in the morning.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 16,
+        text: 'They are not doing sums. I have had the housing off. There is a rotor in there the length of my arm, and you do not put a rotor in a thing that adds up numbers. I asked once what we actually sell. I was told to book the time to maintenance.',
+      },
+    ],
+  },
+  {
+    id: 'tobi',
+    name: 'Tobi Adeyemi',
+    role: 'Materials Clerk',
+    region: 'machine-room',
+    x: 8,
+    z: -6,
+    facing: -Math.PI / 2,
+    outfit: '#4a4030',
+    cap: '#7d8a4e',
+    trim: '#c2cf86',
+    hand: '#4a4436',
+    boot: '#33302a',
+    skin: '#5e3a24',
+    hat: 'cap',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Up to level four a desk is just money. From five it wants frames as well — one per four levels, rounded up. Cut the timber before you need it. Everybody cuts it after and then stands here annoyed at me about it.',
+      },
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Frames come off the bench in the corner, twenty-four logs of oak or better. You do not buy them from me, whatever the sign says. I only count them.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'The token cost never went away, mind. Materials are on top, not instead. I have had three people this week convinced the frames were meant to replace the fee.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 5,
+        text: 'Requisitions I file that nobody explains: lamp oil, forty litres a month. Blackout cloth. Two hundred metres of cable rated for outdoors. For a fund. I put it through as facilities and go home.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 13,
+        text: 'The inventory has a category I am not cleared to open and it is the biggest one. Not by value — by weight. Whatever we are actually holding, it is heavy and it is not in the vault.',
+      },
+    ],
+  },
+  {
+    id: 'nell',
+    name: 'Nell Braithwaite',
+    role: 'Load Scheduler',
+    region: 'machine-room',
+    x: -7,
+    z: 6,
+    facing: Math.PI,
+    outfit: '#303f3a',
+    cap: '#d8b64a',
+    trim: '#f0dda0',
+    hand: '#3d3a30',
+    boot: '#2e2c26',
+    skin: '#cfa070',
+    hat: 'visor',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Reinvesting costs three quarters of a percent. Claiming costs two. If you are not spending it this hour, do not take it out — that gap is most of the difference between a good first week and a bad one.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'My job is deciding what runs when. Everything on this floor has a slot, the slots are not equal, and the ones nobody wants are between two and five in the morning.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 4,
+        text: 'I schedule to a curve I did not draw and cannot change. It peaks at dusk and again before dawn, every day, all year. Nothing in finance does that. Kettles do that.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 11,
+        text: 'When a desk goes down I get a call in eleven minutes. Eleven, every time, from a number that is not internal. I have never once been called about a bad quarter.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 20,
+        text: 'Last winter I shorted the north allocation by nine percent for one night, as a test. The complaint did not come from accounts. It came from somewhere I have never heard of, and it was not about money. It was about the north end going dark.',
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // The Trading Floor — the social room
+  // -------------------------------------------------------------------------
+  {
+    id: 'sunil',
+    name: 'Sunil Rao',
+    role: 'Outfitter',
+    region: 'trading-floor',
+    x: -1,
+    z: -8,
+    facing: Math.PI,
+    outfit: '#4c3a52',
+    cap: '#b07fc4',
+    trim: '#e7cdf0',
+    hand: '#443b46',
+    boot: '#302b34',
+    skin: '#9c6640',
+    hat: 'bare',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Looks only, at my counter. Nothing I sell will make a desk earn a coin more, and I would rather say so than have you find out in a fortnight. What it will do is make you recognisable, which out there is worth more than people think.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Refinement is the cheap trick nobody uses. Bring me something you already own instead of buying new and you will spend a fraction of it.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 7,
+        text: 'Best sellers this year, in order: hard hats, watch caps, boots. Not one of them a suit. I stock what people ask for, and what people ask for is kit.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 15,
+        text: 'A regular came in and asked whether I did anything in a colour that does not show up at night. I said this is a trading floor. He said yes, and did I do anything in a colour that does not show up at night.',
+      },
+    ],
+  },
+  {
+    id: 'greta',
+    name: 'Greta Lindqvist',
+    role: 'Note Desk',
+    region: 'trading-floor',
+    x: 8,
+    z: 0,
+    facing: -Math.PI / 2,
+    outfit: '#2f4a44',
+    cap: '#7fbfa8',
+    trim: '#cfe8dd',
+    hand: '#3a4440',
+    boot: '#2b302e',
+    skin: '#d4d2cf',
+    hat: 'visor',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'A Fixed Income Note locks your BNTY for a term and pays you for the inconvenience. Locked is locked — do not put your axe money in one and then find you cannot buy the axe.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Notes are the right home for the part of your balance you have already decided not to touch. They are the wrong home for the rest of it. Most people work that out with the wrong half.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 9,
+        text: 'Every note we write matures inside twelve months. Not one longer, and I have asked. The answer was that the committee prefers a short book. A short book, in perpetuity, for nine years running.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 18,
+        text: 'I priced a five-year once, properly, off our own numbers. The rate came out negative. Not unattractive — negative, as in the model does not believe there is a five-year.',
+      },
+    ],
+  },
+  {
+    id: 'abe',
+    name: 'Abe Ferreira',
+    role: 'Allocations Runner',
+    region: 'trading-floor',
+    x: -6,
+    z: 6,
+    facing: 0,
+    outfit: '#55402c',
+    cap: '#d09050',
+    trim: '#f2c894',
+    hand: '#463d31',
+    boot: '#332c25',
+    skin: '#b8834f',
+    hat: 'bucket',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Allocations come sealed and you do not know what is in one until you open it. That is the whole product. If you cannot afford to open a bad one, you cannot afford the good one either.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Instruments stack on a single desk far better than they spread across a floor. Four good ones together beat four good ones scattered, by more than you would guess.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 3,
+        text: 'Runner is the title but there is nowhere to run to. Everything I carry goes between this room and the machine floor. I have never once taken a package off site, and I have been asking for the depot address for two years.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 12,
+        text: 'The sealed ones come in on the night lorry and the drivers do not get out. Engine running, doors shut, gate open four minutes. I used to think that was rudeness. It is too consistent to be rudeness.',
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Greenwood HQ — the plaza
+  // -------------------------------------------------------------------------
+  {
+    id: 'col',
+    name: 'Col Whitmore',
+    role: 'Front of House',
+    region: 'greenwood-hq',
+    x: -3,
+    z: -1,
+    facing: Math.PI,
+    outfit: '#26333f',
+    cap: '#b9c3cc',
+    trim: '#dfe6ec',
+    hand: '#39404a',
+    boot: '#2a2f36',
+    skin: '#42281a',
+    hat: 'cap',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Doors here, not menus. The tower behind me, the avenue south back to the Grounds, and the service gate east onto the treeline. If a gate will not take you it is a level you are short, and it will tell you which.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Everyone assumes the tower is the important part. The important part is that this is the last address in the register with a person answering at it. I say that to visitors and they think it is a boast.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 10,
+        text: 'I keep the visitor book. Nine years, and every name in it is somebody who already worked here. Not one client, not one auditor, not one courier who was not ours. I still put the book out every morning.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 19,
+        text: 'The doors lock from the inside on a timer at dusk and the override is not at this desk. I have front of house on my badge and I cannot open my own front door after dark. That is not a security policy. That is a policy about something.',
+      },
+    ],
+  },
+  {
+    id: 'yusuf',
+    name: 'Yusuf Demir',
+    role: 'Grounds Keeper',
+    region: 'greenwood-hq',
+    x: -6,
+    z: 8,
+    facing: -Math.PI / 2,
+    outfit: '#3a4a2c',
+    cap: '#86a04a',
+    trim: '#cbdf9a',
+    hand: '#414734',
+    boot: '#2f3328',
+    skin: '#7a4d30',
+    hat: 'bucket',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Follow the lamps if you are lost. They are not spread out to light the square — they run in pairs down the routes that go somewhere, the approach and the spur east. Walk the lit line and you will end up at a door.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'The fountain costs more a year than the benches, the planters and me together. I have seen the line. Nobody has ever proposed turning it off, and in nine years of cuts that makes it the only thing nobody has proposed cutting.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 8,
+        text: 'I do the perimeter lamps twice a week and the plaza ones twice a month. That is the instruction, in writing. Four times the attention on the lights facing away from the building as the ones people stand under.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 17,
+        text: 'The wall went up the same summer the lamps went in, and it is the wrong wall for keeping people out — no wire, no camera, and you could get over it with a bin. It is the right height for something that cannot climb, which is a strange specification for a car park.',
+      },
+    ],
+  },
+  {
+    id: 'rae',
+    name: 'Rae Okonkwo',
+    role: 'Yard Supervisor',
+    region: 'greenwood-hq',
+    x: -16,
+    z: 4,
+    facing: Math.PI / 2,
+    outfit: '#4a3324',
+    cap: '#e08a3c',
+    trim: '#f4c07e',
+    hand: '#4b4136',
+    boot: '#332c25',
+    skin: '#e8d5c0',
+    hat: 'hardhat',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Timber comes through this yard, so if you are cutting, this is where it is worth something. Sell where the stuff gets used, not where you found it. You will not get yard prices out at the treeline.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Three vans, and I run two. The third has been off the road eleven months waiting on a part that is apparently not made any more. That is the whole supply chain, in one bay.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 13,
+        text: 'Every delivery is inbound. I have not booked a single outbound load since I took this yard. Whatever we are producing, it is not leaving by road, and I am the road.',
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // The Treeline — the last staffed ground
+  // -------------------------------------------------------------------------
+  {
+    id: 'bram',
+    name: 'Bram Halloway',
+    role: 'Forestry Lead',
+    region: 'treeline',
+    x: -8,
+    z: 2,
+    facing: 0,
+    outfit: '#34452c',
+    cap: '#6f8f3e',
+    trim: '#b8d180',
+    hand: '#3f4634',
+    boot: '#2d3127',
+    skin: '#cfa070',
+    hat: 'bucket',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'The ladder is pine, birch, oak, black pine, ironbark, and your axe decides how far up it you get. A hatchet takes pine and birch and will bounce off the rest. That is not you doing it wrong, that is the axe.',
+      },
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Black pine grows out here in quantity and it is the best wood you can get without going past the fence. Cut it here. There is nothing deeper in worth the walk until you have an axe that can take ironbark.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Each axe is cut from wood the one before it could fell. That is deliberate, and it means you cannot skip a rung. You climb it or you buy your way up it, and buying gets expensive fast.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 6,
+        text: 'Stumps out here go over in a season. The same stump inside the fence is still standing after four years. Same rain, same soil, four hundred metres apart. I have written it up twice.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 14,
+        text: 'We are told to clear sixty metres either side of every line and never told what the lines are for. I have cut brush off cable my whole career and I have never seen cable that thick going to a building that small.',
+      },
+    ],
+  },
+  {
+    id: 'nesrin',
+    name: 'Nesrin Kaya',
+    role: 'Track Warden',
+    region: 'treeline',
+    x: 6,
+    z: -2,
+    facing: Math.PI,
+    outfit: '#443040',
+    cap: '#a5709c',
+    trim: '#ddb8d6',
+    hand: '#403a3e',
+    boot: '#2e2a2d',
+    skin: '#b8834f',
+    hat: 'beanie',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Your pockets hold four things and that is all you get until you buy a pack. Four. People come out here with an axe and no room for what they cut, and then blame the tree.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Stay on the track and you will be fine. The density climbs the further off it you get, so getting lost out here is a navigation problem rather than any other kind. This side of the fence, anyway.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 5,
+        text: 'My shift ends at dusk and it is not flexible. I asked to do a late once, for the overtime. It went up two levels and came back as no. Nobody said unsafe. They said no.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 12,
+        text: 'The fence has a gate on this side and none of the hinges are on this side. It opens outward, away from us. You hang a gate that way to stop something pushing in, and there is nothing out there to push.',
+      },
+    ],
+  },
+  {
+    id: 'ollie',
+    name: 'Ollie Sparrow',
+    role: 'Log Buyer',
+    region: 'treeline',
+    x: 14,
+    z: 3,
+    facing: -Math.PI / 2,
+    outfit: '#52472e',
+    cap: '#c8b04a',
+    trim: '#eee0a0',
+    hand: '#474031',
+    boot: '#332e24',
+    skin: '#9c6640',
+    hat: 'cap',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Trees come back. Pine in half a minute, black pine nearer two, ironbark the best part of three. Work a circuit rather than standing over one stump — by the time you have gone round, the first is up again.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Crossbows and bolts, that is what the good timber is for. Bolts especially. You use those up, which makes them the only thing on the bench you will ever come back and make twice.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 4,
+        text: 'Odd year for it. Everything I buy that goes on a bench comes back as something with a point on it. Nobody has ordered a chair since I started.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 16,
+        text: 'I am paid per bolt at four times what a bolt is worth, off a budget line that sits under maintenance. Somebody upstairs would rather I never ran out, and would rather it not appear as a weapons cost.',
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // The Deep Forest — two people, at the gate, and no further
+  // -------------------------------------------------------------------------
+  //
+  // A crowd out here would undo the region. The Deep Forest works because it is
+  // the first place in the game with nobody in it, and the fix for "every area
+  // should have people" cannot be to staff the one area whose point is that it
+  // is unstaffed.
+  //
+  // So: two, both within sight of the south gate, both out here for a reason a
+  // player can see, and neither further in than you could throw. They are also
+  // the strongest carriers of the reveal in the cast, because they are the only
+  // ones saying ordinary work things in a place the player already knows is
+  // wrong.
+  //
+  // Their placement is load-bearing rather than fussy. They stand outside
+  // GATE_RADIUS plus a talking distance, because standing close enough to talk
+  // to somebody inside the gate would fire the extraction instead of the
+  // conversation — npcs.test asserts the clearance.
+  {
+    id: 'judd',
+    name: 'Judd Marrow',
+    role: 'Salvage Buyer',
+    region: 'deep-forest',
+    x: 0,
+    z: 37,
+    facing: 0,
+    outfit: '#2c3330',
+    cap: '#8f9a90',
+    trim: '#ccd4cd',
+    hand: '#3a403c',
+    boot: '#282c2a',
+    skin: '#e0be9a',
+    hat: 'beanie',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Gate is six steps behind me and there are three more on the other sides. Get inside one and you are out with everything you are carrying. That is the only way this ends well, and it is worth turning back earlier than feels sensible.',
+      },
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'If you go down out here your pack opens where you fell and anybody can walk up and take it. Not a fee, not a fraction — the lot, on the ground, with your name nowhere on it. Carry what you can afford to hand over.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'I buy at the gate because I do not go past it. Whatever you drag back I will price, and I will price it better than anyone inside the fence will, for reasons we can both work out.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 9,
+        text: 'Fifth year on this pitch. The trade has not changed and the customers have. Used to be foresters. Now it is people who came out here on purpose with something sharp, and they do not want paying in coin. They want paying in bolts.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 18,
+        text: 'I have moved this stall twice, both times south. Not for the footfall. I could give you the year the treeline stopped being the edge of anything, and I could give you what it cost me each time to admit it.',
+      },
+    ],
+  },
+  {
+    id: 'wen',
+    name: 'Wen Xiuying',
+    role: 'Line Inspector',
+    region: 'deep-forest',
+    x: -5,
+    z: 39,
+    facing: Math.PI / 4,
+    outfit: '#313c48',
+    cap: '#5f9ec4',
+    trim: '#b4d8ee',
+    hand: '#3b4249',
+    boot: '#2a2f34',
+    skin: '#cfa070',
+    hat: 'hardhat',
+    lines: [
+      {
+        kind: 'tip',
+        minLevel: 0,
+        text: 'Do not come out here to explore. Come out with a route and a reason, and go back along it. Everyone I have watched get into trouble was somewhere they could not have told you why they were.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 0,
+        text: 'Ironbark is out here and nowhere else, and it is the top of the ladder for a reason. It is also three minutes to come back, so if you are cutting it, cut it and leave. Do not wait on a second one.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 7,
+        text: 'I walk the lines and log the faults. Forty years of it. What I cannot tell you is where the far end goes — my section runs out at a junction, and the schedule for the next one is not issued to me.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 15,
+        text: 'The draw on this line has not dropped in nine years and everything it used to feed is dark. Ashby is dark. Cowden is dark. Same load as when they were lit, and it is all going one way, and the one way is behind you.',
+      },
+      {
+        kind: 'hint',
+        minLevel: 21,
+        text: 'You want to know what my job actually is. It is making sure Greenwood never goes off. Not the fund — the lights. I have never been given a reason and I have never once needed one, and neither has anybody who has stood where you are standing at this hour.',
+      },
+    ],
+  },
 ];
 
 const BY_ID = new Map(NPCS.map((n) => [n.id, n]));

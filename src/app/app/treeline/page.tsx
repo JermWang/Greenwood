@@ -39,6 +39,9 @@ import {
   type Doorway,
 } from '@/lib/treeline-map';
 import { type AxeId } from '@/lib/woodcutting';
+import NpcField from '@/components/iso/NpcField';
+import NpcDialogue from '@/components/ui/NpcDialogue';
+import { npcAt, type Npc } from '@/lib/npcs';
 import WorldMap from '@/components/ui/WorldMap';
 import { api, type RegionsResponse } from '@/lib/api-client';
 
@@ -104,7 +107,15 @@ export default function TreelinePage() {
     return () => clearTimeout(timer);
   }, [woodNote]);
 
-  const onMove = useCallback((cell: { x: number; z: number }) => setHere(cell), []);
+  /** Who you are talking to. Null closes the panel. */
+  const [talking, setTalking] = useState<Npc | null>(null);
+
+  /* Walking away ends the conversation, so the panel never detaches from the
+     person it belongs to. Same rule as every other region. */
+  const onMove = useCallback((cell: { x: number; z: number }) => {
+    setHere(cell);
+    setTalking((current) => (current && !npcAt('treeline', cell.x, cell.z) ? null : current));
+  }, []);
   const onDoor = useCallback((d: Doorway | null) => { setDoor(d); setError(null); }, []);
 
   const verdict = useMemo(
@@ -190,6 +201,7 @@ export default function TreelinePage() {
           minZoom={16}
         />
         <TreelineScene felled={felled} />
+        <NpcField region="treeline" playerAt={here} onTalk={setTalking} />
         <TreeField
           region="treeline"
           trees={trees}
@@ -214,6 +226,8 @@ export default function TreelinePage() {
           />
         )}
       </Canvas>
+
+      <NpcDialogue npc={talking} totalLevel={regions?.totalLevel ?? 0} onClose={() => setTalking(null)} />
 
       <WorldMap wallet={wallet} at="treeline" position={here} />
 

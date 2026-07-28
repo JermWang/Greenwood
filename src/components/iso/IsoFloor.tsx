@@ -21,6 +21,9 @@ import { api, type BenchRecipe, type FloorBonus } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
 import { atBench } from '@/lib/craft-bench';
 import BenchPanel from '@/components/ui/BenchPanel';
+import NpcField from './NpcField';
+import NpcDialogue from '@/components/ui/NpcDialogue';
+import { npcAt, type Npc } from '@/lib/npcs';
 import BuildPrompt, { type DeskFamily } from './BuildPrompt';
 
 export type { MachineKind, IsoMachine };
@@ -281,8 +284,26 @@ export default function IsoFloor({
    * the Grounds work, and it is the reason to have a room at all.
    */
   const [standingAt, setStandingAt] = useState<{ x: number; z: number } | null>(null);
+  /*
+   * Total Level, so the residents say the right things.
+   *
+   * UserOperation carries a desk , which is a DIFFERENT number — see
+   * the note in lib/regions on why tenure and capability are measured apart.
+   * Using it here would have opened the reveal on the wrong axis entirely.
+   */
+  const [totalLevel, setTotalLevel] = useState(0);
+  useEffect(() => {
+    if (!wallet) return;
+    void api.regions(wallet).then((r) => setTotalLevel(r.totalLevel)).catch(() => {});
+  }, [wallet]);
+
+  /** Who you are talking to. Null closes the panel. */
+  const [talking, setTalking] = useState<Npc | null>(null);
+
   const onPlayerMove = useCallback((cell: { x: number; z: number }) => {
     setStandingAt(cell);
+    // Walking away ends the conversation, the same way it does outdoors.
+    setTalking((current) => (current && !npcAt('machine-room', cell.x, cell.z) ? null : current));
     // Moving cancels a build you had not confirmed. A prompt that followed you
     // across the floor would have detached from the tile it was about.
     setBuildAt(null);
@@ -458,7 +479,15 @@ export default function IsoFloor({
         onDeskClick={(id) => { setSelectedId(id); setHoldingId(null); setBuildAt(null); }}
         onPlayerMove={onPlayerMove}
         onBackgroundClick={() => { setSelectedId(null); setHoldingId(null); setBuildAt(null); }}
-      />
+      >
+        {/* Inside the Canvas, via IsoScene's children slot — the room owns its
+            own Canvas, so there is no other way in from here. */}
+        <NpcField
+          region="machine-room"
+          playerAt={standingAt ?? { x: Infinity, z: Infinity }}
+          onTalk={setTalking}
+        />
+      </IsoScene>
 
       {/*
         Standing at a desk: what it has made, and taking it.
@@ -535,6 +564,8 @@ export default function IsoFloor({
           <em>{standingAt.x}, {standingAt.z}</em>
         </button>
       )}
+
+      <NpcDialogue npc={talking} totalLevel={totalLevel} onClose={() => setTalking(null)} />
 
       <BenchPanel
         open={nearBench}

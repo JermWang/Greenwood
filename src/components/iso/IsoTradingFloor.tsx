@@ -42,6 +42,10 @@ import {
   ZoneSign,
 } from './MapDressing';
 import { useFloorPresence, type FloorPeer, type PresenceIdentity } from './useFloorPresence';
+import NpcField from './NpcField';
+import NpcDialogue from '@/components/ui/NpcDialogue';
+import { npcAt, type Npc } from '@/lib/npcs';
+import { api } from '@/lib/api-client';
 
 /** 23x23. Roughly double the old room, which had the stalls almost touching. */
 const FLOOR: BoardBounds = { minX: -11, maxX: 11, minZ: -11, maxZ: 11 };
@@ -389,10 +393,23 @@ export default function IsoTradingFloor({
    * from, which bounces you back again, with no way out but closing the tab.
    */
   const [hasWalked, setHasWalked] = useState(false);
+  /** Who you are talking to. Null closes the panel. */
+  const [talking, setTalking] = useState<Npc | null>(null);
   const arrive = useCallback((cell: Cell) => {
     setPosition(cell);
     setHasWalked(true);
+    // Walking away ends the conversation, the same rule as every other room.
+    setTalking((current) => (current && !npcAt('trading-floor', cell.x, cell.z) ? null : current));
   }, []);
+
+  /* Total Level gates which lines exist. Fetched here rather than passed in,
+     so a caller cannot forget it and quietly mute half the dialogue. */
+  const [totalLevel, setTotalLevel] = useState(0);
+  useEffect(() => {
+    const me = identity?.wallet;
+    if (!me) return;
+    void api.regions(me).then((r) => setTotalLevel(r.totalLevel)).catch(() => {});
+  }, [identity?.wallet]);
   const [hoveredStall, setHoveredStall] = useState<string | null>(null);
   const { peers, live } = useFloorPresence(identity, position);
 
@@ -550,7 +567,10 @@ export default function IsoTradingFloor({
         {others.map((peer) => (
           <Character key={peer.wallet} look={lookFor(peer)} name={peer.name} target={{ x: peer.x, z: peer.z }} />
         ))}
+        <NpcField region="trading-floor" playerAt={position} onTalk={setTalking} />
       </Canvas>
+
+      <NpcDialogue npc={talking} totalLevel={totalLevel} onClose={() => setTalking(null)} />
 
       <div className="iso-floor-hud">
         <span className={live ? 'is-live' : ''}>

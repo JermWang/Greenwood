@@ -392,10 +392,15 @@ const Furniture = memo(function Furniture() {
       ))}
 
       {yard.map((p) => {
-        const at = { key: `y${p.x}:${p.z}`, position: [p.x, p.z] as [number, number], rotation: p.rotation, seed: p.seed };
-        if (p.kind === 'van') return <ParkedVan {...at} />;
-        if (p.kind === 'skip') return <Skip {...at} />;
-        return <PalletStack {...at} />;
+        // `key` is passed directly and the rest spread. Putting it in the spread
+        // object looks tidier and does not work: React reads key off the JSX
+        // element, so a spread one arrives as an ordinary prop and the list is
+        // silently unkeyed.
+        const at = { position: [p.x, p.z] as [number, number], rotation: p.rotation, seed: p.seed };
+        const key = `y${p.x}:${p.z}`;
+        if (p.kind === 'van') return <ParkedVan key={key} {...at} />;
+        if (p.kind === 'skip') return <Skip key={key} {...at} />;
+        return <PalletStack key={key} {...at} />;
       })}
     </>
   );
