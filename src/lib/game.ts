@@ -38,7 +38,8 @@ import {
   EMISSION_RESERVE,
   STARTER_OSR_GRANT,
 } from './economy';
-import { nodeUpgradeCost } from './capital';
+import { DESK_MATERIAL, deskFrames, nodeUpgradeCost } from './capital';
+import { spendMaterial } from './materials';
 import { NODE_SLOTS, RARITIES, type NodeFamily, type Rarity } from './rarity';
 import { allLayoutMultipliers, layoutBonus, type LayoutBonus } from './floor';
 import { recordQuestProgress } from './quests';
@@ -701,6 +702,15 @@ export function mintNode(wallet: string, familyKey: string, opts?: SpendOpts) {
   const cap = familyCap(user, fam.family);
   const owned = nodes.filter((n) => n.row.family === fam.family).length;
   if (owned >= cap) throw new GameError('Capacity full · upgrade portfolio to add more');
+  /*
+   * OPENING a desk costs capital only. No timber.
+   *
+   * The first draft charged a frame here and it made the game unstartable: the
+   * introduction's very first instruction is to open a desk, and a frame is
+   * 24 oak behind an axe behind 400 Scrip. Materials start at level 5 instead —
+   * see FRAMES_FROM_LEVEL in lib/capital — which is where the wood ladder is
+   * both required and reachable.
+   */
   const debit = offChainDebit(user, fam.burnCostOsr, opts, (have) =>
     `Not enough BNTY: need ${fam.burnCostOsr.toLocaleString()} BNTY (you have ${have}). Route rewards or open allocations first.`
   );
@@ -996,6 +1006,22 @@ export function upgradeNode(
   if (expectFromLevel != null && expectFromLevel !== node.row.level) {
     throw new GameError('desk level moved since the quote — request a fresh one', 409);
   }
+  /*
+   * Timber for the level being reached, before the token moves.
+   *
+   * This is what makes materials a PERMANENT parallel demand rather than a
+   * one-time tax on opening a desk. A flat cost paid at mint would be outgrown
+   * immediately and woodcutting would stay a beginner activity; charging every
+   * level means a level-15 floor still wants wood, which is what keeps a
+   * gathering skill relevant to somebody a hundred hours in.
+   *
+   * Priced off the level being MOVED TO, and deliberately shallow — see
+   * deskFrames in lib/capital for why two steep curves multiplied together is a
+   * wall rather than a decision.
+   */
+  const toLevel = node.row.level + 1;
+  spendMaterial(wallet, DESK_MATERIAL, deskFrames(toLevel), 'Desk Frame');
+
   const cost = nodeUpgradeCost(node.row.level);
   const debit = offChainDebit(user, cost, opts, (have) =>
     `Not enough BNTY to level up: need ${cost.toLocaleString()} BNTY (you have ${have}).`

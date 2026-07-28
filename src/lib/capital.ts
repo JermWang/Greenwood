@@ -218,3 +218,73 @@ export function marginalYieldPerCapital(level: number): number {
   const gain = levelMultiplier(level + 1) - levelMultiplier(level);
   return gain / upgradeCapital(level);
 }
+
+// ---------------------------------------------------------------------------
+// Materials
+// ---------------------------------------------------------------------------
+
+/**
+ * The crafted part a desk is built and rebuilt from.
+ *
+ * Matches the recipe id in lib/crafting. Named here rather than imported so
+ * this module keeps its own dependency shape; crafting.test asserts the two
+ * agree, which is the same trade LOG_TIER makes.
+ */
+export const DESK_MATERIAL = 'desk-frame';
+
+/**
+ * Frames to reach a given desk level from the one below.
+ *
+ * MATERIALS ARE ON TOP OF THE TOKEN, NEVER INSTEAD OF IT. Desks are the BNTY
+ * sink and the halving schedule is written against them; a desk payable in wood
+ * would quietly remove that sink. So this is a second, parallel requirement —
+ * you need the capital AND the timber — and the capital curve above is
+ * completely unchanged by it.
+ *
+ * IT SCALES, and that is the interesting decision rather than a detail.
+ *
+ * A flat cost would make wood a one-time tax on opening a desk: paid once,
+ * outgrown immediately, and woodcutting stays a beginner activity that a
+ * serious player never thinks about again. Scaling makes timber a PERMANENT
+ * parallel demand — the level-15 floor still wants wood — which is what keeps a
+ * gathering skill relevant to somebody a hundred hours in.
+ *
+ * The curve is deliberately shallow: ceil(level / 4). Reaching level 8 — the
+ * Deep Forest's desk gate — costs eleven frames all told, which is 264 oak logs
+ * or roughly three circuits of a wood. Enough to be a real trip, nowhere near
+ * enough to become the thing standing between a player and their own floor.
+ *
+ * Shallow ON PURPOSE, because this cost stacks with a capital curve that is
+ * already the binding constraint. Two steep curves multiplied together is not
+ * twice the decision, it is a wall.
+ */
+/**
+ * The level at which timber starts being required at all.
+ *
+ * BELOW THIS, DESKS COST ONLY CAPITAL — and that is a correction, not a
+ * softening. The first version charged a frame to OPEN a desk and one for every
+ * level after, which made the game unstartable: a Desk Frame needs 24 oak, oak
+ * needs a Felling Axe, a Felling Axe needs 20 pine and a Hatchet, and a Hatchet
+ * needs 400 Scrip. The first thing the introduction asks anybody to do is open a
+ * desk, and its sixth step is taking one to level 2. Fourteen tests failed at
+ * once, which is what a prerequisite loop looks like from the outside.
+ *
+ * Five is chosen so the wood ladder becomes a requirement exactly where it also
+ * becomes possible: by level 5 a player has been outside, has Scrip for an axe,
+ * and has somewhere to cut oak. It also lands the Deep Forest's desk-8 gate
+ * squarely inside the material curve, which couples the two ladders — you
+ * cannot reach the PvP zone without having done some woodcutting.
+ */
+export const FRAMES_FROM_LEVEL = 5;
+
+export function deskFrames(level: number): number {
+  if (level < FRAMES_FROM_LEVEL) return 0;
+  return Math.ceil(level / 4);
+}
+
+/** Total frames sunk to take a desk from nothing to `level`. */
+export function deskFramesTotal(level: number): number {
+  let total = 0;
+  for (let l = 1; l <= level; l += 1) total += deskFrames(l);
+  return total;
+}
