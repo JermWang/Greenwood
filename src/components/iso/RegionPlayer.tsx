@@ -17,7 +17,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { ThreeEvent } from '@react-three/fiber';
 import type { MutableRefObject } from 'react';
 import type { DragState } from './IsoBoard';
-import Character, { lookFor } from './Character';
+import Character, { lookFor, type CharacterAction } from './Character';
 import { findPathWhere, smoothPath, type Cell } from './pathing';
 import { DoorTile, TileFill, TileRing } from './TileMarker';
 import { ISO } from './palette';
@@ -43,6 +43,14 @@ export interface RegionPlayerProps<D> {
   dragRef: MutableRefObject<DragState>;
   onMove: (cell: Cell) => void;
   onDoor: (door: D | null) => void;
+  /**
+   * What the body is doing while stood still.
+   *
+   * Owned by the page, because the page owns whatever request the animation is
+   * covering — a swing starts when the request goes out and stops when it comes
+   * back, and only the caller knows that.
+   */
+  action?: CharacterAction;
   positionRef?: MutableRefObject<{ x: number; z: number } | null>;
 }
 
@@ -64,6 +72,7 @@ export default function RegionPlayer<D>({
   dragRef,
   onMove,
   onDoor,
+  action = 'idle',
   positionRef,
 }: RegionPlayerProps<D>) {
   const [spawn] = useState<Cell>(() => ({ ...start }));
@@ -139,6 +148,7 @@ export default function RegionPlayer<D>({
         onStep={step}
         spawn={spawn}
         spawnFacing={startFacing}
+        action={action}
         positionRef={positionRef}
       />
 

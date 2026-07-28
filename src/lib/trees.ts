@@ -20,6 +20,7 @@ import { packHasRoom } from './packs';
 import { spendScrip } from './scrip';
 import { isWalkable as forestWalkable, propAt as forestPropAt } from './deep-forest-map';
 import { isWalkable as groundsWalkable, propAt as groundsPropAt } from './grounds-map';
+import { isWalkable as treelineWalkable, propAt as treelinePropAt } from './treeline-map';
 import {
   AXES,
   SPECIES,
@@ -55,7 +56,9 @@ export function treeStanding(region: string, x: number, z: number): SpeciesId | 
       ? forestPropAt(x, z)
       : region === 'grounds'
         ? groundsPropAt(x, z)
-        : null;
+        : region === 'treeline'
+          ? treelinePropAt(x, z)
+          : null;
   if (!prop) return null;
   // Boulders and planters are not trees. The map's own kind is the authority on
   // what a prop IS; woodcutting only decides what species a tree happens to be.
@@ -65,7 +68,14 @@ export function treeStanding(region: string, x: number, z: number): SpeciesId | 
 
 /** Can a player stand next to this tile at all? Used to reject unreachable trees. */
 function reachable(region: string, x: number, z: number): boolean {
-  const walk = region === 'deep-forest' ? forestWalkable : region === 'grounds' ? groundsWalkable : null;
+  const walk =
+    region === 'deep-forest'
+      ? forestWalkable
+      : region === 'grounds'
+        ? groundsWalkable
+        : region === 'treeline'
+          ? treelineWalkable
+          : null;
   if (!walk) return false;
   for (let dx = -1; dx <= 1; dx += 1) {
     for (let dz = -1; dz <= 1; dz += 1) {

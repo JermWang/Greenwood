@@ -238,7 +238,8 @@ export const REGIONS: Region[] = [
     hostiles: true,
     requiresPack: true,
     lighting: 'amber-dusk',
-    bounds: { minX: -70, maxX: 70, minZ: -70, maxZ: 70 },
+    // Must match BOUNDS in lib/treeline-map — asserted in treeline-map.test.
+    bounds: { minX: -26, maxX: 26, minZ: -20, maxZ: 20 },
     blurb: 'Past the fence. Something moves out here, but it will not follow you home.',
   },
   {

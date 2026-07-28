@@ -228,10 +228,24 @@ export function speciesAt(region: string, x: number, z: number): SpeciesId {
     if (roll > 0.4) return 'oak';
     return 'pine';
   }
+  /*
+   * The Treeline is where the ladder actually opens up, and the numbers say so.
+   *
+   * Black pine was 7% here and everything worth having was in the Deep Forest —
+   * which wants total level 10, a desk at 8, a pack, and consent to PvP. That
+   * put the crafting ladder BEHIND the hardest gate in the game: a player
+   * finishing the introduction around level 11 with a level-2 desk could reach
+   * exactly one tier of wood.
+   *
+   * A gathering skill is early-game content. Its payoff belongs where somebody
+   * an hour in can get at it, which is here at level 6 / desk 3 / pack. So black
+   * pine is 22% and oak is over a third — this is THE place for both — while
+   * ironbark stays deep, so the top of the ladder is still somewhere frightening.
+   */
   if (region === 'treeline') {
-    if (roll > 0.93) return 'blackpine';
-    if (roll > 0.55) return 'oak';
-    if (roll > 0.3) return 'birch';
+    if (roll > 0.78) return 'blackpine';
+    if (roll > 0.42) return 'oak';
+    if (roll > 0.18) return 'birch';
     return 'pine';
   }
   // The settlement. Planted, tended, and worth almost nothing.
