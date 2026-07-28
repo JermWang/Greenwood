@@ -1788,3 +1788,96 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   line-height: 1.4;
   color: rgba(226, 235, 239, 0.55);
 }
+
+/* --------------------------------------------------------------------------
+   The craft bench.
+
+   Right side, so it never fights the desk book at bottom-left or the
+   contextual panel at bottom-centre. Tall and scrollable because it lists the
+   WHOLE ladder including what you cannot make yet — hiding those would hide
+   the ladder from the player who most needs to see it.
+   -------------------------------------------------------------------------- */
+.bench-panel {
+  position: absolute;
+  z-index: 9;
+  right: 18px;
+  bottom: 118px;
+  width: 302px;
+  max-height: calc(100% - 210px);
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border: 1px solid rgba(204, 255, 0, 0.4);
+  border-radius: 13px;
+  background: rgba(12, 14, 10, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+}
+.bench-panel header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.bench-panel header b { display: block; font-size: 12.5px; color: #fff; }
+.bench-panel header em {
+  display: block;
+  margin-top: 2px;
+  font: 700 8px var(--font-mono), monospace;
+  font-style: normal;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--robin-neon, #ccff00);
+}
+.bench-close {
+  display: grid; place-items: center;
+  width: 19px; height: 19px;
+  border: 0; border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--heather-2, #b1afac);
+  cursor: pointer;
+}
+.bench-close:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+
+.bench-list {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 0 2px 0 0;
+  list-style: none;
+  overflow-y: auto;
+}
+.bench-row {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid rgba(212, 210, 207, 0.16);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  text-align: left;
+  cursor: pointer;
+}
+.bench-row:hover:not(:disabled) { border-color: rgba(204, 255, 0, 0.5); background: rgba(204, 255, 0, 0.07); }
+.bench-tier {
+  display: grid; place-items: center;
+  width: 26px; height: 22px;
+  border: 1px solid rgba(204, 255, 0, 0.3);
+  border-radius: 5px;
+  font: 800 9px var(--font-mono), monospace;
+  color: var(--robin-neon, #ccff00);
+}
+.bench-what b { display: block; font-size: 11.5px; color: #fff; }
+.bench-what small { display: block; margin-top: 1px; font-size: 9.5px; line-height: 1.4; color: rgba(226, 235, 239, 0.5); }
+.bench-cost {
+  font: 700 11px var(--font-mono), monospace;
+  color: var(--robin-neon, #ccff00);
+  white-space: nowrap;
+}
+.bench-cost i { font-style: normal; font-size: 8.5px; color: rgba(226, 235, 239, 0.45); }
+/* Dimmed, never hidden — a recipe you cannot make is one you work toward. */
+.bench-row.is-locked { opacity: 0.5; cursor: default; }
+.bench-row.is-locked .bench-tier { border-color: rgba(212, 210, 207, 0.2); color: rgba(226, 235, 239, 0.5); }
+.bench-row:disabled { cursor: default; }
+.bench-note { margin: 9px 2px 0; font-size: 10px; line-height: 1.5; color: rgba(226, 235, 239, 0.6); }
+
+@media (max-width: 900px) {
+  .bench-panel { right: 10px; left: 10px; width: auto; bottom: 108px; max-height: 46vh; }
+}

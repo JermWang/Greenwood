@@ -17,8 +17,10 @@ import { lookFor } from './Character';
 import { type IsoMachine, type MachineKind, type PlacedIsoMachine } from './palette';
 import MachineSpec from '@/components/ui/MachineSpec';
 import { LAYOUT_RULES } from '@/lib/floor-rules';
-import { api, type FloorBonus } from '@/lib/api-client';
+import { api, type BenchRecipe, type FloorBonus } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
+import { atBench } from '@/lib/craft-bench';
+import BenchPanel from '@/components/ui/BenchPanel';
 import BuildPrompt, { type DeskFamily } from './BuildPrompt';
 
 export type { MachineKind, IsoMachine };
@@ -356,6 +358,51 @@ export default function IsoFloor({
     }
   }, [nearbyDesk, wallet, upgrading, refresh]);
 
+  /**
+   * The craft bench, opened by standing at it.
+   *
+   * Same rule as every other verb in this world: you walk to the doors, route
+   * yield at the desk that made it, and fell the tree you are next to. A
+   * crafting menu reachable from anywhere would be the one interaction that
+   * undid the rule everything else is built on.
+   *
+   * Fetched on arrival rather than held open, because what the bench says
+   * depends on wood the player may have spent since they last looked at it.
+   */
+  const [bench, setBench] = useState<BenchRecipe[]>([]);
+  const [crafting, setCrafting] = useState<string | null>(null);
+  const [benchNote, setBenchNote] = useState<string | null>(null);
+  const nearBench = !!standingAt && atBench(standingAt.x, standingAt.z);
+
+  useEffect(() => {
+    if (!nearBench || !wallet) return;
+    let live = true;
+    void api.craftBench(wallet).then((r) => { if (live) setBench(r.bench); }).catch(() => {});
+    return () => { live = false; };
+  }, [nearBench, wallet]);
+
+  const craft = useCallback(
+    async (recipe: BenchRecipe) => {
+      if (!wallet || crafting) return;
+      setCrafting(recipe.id);
+      setBenchNote(null);
+      try {
+        const result = await api.craft(wallet, recipe.id);
+        setBench(result.bench);
+        const many = result.yielded > 1 ? ` ×${result.yielded}` : '';
+        setBenchNote(`${result.name}${many} — +${result.xp} scouting`);
+        // The fund reads the same store, and an axe crafted here is an axe the
+        // rest of the app should already know about.
+        void refresh();
+      } catch (e) {
+        setBenchNote(e instanceof Error ? e.message : 'That did not come together.');
+      } finally {
+        setCrafting(null);
+      }
+    },
+    [wallet, crafting, refresh]
+  );
+
   const canBuildHere =
     !demo &&
     !!wallet &&
@@ -488,6 +535,15 @@ export default function IsoFloor({
           <em>{standingAt.x}, {standingAt.z}</em>
         </button>
       )}
+
+      <BenchPanel
+        open={nearBench}
+        bench={bench}
+        busy={crafting}
+        note={benchNote}
+        onCraft={(r) => void craft(r)}
+        onClose={() => setBenchNote(null)}
+      />
 
       <BuildPrompt
         cell={buildAt}

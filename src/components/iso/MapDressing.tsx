@@ -727,3 +727,117 @@ export function ZoneSign({
     </group>
   );
 }
+
+/**
+ * The craft bench.
+ *
+ * Where logs stop being a number and become a thing. It is a PLACE rather than a
+ * button for the same reason every other verb in this game is: you walk to the
+ * doors, you route yield at the desk that made it, you fell the tree you are
+ * standing next to. A crafting menu reachable from anywhere would be the one
+ * interaction that undid the rule the whole world is built around.
+ *
+ * Read as a workbench at a glance: a heavy top, a vice, a rack of stock leaning
+ * against the end, and shavings on the floor. The shavings are doing more work
+ * than they look — they are the only thing in the Machine Room that says
+ * somebody makes things here rather than only running them.
+ */
+export function CraftBench({
+  position,
+  rotation = 0,
+  seed = 0,
+  /** Lit while the player is close enough to use it. */
+  active = false,
+}: {
+  position: [number, number];
+  rotation?: number;
+  seed?: number;
+  active?: boolean;
+}) {
+  return (
+    <group position={[position[0], 0, position[1]]} rotation={[0, rotation, 0]}>
+      {/* Legs, then a top thick enough to hit things on. */}
+      {[
+        [-0.62, -0.28],
+        [0.62, -0.28],
+        [-0.62, 0.28],
+        [0.62, 0.28],
+      ].map(([x, z]) => (
+        <mesh key={`${x}:${z}`} position={[x, 0.32, z]} castShadow>
+          <boxGeometry args={[0.1, 0.64, 0.1]} />
+          {flat(ISO.woodDark, 0.98)}
+        </mesh>
+      ))}
+      <mesh position={[0, 0.7, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.6, 0.14, 0.8]} />
+        {flat(ISO.wood, 0.95)}
+      </mesh>
+      {/* Apron under the top, so it reads as a slab rather than a plank. */}
+      <mesh position={[0, 0.6, 0]} castShadow>
+        <boxGeometry args={[1.5, 0.1, 0.7]} />
+        {flat(ISO.woodDark, 0.98)}
+      </mesh>
+
+      {/* Vice on the near corner — the detail that makes it a workbench and not
+          a table. */}
+      <mesh position={[-0.62, 0.68, 0.44]} castShadow>
+        <boxGeometry args={[0.26, 0.2, 0.16]} />
+        {flat(ISO.steelDark, 0.5, 0.6)}
+      </mesh>
+      <mesh position={[-0.62, 0.58, 0.44]} castShadow>
+        <cylinderGeometry args={[0.03, 0.03, 0.22, 6]} />
+        {flat(ISO.steel, 0.45, 0.65)}
+      </mesh>
+
+      {/* Stock leaning against the far end. Quarter-turned like everything
+          else, but each length is a slightly different height so the rack reads
+          as timber rather than as a fence. */}
+      {[0, 1, 2, 3].map((i) => {
+        const lean = 0.16 + hash2(seed, i) * 0.1;
+        const len = 1.1 + hash2(seed, i + 4) * 0.5;
+        return (
+          <mesh
+            key={i}
+            position={[0.78 + i * 0.07, len / 2, -0.3 + i * 0.16]}
+            rotation={[0, 0, -lean]}
+            castShadow
+          >
+            <cylinderGeometry args={[0.05, 0.06, len, 5]} />
+            {flat(i % 2 === 0 ? ISO.wood : ISO.woodDark, 0.97)}
+          </mesh>
+        );
+      })}
+
+      {/* Shavings. Small, flat, and scattered off the seed so no two benches
+          are swept the same. */}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <mesh
+          key={`s${i}`}
+          position={[
+            (hash2(seed, i + 20) - 0.5) * 1.8,
+            0.02,
+            0.5 + hash2(seed, i + 30) * 0.5,
+          ]}
+          rotation={[-Math.PI / 2, 0, hash2(seed, i + 40) * Math.PI]}
+        >
+          <planeGeometry args={[0.12, 0.05]} />
+          {flat('#c9ad82', 0.95)}
+        </mesh>
+      ))}
+
+      {/* A lamp over the top, lit only when you are close enough to work. It is
+          the affordance: a bench you cannot reach is a bench that is dark. */}
+      <mesh position={[0, 1.45, -0.1]} castShadow>
+        <boxGeometry args={[0.34, 0.12, 0.24]} />
+        {flat(ISO.steelDark, 0.5, 0.55)}
+      </mesh>
+      <mesh position={[0, 1.37, -0.1]}>
+        <boxGeometry args={[0.26, 0.03, 0.16]} />
+        {active ? lit('#ffe9b0', 2) : flat('#4a4740')}
+      </mesh>
+      {active && (
+        <pointLight position={[0, 1.2, 0.1]} color="#ffe4a3" intensity={7} distance={5} decay={2} />
+      )}
+    </group>
+  );
+}

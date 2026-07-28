@@ -203,6 +203,21 @@ export interface RegionView {
   minDeskLevel: number;
 }
 
+/** One bench row, as the server describes it. */
+export interface BenchRecipe {
+  id: string;
+  name: string;
+  kind: string;
+  tier: number;
+  logs: number;
+  xp: number;
+  yields?: number;
+  blurb: string;
+  ok: boolean;
+  reason: string | null;
+  plan: Array<{ ref: string; quantity: number }>;
+}
+
 export interface RegionsResponse {
   totalLevel: number;
   pack: {
@@ -795,6 +810,17 @@ export const api = {
       regrowsAt: number;
       stumps: Array<{ id: string; x: number; z: number }>;
     }>('/trees/chop', { wallet, region, x, z }),
+
+  /** The craft bench, with every recipe and its verdict for this wallet. */
+  craftBench: (wallet: string) =>
+    request<{ bench: BenchRecipe[] }>(`/craft?wallet=${wallet}`),
+
+  /** Make something. What it costs is decided server-side from the real pack. */
+  craft: (wallet: string, recipe: string) =>
+    post<{ recipe: string; name: string; yielded: number; xp: number; bench: BenchRecipe[] }>(
+      '/craft',
+      { wallet, recipe }
+    ),
 
   /** Which trees are currently down in a region. Only the exceptions travel. */
   stumps: (wallet: string, region: string) =>

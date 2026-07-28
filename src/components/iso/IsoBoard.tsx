@@ -22,8 +22,9 @@ import Character, { type CharacterLook } from './Character';
 import { cellId, findPath, nearestOpen, type Cell } from './pathing';
 import { useRouter } from 'next/navigation';
 import { machineRoomDoors, arrivalCell, arrivalFacing, outwardFacing, doorAt, doorTileAt, rememberExit, takeArrival, type Door } from './portals';
-import { Portal } from './MapDressing';
+import { CraftBench, Portal } from './MapDressing';
 import { concreteTexture, hash2 } from './mapkit';
+import { BENCH_CELL, BENCH_FACING, BENCH_REACH } from '@/lib/craft-bench';
 import { ISO, TILE_TOP, type IsoMachine, type PlacedIsoMachine } from './palette';
 
 /**
@@ -299,6 +300,25 @@ export default function IsoBoard({
       </mesh>
 
       {dressed && <MachineRoomSet bounds={bounds} />}
+
+      {/*
+        The craft bench, in the corner of the room you already visit.
+        Lit only when you are stood next to it, which is the whole affordance —
+        a bench you cannot reach is a bench that is dark. Its cell comes from
+        lib/craft-bench so the scene and the interaction cannot disagree about
+        where it is.
+      */}
+      {dressed && (
+        <CraftBench
+          position={[BENCH_CELL.x, BENCH_CELL.z]}
+          rotation={BENCH_FACING}
+          seed={7}
+          active={
+            Math.max(Math.abs(position.x - BENCH_CELL.x), Math.abs(position.z - BENCH_CELL.z)) <=
+            BENCH_REACH
+          }
+        />
+      )}
 
       {/*
         The floor. DRAWN here, but no longer picked here.
