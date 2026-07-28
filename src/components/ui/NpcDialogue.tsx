@@ -22,11 +22,21 @@ export default function NpcDialogue({
   npc,
   totalLevel,
   onClose,
+  action,
 }: {
   npc: Npc | null;
   /** Gates which lines exist. The world gets stranger as you get further in. */
   totalLevel: number;
   onClose: () => void;
+  /**
+   * A thing this person will sell or do, rendered under the line.
+   *
+   * A slot rather than a shop system, because the alternative is a screen. The
+   * whole no-nav-rail rule exists so that buying the thing somebody just told
+   * you about happens WHERE they told you — walking to a menu to act on a
+   * conversation is the exact break the rule is guarding.
+   */
+  action?: React.ReactNode;
 }) {
   const lines = useMemo(() => (npc ? linesFor(npc, totalLevel) : []), [npc, totalLevel]);
 
@@ -76,6 +86,10 @@ export default function NpcDialogue({
       </header>
 
       <p className="npc-line">{line ? line.text : 'They nod at you and carry on working.'}</p>
+
+      {/* What they will sell you, if anything. Sits between the line and the
+          pager so it reads as part of the conversation rather than as chrome. */}
+      {action && <div className="npc-action">{action}</div>}
 
       <footer>
         {/* Dots rather than "3 of 7": the count is not information a player

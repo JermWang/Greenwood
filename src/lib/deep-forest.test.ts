@@ -21,6 +21,7 @@ import {
   PACK_TIERS,
   MAX_PACK_STEP,
   NO_PACK,
+  POCKET_SLOTS,
   packSlots,
   packTier,
   hasPack,
@@ -206,9 +207,26 @@ describe('where a region drops you', () => {
 });
 
 describe('packs', () => {
-  it('gives a wallet with no pack no capacity at all', () => {
+  /**
+   * No pack means POCKETS, not nothing.
+   *
+   * This asserted zero, and playing the game found out why that was wrong: the
+   * hatchet costs 400 Scrip and the cheapest pack costs 2,500, so woodcutting —
+   * the errand meant to get a new player moving — was gated behind an item six
+   * times the price of its own tool, and every chop answered "your pack is full"
+   * while carrying nothing.
+   *
+   * The pack's real job is unchanged. `hasPack` is still step >= 1, so it is
+   * still what the Treeline and the Deep Forest ask for, and still the thing
+   * whose contents you lose. Pockets are useless for an expedition, which is
+   * exactly the point.
+   */
+  it('gives a wallet with no pack pockets, but not a pack', () => {
     expect(hasPack(NO_PACK)).toBe(false);
-    expect(packSlots(NO_PACK)).toBe(0);
+    expect(packSlots(NO_PACK)).toBe(POCKET_SLOTS);
+    expect(POCKET_SLOTS).toBeGreaterThan(0);
+    // Comfortably below the smallest real pack, or buying one would be pointless.
+    expect(POCKET_SLOTS).toBeLessThan(PACK_TIERS[0].slots);
   });
 
   it('grows slots at every step', () => {

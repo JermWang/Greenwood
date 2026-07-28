@@ -56,8 +56,24 @@ export function packTier(step: number): PackTier | null {
 }
 
 /** Slots at a given step. Zero when the player has never bought a pack. */
+/**
+ * Slots you have before you own anything: your pockets.
+ *
+ * Zero was wrong, and playing it found out how wrong. Woodcutting became
+ * unreachable for a new player — the hatchet costs 400 Scrip and the cheapest
+ * pack costs 2,500, so the first tool in the game was gated behind an item six
+ * times its price, and the errand meant to get somebody moving could not be
+ * started. Every chop answered "your pack is full" while carrying nothing.
+ *
+ * Four is enough for a handful of logs and useless for an expedition, which is
+ * exactly the shape it should have. It does NOT make you packed: `hasPack` is
+ * still step >= 1, so the Treeline and the Deep Forest are unchanged and the
+ * pack keeps its real job — being the thing you can lose.
+ */
+export const POCKET_SLOTS = 4;
+
 export function packSlots(step: number): number {
-  return packTier(step)?.slots ?? 0;
+  return packTier(step)?.slots ?? POCKET_SLOTS;
 }
 
 export const hasPack = (step: number): boolean => step >= 1;

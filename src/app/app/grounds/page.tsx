@@ -31,10 +31,12 @@ import GroundsPlayer from '@/components/iso/GroundsPlayer';
 import { ISO_OFFSET } from '@/components/iso/palette';
 import { useOperation } from '@/lib/useOperation';
 import { DEV_WALLET_BYPASS } from '@/lib/dev-mode';
-import { ARRIVAL, BOUNDS, DOORS, type Doorway } from '@/lib/grounds-map';
+import { allProps, ARRIVAL, BOUNDS, DOORS, type Doorway } from '@/lib/grounds-map';
+import { type AxeId } from '@/lib/woodcutting';
 import { rememberExit, takeArrival } from '@/components/iso/portals';
 import WorldMap from '@/components/ui/WorldMap';
 import NpcField from '@/components/iso/NpcField';
+import TreeField from '@/components/iso/TreeField';
 import NpcDialogue from '@/components/ui/NpcDialogue';
 import { npcAt, type Npc } from '@/lib/npcs';
 import { api, type RegionsResponse } from '@/lib/api-client';
@@ -73,6 +75,15 @@ function spawnCell(): { x: number; z: number } {
 const CAMERA = { position: ISO_OFFSET, zoom: 26, near: -400, far: 600 } as const;
 
 /**
+ * One full swing, in milliseconds. Matches CHOP_HZ in Character.
+ *
+ * The request is raced against this rather than simply awaited, so the axe
+ * visibly lands before the tree changes. A chop that resolved the instant the
+ * server answered would look like the tree fell because you looked at it.
+ */
+const CHOP_SWING_MS = 870;
+
+/**
  * The playable rectangle, so IsoRig frames the world rather than a room.
  *
  * An explicit `zoom` rides alongside: IsoRig's default is to fit the entire
@@ -105,12 +116,132 @@ export default function GroundsPage() {
    */
   const livePos = useRef<{ x: number; z: number } | null>(null);
 
+  /**
+   * Every tree the map puts in this region.
+   *
+   * Computed once — it is a pure function of the seed and never changes. What
+   * changes is which of them are STANDING, and that is `felled` below.
+   */
+  const trees = useMemo(
+    () => allProps().filter((p) => p.kind === 'tree').map((p) => ({ x: p.x, z: p.z, seed: p.seed })),
+    []
+  );
+
+  /**
+   * Stumps, from the server.
+   *
+   * Kept as the server's list rather than anything this client believes, so two
+   * players in the same clearing see the same ground. `felled` is derived from
+   * it for the scene, which needs a set to test membership against per tree.
+   */
+  const [stumps, setStumps] = useState<Array<{ id: string; x: number; z: number }>>([]);
+  const felled = useMemo(() => new Set(stumps.map((s) => `${s.x}:${s.z}`)), [stumps]);
+
+  const [axe, setAxe] = useState<AxeId | null>(null);
+  /** The next rung, from the server. Null once the ladder is topped out. */
+  const [nextAxe, setNextAxe] = useState<{ id: string; name: string; scripCost: number; blurb: string } | null>(null);
+  const [buyingAxe, setBuyingAxe] = useState(false);
+  /** The tile being felled. Drives both the swing and the busy tint. */
+  const [chopping, setChopping] = useState<{ x: number; z: number } | null>(null);
+  const [woodNote, setWoodNote] = useState<string | null>(null);
+
   const load = useCallback(() => {
     if (!wallet) return;
     void api.regions(wallet).then(setRegions).catch(() => setRegions(null));
+    void api
+      .axe(wallet)
+      .then((r) => {
+        setAxe((r.axe?.id as AxeId) ?? null);
+        setNextAxe(r.next);
+      })
+      .catch(() => setAxe(null));
   }, [wallet]);
 
+  /**
+   * Buy the next axe up, without leaving the conversation.
+   *
+   * Reloads rather than assuming: the server decides which rung is next, and
+   * guessing here would mean a stale panel offering a tool that has already been
+   * bought.
+   */
+  const buyAxe = useCallback(async () => {
+    if (!wallet || !nextAxe || buyingAxe) return;
+    setBuyingAxe(true);
+    try {
+      const result = await api.buyAxe(wallet, nextAxe.id);
+      setWoodNote(`${result.tool.name} — you can work now.`);
+      load();
+    } catch (e) {
+      setWoodNote(e instanceof Error ? e.message : 'She shakes her head.');
+    } finally {
+      setBuyingAxe(false);
+    }
+  }, [wallet, nextAxe, buyingAxe, load]);
+
+  /**
+   * Fell the tree that was clicked.
+   *
+   * The swing plays for its own duration BEFORE the request resolves, which is
+   * deliberate: a chop that completed the instant the server answered would look
+   * like the tree fell over because you looked at it. `CHOP_SWING_MS` is one full
+   * cycle of the animation, so the axe visibly lands before anything changes.
+   *
+   * Errors are shown rather than swallowed — "your hatchet will not cut oak" is
+   * the single most useful sentence in the whole skill, and it is the one that
+   * sells the next axe.
+   */
+  const chop = useCallback(
+    async (tree: { x: number; z: number }) => {
+      if (!wallet || chopping) return;
+      setChopping({ x: tree.x, z: tree.z });
+      setWoodNote(null);
+      try {
+        const [result] = await Promise.all([
+          api.chopTree(wallet, 'grounds', tree.x, tree.z),
+          new Promise((r) => setTimeout(r, CHOP_SWING_MS)),
+        ]);
+        setStumps(result.stumps);
+        setWoodNote(`+${result.logs} ${result.species} · +${result.xp} scouting`);
+      } catch (e) {
+        setWoodNote(e instanceof Error ? e.message : 'That did not come down.');
+      } finally {
+        setChopping(null);
+      }
+    },
+    [wallet, chopping]
+  );
+
   useEffect(() => { load(); }, [load]);
+
+  /**
+   * Stumps, on arrival and on a slow timer.
+   *
+   * Slow on purpose. A chop already returns the fresh list, so this only exists
+   * to catch trees felled by OTHER players and ones that have quietly regrown —
+   * neither of which is urgent, and both of which would be an odd thing to poll
+   * hard for. Twenty seconds is under the fastest respawn, so a pine is never
+   * missing for longer than it is actually down.
+   */
+  useEffect(() => {
+    if (!wallet) return;
+    let live = true;
+    const pull = () => {
+      void api
+        .stumps(wallet, 'grounds')
+        .then((r) => { if (live) setStumps(r.stumps); })
+        .catch(() => {});
+    };
+    pull();
+    const timer = setInterval(pull, 20_000);
+    return () => { live = false; clearInterval(timer); };
+  }, [wallet]);
+
+  /** The note clears itself; one every few seconds would otherwise pile up. */
+  useEffect(() => {
+    if (!woodNote) return;
+    const timer = setTimeout(() => setWoodNote(null), 3200);
+    return () => clearTimeout(timer);
+  }, [woodNote]);
 
   /**
    * Walking away ends the conversation.
@@ -292,8 +423,17 @@ export default function GroundsPage() {
           follow={here}
           followRef={livePos}
         />
-        <GroundsScene />
+        <GroundsScene felled={felled} />
         <NpcField region="grounds" playerAt={here} onTalk={setTalking} />
+        <TreeField
+          region="grounds"
+          trees={trees}
+          stumps={stumps}
+          playerAt={here}
+          axe={axe}
+          busyAt={chopping}
+          onChop={chop}
+        />
         {(wallet || DEV_WALLET_BYPASS) && (
           <GroundsPlayer
             wallet={wallet ?? 'dev'}
@@ -301,6 +441,7 @@ export default function GroundsPage() {
             dragRef={dragRef}
             onMove={onMove}
             onDoor={onDoor}
+            action={chopping ? 'chop' : 'idle'}
             positionRef={livePos}
           />
         )}
@@ -310,12 +451,42 @@ export default function GroundsPage() {
           anywhere, it just tells you what is next to what. See WorldMap. */}
       <WorldMap wallet={wallet} at="grounds" position={here} />
 
+      {/*
+        What the last swing was worth, or why it was refused.
+
+        Above the HUD rail and away from the bottom-centre prompts, because it
+        fires while you are standing at a tree and those fire while you are
+        standing at a door — two things that must never cover each other. It
+        clears itself, since a gathering skill produces one of these every few
+        seconds and a log that piled up would become the loudest thing on screen.
+      */}
+      {woodNote && <div className="chop-note">{woodNote}</div>}
+
       {/* Which lines exist depends on Total Level, so the same five people say
           different things as you get further in. `regions` already carries it. */}
       <NpcDialogue
         npc={talking}
         totalLevel={regions?.totalLevel ?? 0}
         onClose={() => setTalking(null)}
+        /*
+         * Marta sells the axes, and only Marta.
+         *
+         * She is the Quartermaster and she already sells packs, so tools are
+         * hers by the same logic — and putting the purchase inside the
+         * conversation means the sentence that explains why you want one and the
+         * button that gets you one are the same moment. A shop screen would make
+         * a player leave the person who just told them about it.
+         */
+        action={
+          talking?.id === 'marta' && nextAxe ? (
+            <button className="npc-buy" onClick={() => void buyAxe()} disabled={buyingAxe}>
+              {buyingAxe
+                ? 'Handing it over…'
+                : `Buy the ${nextAxe.name} · ${nextAxe.scripCost.toLocaleString()} Scrip`}
+              <em>{nextAxe.blurb}</em>
+            </button>
+          ) : null
+        }
       />
 
       {/*

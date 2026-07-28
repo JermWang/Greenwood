@@ -32,6 +32,7 @@ import { gridTexture } from './mapkit';
 import { ISO } from './palette';
 import PlaceLabel from './PlaceLabel';
 import { FenceSection, Planter, SettlementBuilding } from './OutdoorDressing';
+import { SPECIES, speciesAt } from '@/lib/woodcutting';
 import {
   allProps,
   BOUNDS,
@@ -307,23 +308,43 @@ const EntranceGate = memo(function EntranceGate() {
  * threshold is somewhere in the low hundreds, and below it instancing costs more
  * complexity than it saves frames.
  */
-const Scatter = memo(function Scatter() {
+const Scatter = memo(function Scatter({ felled }: { felled: Set<string> }) {
   const { trees, rocks, planters, shapes } = useMemo(() => {
     const props = allProps();
-    const trees = props.filter((p) => p.kind === 'tree');
+    /*
+     * Felled trees are removed from the INSTANCE LIST, not hidden.
+     *
+     * There is no per-instance visibility flag on an InstancedMesh — every
+     * instance in the buffer is drawn — so the only honest way to take a tree
+     * out of the world is to rebuild the buffer without it. That is why this
+     * depends on `felled`: cutting a tree changes the count, every matrix after
+     * it shifts down one, and the layout effect writes the whole set again.
+     *
+     * At a few hundred trees that rebuild costs less than a frame and happens
+     * only on a chop. The alternative — scaling a felled instance to zero —
+     * leaves a degenerate matrix in the buffer and reads as a flicker.
+     */
+    const standing = props.filter((p) => p.kind === 'tree' && !felled.has(`${p.x}:${p.z}`));
     return {
-      trees,
+      trees: standing,
       rocks: props.filter((p) => p.kind === 'boulder'),
       planters: props.filter((p) => p.kind === 'planter'),
-      shapes: trees.map((p: MapProp) => ({
-        height: 3.1 + vary(p.seed, 1) * 2.4,
-        spread: 1.2 + vary(p.seed, 2) * 0.6,
-        spin: vary(p.seed, 3) * Math.PI * 2,
-        lean: (vary(p.seed, 4) - 0.5) * 0.11,
-        needle: new THREE.Color(NEEDLE[Math.floor(vary(p.seed, 5) * NEEDLE.length)]),
-      })),
+      // Species decides the colour, so a birch is pale and an oak is dark
+      // wherever it stands — the same lookup the server validates a chop
+      // against, so what you see is what you can cut.
+      shapes: standing.map((p: MapProp) => {
+        const species = SPECIES[speciesAt('grounds', p.x, p.z)];
+        return {
+          height: 3.1 + vary(p.seed, 1) * 2.4,
+          spread: 1.2 + vary(p.seed, 2) * 0.6,
+          spin: vary(p.seed, 3) * Math.PI * 2,
+          lean: (vary(p.seed, 4) - 0.5) * 0.11,
+          needle: new THREE.Color(species.needle),
+          bark: new THREE.Color(species.bark),
+        };
+      }),
     };
-  }, []);
+  }, [felled]);
 
   const trunk = useMemo(
     () => (i: number, d: THREE.Object3D) => {
@@ -354,6 +375,7 @@ const Scatter = memo(function Scatter() {
   );
 
   const needleColour = useMemo(() => (i: number, c: THREE.Color) => c.copy(shapes[i].needle), [shapes]);
+  const barkColour = useMemo(() => (i: number, c: THREE.Color) => c.copy(shapes[i].bark), [shapes]);
 
   const rockPlace = useMemo(
     () => (i: number, d: THREE.Object3D) => {
@@ -368,7 +390,7 @@ const Scatter = memo(function Scatter() {
 
   return (
     <>
-      <Layer count={trees.length} flat={BARK} place={trunk}>
+      <Layer count={trees.length} flat="#ffffff" colour={barkColour} place={trunk}>
         <cylinderGeometry args={[0.09, 0.14, 1, 5]} />
       </Layer>
       {/* Three tiers — the chevrons from the mark, in three dimensions. Each is
@@ -396,13 +418,13 @@ const Scatter = memo(function Scatter() {
  * lib/grounds-map, so what a player can walk through and what they can read are
  * one list. A label without a door would be a sign for a place you cannot reach.
  */
-const GroundsScene = memo(function GroundsScene() {
+const GroundsScene = memo(function GroundsScene({ felled }: { felled: Set<string> }) {
   return (
     <>
       <GroundsLighting />
       <Ground />
       <Paths />
-      <Scatter />
+      <Scatter felled={felled} />
       <Fence />
       <EntranceGate />
 

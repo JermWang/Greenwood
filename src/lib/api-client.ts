@@ -785,6 +785,33 @@ export const api = {
       '/expedition/pack',
       { wallet }
     ),
+  /** Fell a tree. The server decides what was standing there and what it pays. */
+  chopTree: (wallet: string, region: string, x: number, z: number) =>
+    post<{
+      species: string;
+      logs: number;
+      xp: number;
+      ref: string;
+      regrowsAt: number;
+      stumps: Array<{ id: string; x: number; z: number }>;
+    }>('/trees/chop', { wallet, region, x, z }),
+
+  /** Which trees are currently down in a region. Only the exceptions travel. */
+  stumps: (wallet: string, region: string) =>
+    request<{ stumps: Array<{ id: string; x: number; z: number }> }>(
+      `/trees?wallet=${wallet}&region=${region}`
+    ),
+
+  /** The axe this fund carries, and the next rung up. */
+  axe: (wallet: string) =>
+    request<{
+      axe: { id: string; name: string; tier: number; damage: number; scripCost: number; blurb: string } | null;
+      next: { id: string; name: string; tier: number; damage: number; scripCost: number; blurb: string } | null;
+    }>(`/tools/axe?wallet=${wallet}`),
+
+  buyAxe: (wallet: string, axe: string) =>
+    post<{ axe: string; spent: number; tool: { name: string } }>('/tools/axe', { wallet, axe }),
+
   intro: (wallet: string) => request<IntroResponse>(`/intro/${wallet}`),
   claimIntroStep: (wallet: string, key: string) =>
     post<{ key: string; xp: number; scrip: number; intro: IntroState; progression: Progression }>(

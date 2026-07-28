@@ -23,7 +23,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { ThreeEvent } from '@react-three/fiber';
 import type { MutableRefObject } from 'react';
 import type { DragState } from './IsoBoard';
-import Character, { lookFor } from './Character';
+import Character, { lookFor, type CharacterAction } from './Character';
 import { findPathWhere, smoothPath, type Cell } from './pathing';
 import { DoorTile, TileFill, TileRing } from './TileMarker';
 import { ISO } from './palette';
@@ -76,6 +76,15 @@ export interface GroundsPlayerProps {
   /** Fired when the player stops on a doorway tile. */
   onDoor: (door: Doorway | null) => void;
   /**
+   * What the body is doing while stood still.
+   *
+   * The page owns this because the page owns the chop request — the swing has to
+   * start when the request goes out and stop when it comes back, and only the
+   * caller knows that. Passing it down is cheaper than teaching this component
+   * what a tree is.
+   */
+  action?: CharacterAction;
+  /**
    * Handed straight to Character, which writes the live interpolated position
    * into it every frame. The camera reads it — see IsoRig's `followRef`.
    */
@@ -84,6 +93,7 @@ export interface GroundsPlayerProps {
 
 export default function GroundsPlayer({
   wallet,
+  action = 'idle',
   start,
   dragRef,
   onMove,
@@ -188,6 +198,7 @@ export default function GroundsPlayer({
         onStep={step}
         spawn={spawn}
         spawnFacing={spawn.z === ARRIVAL.z && spawn.x === ARRIVAL.x ? Math.PI : 0}
+        action={action}
         positionRef={positionRef}
       />
 

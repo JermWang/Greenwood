@@ -1730,3 +1730,61 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .lift-floor:disabled { cursor: default; }
 .lift-error, .lift-note { margin: 9px 2px 0; font-size: 10px; color: rgba(226, 235, 239, 0.5); }
 .lift-error { color: #ff8f7a; }
+
+/* --------------------------------------------------------------------------
+   Woodcutting feedback.
+
+   The note sits ABOVE the HUD rail and clear of the bottom-centre prompts,
+   because it fires while you are standing at a tree and those fire while you
+   are standing at a door. Two overlays that can both be live have to occupy
+   different ground.
+   -------------------------------------------------------------------------- */
+.chop-note {
+  position: absolute;
+  z-index: 24;
+  left: 50%;
+  top: 92px;
+  transform: translateX(-50%);
+  padding: 7px 14px;
+  border: 1px solid rgba(204, 255, 0, 0.4);
+  border-radius: 999px;
+  background: rgba(10, 16, 8, 0.9);
+  backdrop-filter: blur(6px);
+  font: 700 10.5px var(--font-mono), monospace;
+  letter-spacing: 0.08em;
+  color: var(--robin-neon, #ccff00);
+  white-space: nowrap;
+  pointer-events: none;
+  /* Arrives quickly and holds; the fade-out is handled by unmounting. */
+  animation: chop-note-in 0.18s ease-out;
+}
+@keyframes chop-note-in {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .chop-note { animation: none; } }
+
+/* What an NPC will sell you, inside the conversation rather than on a screen. */
+.npc-buy {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 12px;
+  border: 1px solid rgba(204, 255, 0, 0.45);
+  border-radius: 9px;
+  background: rgba(204, 255, 0, 0.08);
+  text-align: left;
+  font: 700 11px var(--font-sans, inherit);
+  color: var(--robin-neon, #ccff00);
+  cursor: pointer;
+}
+.npc-buy:hover:not(:disabled) { background: rgba(204, 255, 0, 0.16); }
+.npc-buy:disabled { opacity: 0.55; cursor: default; }
+.npc-buy em {
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(226, 235, 239, 0.55);
+}
