@@ -278,7 +278,13 @@ export function GatheringNode({
 }
 
 /**
- * A planter: the shrub in a concrete box that every office forecourt has.
+ * A STREET planter: the shrub in a low concrete box every office forecourt has.
+ *
+ * Distinct from MapDressing's Planter, which is the tall potted evergreen that
+ * stands indoors. Both were called Planter and both were live, in two files, and
+ * the second was written by somebody who did not know the first existed. Names
+ * that collide across modules are how that happens; codebase.test now fails on
+ * it rather than leaving it to be noticed.
  *
  * Reads as maintenance. That is its entire job — it is the prop that says
  * somebody still comes out here with a trowel, which is why grounds-map stops
@@ -286,7 +292,7 @@ export function GatheringNode({
  * sign that the settlement's reach has an edge, and it lands better as an
  * absence than it would as a sign saying so.
  */
-export function Planter({ position, seed = 0 }: { position: [number, number]; seed?: number }) {
+export function StreetPlanter({ position, seed = 0 }: { position: [number, number]; seed?: number }) {
   const shrubs = 1 + Math.floor(hash2(seed, 1) * 3);
   return (
     <group position={[position[0], 0, position[1]]}>

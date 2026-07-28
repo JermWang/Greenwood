@@ -30,7 +30,7 @@ import Layer from './instancing';
 import { gridTexture } from './mapkit';
 import { ISO } from './palette';
 import PlaceLabel from './PlaceLabel';
-import { Planter } from './OutdoorDressing';
+import { StreetPlanter } from './OutdoorDressing';
 import { Bench } from './MapDressing';
 import { BOUNDS, DOORS, FOUNTAIN, TOWER, allProps } from '@/lib/hq-map';
 
@@ -346,7 +346,7 @@ const Furniture = memo(function Furniture() {
       ))}
 
       {planters.map((p) => (
-        <Planter key={`p${p.x}:${p.z}`} position={[p.x, p.z]} seed={p.seed} />
+        <StreetPlanter key={`p${p.x}:${p.z}`} position={[p.x, p.z]} seed={p.seed} />
       ))}
     </>
   );

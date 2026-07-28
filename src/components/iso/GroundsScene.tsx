@@ -31,7 +31,7 @@ import Layer, { vary } from './instancing';
 import { gridTexture } from './mapkit';
 import { ISO } from './palette';
 import PlaceLabel from './PlaceLabel';
-import { FenceSection, Planter, SettlementBuilding } from './OutdoorDressing';
+import { FenceSection, StreetPlanter, SettlementBuilding } from './OutdoorDressing';
 import { SPECIES, speciesAt } from '@/lib/woodcutting';
 import {
   allProps,
@@ -415,7 +415,7 @@ const Scatter = memo(function Scatter({ felled }: { felled: Set<string> }) {
         <dodecahedronGeometry args={[1, 0]} />
       </Layer>
       {planters.map((p) => (
-        <Planter key={`${p.x}:${p.z}`} position={[p.x, p.z]} seed={p.seed} />
+        <StreetPlanter key={`${p.x}:${p.z}`} position={[p.x, p.z]} seed={p.seed} />
       ))}
     </>
   );
