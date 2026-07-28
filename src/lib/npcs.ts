@@ -116,6 +116,16 @@ export const NPCS: Npc[] = [
       {
         kind: 'tip',
         minLevel: 0,
+        text: 'If you want something to do that pays: fell some trees. Buy a hatchet, take it to the treeline, bring the logs back. I will take every log you can carry and I will not ask where they came from.',
+      },
+      {
+        kind: 'trade',
+        minLevel: 1,
+        text: 'Timber is a commodity like anything else — the Exchange lists it. Better wood grows further out, and the axe you own decides what you can actually put a blade through. Hatchet does pine and birch. That is it.',
+      },
+      {
+        kind: 'tip',
+        minLevel: 0,
         text: 'Four instrument slots per desk. The game averages them and then raises that to a power below one — so two rares in one desk beat four commons spread across two. Concentrate. Everyone learns that the expensive way.',
       },
       {

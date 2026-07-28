@@ -350,6 +350,19 @@ function migrate(db: DatabaseSync) {
       swung_at INTEGER NOT NULL DEFAULT 0
     );
 
+    -- Felled trees, as stumps waiting to regrow.
+    --
+    -- Only the FELLED ones are stored. A tree that has never been cut has no
+    -- row, because its species and position are already a pure function of its
+    -- coordinate (lib/woodcutting, lib/deep-forest-map) -- writing a row per
+    -- standing tree would mean persisting a map both halves can already compute.
+    -- This table is the exception list, not the world.
+    CREATE TABLE IF NOT EXISTS tree_state (
+      tree_id TEXT PRIMARY KEY,
+      felled_at INTEGER NOT NULL,
+      felled_by TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_listings_open ON listings(status, item_kind, created_at);
     CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller, status);
     -- One live listing per item. Partial index so sold/cancelled rows can pile
@@ -388,6 +401,9 @@ function migrate(db: DatabaseSync) {
   // entry ticket to the hostile regions, and nobody should be retroactively
   // holding one for a zone that did not exist when they last played.
   ensureColumn(db, 'users', 'pack_step', 'INTEGER NOT NULL DEFAULT 0');
+  // The best axe owned. Same shape as pack_step: a ladder you climb with Scrip,
+  // stored as one column because you only ever hold the best one.
+  ensureColumn(db, 'users', 'axe_id', 'TEXT');
 }
 
 /**

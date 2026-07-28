@@ -37,7 +37,9 @@ export type QuestAction =
    * outside" complete without anybody stepping outside, which is the one thing
    * that step exists to cause.
    */
-  | 'enter_region';
+  | 'enter_region'
+  /** Felled a tree. Counted in LOGS, not swings -- an ironbark is worth four. */
+  | 'chop_tree';
 
 export interface QuestDef {
   key: string;
@@ -65,6 +67,8 @@ export const QUEST_POOL: QuestDef[] = [
   { key: 'open_note', label: 'Open a Fixed Income Note', action: 'open_note', target: 1, track: 'treasury', xp: 240 },
   { key: 'market_buy_1', label: 'Buy anything on the Exchange', action: 'market_buy', target: 1, track: 'trading', xp: 210 },
   { key: 'market_list_1', label: 'List something on the Exchange', action: 'market_list', target: 1, track: 'trading', xp: 150 },
+  { key: 'chop_10', label: 'Bring Dez ten logs', action: 'chop_tree', target: 10, track: 'scouting', xp: 240 },
+  { key: 'chop_3', label: 'Fell three trees for Dez', action: 'chop_tree', target: 3, track: 'scouting', xp: 110 },
   { key: 'refine_1', label: 'Refine a cosmetic at the Outfitter', action: 'cosmetic_upgrade', target: 1, track: 'trading', xp: 190 },
 ];
 

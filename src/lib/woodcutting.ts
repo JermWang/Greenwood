@@ -240,6 +240,15 @@ export function speciesAt(region: string, x: number, z: number): SpeciesId {
  */
 export const treeId = (region: string, x: number, z: number) => `${region}:${x}:${z}`;
 
+/**
+ * How close you have to be to swing at a tree. One tile.
+ *
+ * Chebyshev, matching the movement rule's idea of adjacency, so 'next to' means
+ * one thing everywhere in this game. Lives here rather than in lib/trees so the
+ * renderer can read it without pulling the database in behind it.
+ */
+export const CHOP_REACH = 1;
+
 /** Milliseconds a felled tree stays a stump. */
 export const respawnMs = (species: SpeciesId) => SPECIES[species].respawn * 1000;
 

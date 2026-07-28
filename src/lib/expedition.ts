@@ -148,6 +148,31 @@ export function upgradePack(wallet: string): { step: number; tier: PackTier } {
  * Zero for a fund with no desks at all, which is the correct answer rather than
  * a missing one.
  */
+/**
+ * Put something in a pack.
+ *
+ * Exported so that anything which produces carriable goods — loot, and now
+ * felling a tree — goes through ONE insert with ONE allowlist check. A second
+ * call site writing its own INSERT would be a second place the `CARRIABLE`
+ * allowlist could be forgotten, and that list decides what a player can lose.
+ * A denylist there would fail open; a duplicated check fails open just as well.
+ *
+ * Returns false rather than throwing when the kind is not carriable, so a caller
+ * that produces something unexpected drops it visibly instead of crashing a
+ * player's action.
+ */
+export function addToPack(wallet: string, stack: CarriedStack): boolean {
+  if (!isCarriable(stack.kind)) return false;
+  if (!(stack.quantity > 0)) return false;
+  getDb()
+    .prepare(
+      `INSERT INTO pack_contents (wallet, kind, ref, quantity) VALUES (?,?,?,?)
+         ON CONFLICT(wallet, kind, ref) DO UPDATE SET quantity = quantity + excluded.quantity`
+    )
+    .run(wallet, stack.kind, stack.ref, stack.quantity);
+  return true;
+}
+
 export function bestDeskLevel(wallet: string): number {
   const row = getDb()
     .prepare('SELECT MAX(level) AS level FROM nodes WHERE wallet = ?')
