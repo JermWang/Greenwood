@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ThreeEvent } from '@react-three/fiber';
 import type { MutableRefObject } from 'react';
 import type { DragState } from './IsoBoard';
-import Character, { lookFor } from './Character';
+import Character, { lookFor, type CharacterAction } from './Character';
 import { ISO } from './palette';
 import { EXTENT, isWalkable, gateAt } from '@/lib/deep-forest-map';
 /**
@@ -92,6 +92,14 @@ export interface DeepForestPlayerProps {
   onPlayers: (players: PlayerView[]) => void;
   onMove: (cell: Cell) => void;
   /**
+   * What the body is doing while stood still.
+   *
+   * Owned by the page because the page owns the chop request — the swing starts
+   * when the request goes out and stops when it returns, and only the caller
+   * knows that. Cheaper than teaching this component what a tree is.
+   */
+  action?: CharacterAction;
+  /**
    * Handed to Character, which writes the live interpolated position into it
    * every frame so the camera can travel with the walk. Especially wanted out
    * here: steps are paced to a server round trip, so a camera driven by arrivals
@@ -100,7 +108,7 @@ export interface DeepForestPlayerProps {
   positionRef?: React.MutableRefObject<{ x: number; z: number } | null>;
 }
 
-export default function DeepForestPlayer({ wallet, start, dragRef, onPiles, onCreatures, onPlayers, onMove, positionRef }: DeepForestPlayerProps) {
+export default function DeepForestPlayer({ wallet, start, dragRef, onPiles, onCreatures, onPlayers, onMove, action = 'idle', positionRef }: DeepForestPlayerProps) {
   const [position, setPosition] = useState<Cell>(start);
   const [route, setRoute] = useState<Cell[]>([]);
   const walking = useRef(false);
@@ -243,6 +251,7 @@ export default function DeepForestPlayer({ wallet, start, dragRef, onPiles, onCr
         target={position}
         spawn={start}
         spawnFacing={spawnFacing}
+        action={action}
         positionRef={positionRef}
       />
 

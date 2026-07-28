@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import Layer, { vary } from './instancing';
 import { allProps, type MapProp } from '@/lib/deep-forest-map';
+import { SPECIES, speciesAt } from '@/lib/woodcutting';
 
 /** Foliage greens. Real greens, deliberately not the brand colour. */
 const NEEDLE = ['#3f5a33', '#47623a', '#38512d', '#4d6a3f'];
@@ -24,9 +25,24 @@ interface Shape {
   spin: number;
   lean: number;
   needle: THREE.Color;
+  bark: THREE.Color;
 }
 
+/**
+ * Appearance, with SPECIES deciding the colours.
+ *
+ * The needle used to be picked from a four-green list off the prop's own seed,
+ * which looked fine and told a lie: two trees standing side by side could be an
+ * oak and an ironbark and looked identical. Out here that matters more than it
+ * did in the Grounds, because the species ladder IS the reason to walk this far
+ * — an ironbark is worth four pines and takes an axe three rungs up, and a
+ * player has to be able to spot one across a clearing to go and get it.
+ *
+ * Height still varies off the seed. What a tree IS comes from the map; how big
+ * it happens to be does not, and a stand of identical oaks would read as tiling.
+ */
 function shapeOf(prop: MapProp): Shape {
+  const species = SPECIES[speciesAt('deep-forest', prop.x, prop.z)];
   return {
     height: 2.9 + vary(prop.seed, 1) * 2.2,
     spread: 1.15 + vary(prop.seed, 2) * 0.55,
@@ -34,7 +50,8 @@ function shapeOf(prop: MapProp): Shape {
     // A slight lean, because a tree that stands perfectly plumb reads as a lamp
     // post. Small enough that a stand still looks like a wood, not a storm.
     lean: (vary(prop.seed, 4) - 0.5) * 0.13,
-    needle: new THREE.Color(NEEDLE[Math.floor(vary(prop.seed, 5) * NEEDLE.length)]),
+    needle: new THREE.Color(species.needle),
+    bark: new THREE.Color(species.bark),
   };
 }
 
@@ -50,17 +67,32 @@ function shapeOf(prop: MapProp): Shape {
  * The whole map is now 289 props across six instanced draws. Culling that is not
  * worth a frame, let alone the class of bug it just caused.
  */
-export default function InstancedForest() {
+export default function InstancedForest({ felled }: { felled?: Set<string> }) {
   const { trees, dead, rocks, shapes } = useMemo(() => {
     const props = allProps();
-    const trees = props.filter((p) => p.kind === 'tree');
+    /*
+     * Felled trees leave the INSTANCE LIST, they are not hidden.
+     *
+     * An InstancedMesh has no per-instance visibility flag — every instance in
+     * the buffer is drawn — so the only honest way to take a tree out of the
+     * world is to rebuild the buffer without it. Scaling a felled one to zero
+     * leaves a degenerate matrix behind and reads as a flicker.
+     *
+     * That is why this depends on `felled`: cutting a tree changes the count,
+     * every matrix after it shifts down one, and the layout effect writes the
+     * whole set again. At a few hundred trees that rebuild costs less than a
+     * frame and only happens on a chop.
+     */
+    const standing = props.filter(
+      (p) => p.kind === 'tree' && !(felled?.has(`${p.x}:${p.z}`) ?? false)
+    );
     return {
-      trees,
+      trees: standing,
       dead: props.filter((p) => p.kind === 'dead'),
       rocks: props.filter((p) => p.kind === 'boulder'),
-      shapes: trees.map(shapeOf),
+      shapes: standing.map(shapeOf),
     };
-  }, []);
+  }, [felled]);
 
   const trunk = useMemo(
     () => (i: number, d: THREE.Object3D) => {
@@ -96,6 +128,11 @@ export default function InstancedForest() {
     [trees, shapes]
   );
 
+  const barkColour = useMemo(
+    () => (i: number, c: THREE.Color) => c.copy(shapes[i].bark),
+    [shapes]
+  );
+
   const needleColour = useMemo(
     () => (i: number, c: THREE.Color) => c.copy(shapes[i].needle),
     [shapes]
@@ -125,7 +162,7 @@ export default function InstancedForest() {
 
   return (
     <>
-      <Layer count={trees.length} flat={BARK} place={trunk}>
+      <Layer count={trees.length} flat="#ffffff" colour={barkColour} place={trunk}>
         <cylinderGeometry args={[0.09, 0.14, 1, 5]} />
       </Layer>
 

@@ -3,7 +3,6 @@ import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { GameError } from '@/lib/game';
 import { chopTree, stumpsIn } from '@/lib/trees';
 import { positionOf } from '@/lib/expedition';
-import { ARRIVAL } from '@/lib/grounds-map';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,10 +43,27 @@ export async function POST(request: Request) {
      * The Deep Forest gets the real check, because that is where a felled
      * ironbark is worth taking from somebody.
      */
-    const at =
-      region === 'grounds'
-        ? { x: Math.round(body.x), z: Math.round(body.z) }
-        : positionOf(wallet) ?? { ...ARRIVAL };
+    let at: { x: number; z: number };
+    if (region === 'grounds') {
+      at = { x: Math.round(body.x), z: Math.round(body.z) };
+    } else {
+      const recorded = positionOf(wallet);
+      /*
+       * No recorded position means you are not in this region.
+       *
+       * This used to fall back to the GROUNDS arrival cell, which is a
+       * coordinate that means nothing out here — so a player who had never
+       * entered the Deep Forest got "you are not close enough to that tree"
+       * about a tree they were nowhere near, which is true and useless. Worse,
+       * a tile that happened to sit near (0, 21) in forest coordinates would
+       * have been fellable from outside the region entirely.
+       *
+       * Refusing is the honest answer: felling in a contested region requires
+       * being in it, and the server knows whether you are.
+       */
+      if (!recorded) throw new GameError('You are not out there.', 400);
+      at = recorded;
+    }
 
     const result = chopTree(wallet, region, body.x, body.z, at);
     return NextResponse.json({ ...result, stumps: stumpsIn(region) });

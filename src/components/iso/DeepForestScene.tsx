@@ -258,6 +258,8 @@ export function ExtractionGate({
 export interface DeepForestProps {
   /** Half-width to draw. Defaults to the map's own EXTENT. */
   extent?: number;
+  /** Tiles whose tree is currently a stump, so the forest can leave a hole. */
+  felled?: Set<string>;
 }
 
 /**
@@ -268,7 +270,7 @@ export interface DeepForestProps {
  * streamer to reach; this renders the whole map at once, so it is sized to what
  * one draw can carry. Growing it is a number change once streaming exists.
  */
-export default function DeepForestScene({ extent = EXTENT }: DeepForestProps) {
+export default function DeepForestScene({ extent = EXTENT, felled }: DeepForestProps) {
   // Everything drawn here comes from lib/deep-forest-map, which the server also
   // reads. Nothing about the world is decided in this file.
   const nodes = useMemo(() => salvageNodes(), []);
@@ -278,7 +280,7 @@ export default function DeepForestScene({ extent = EXTENT }: DeepForestProps) {
       <DeepForestLighting />
       <Ground extent={extent} />
 
-      <InstancedForest />
+      <InstancedForest felled={felled} />
 
       {nodes.map((n) => (
         <GatheringNode key={n.id} position={[n.x, n.z]} kind={n.kind} seed={n.seed} />

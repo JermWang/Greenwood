@@ -28,8 +28,10 @@ import {
   type PlayerView,
   type VisiblePile,
 } from '@/lib/api-client';
-import { gateAt } from '@/lib/deep-forest-map';
+import { gateAt, allProps as forestProps } from '@/lib/deep-forest-map';
+import { type AxeId } from '@/lib/woodcutting';
 import CreatureField from '@/components/iso/CreatureField';
+import TreeField from '@/components/iso/TreeField';
 import PlayerField from '@/components/iso/PlayerField';
 import ExpeditionHud from '@/components/ui/ExpeditionHud';
 import WorldMap from '@/components/ui/WorldMap';
@@ -75,6 +77,24 @@ export default function DeepForestPage() {
   const [state, setState] = useState<ExpeditionState | null>(null);
   const [piles, setPiles] = useState<VisiblePile[]>([]);
   const [creatures, setCreatures] = useState<CreatureView[]>([]);
+
+  /**
+   * Woodcutting, out where it is worth doing.
+   *
+   * Same shape as the Grounds, with one difference that matters: this region is
+   * CONTESTED, so the reach check on the server reads the recorded expedition
+   * position rather than trusting anything sent from here. A client that could
+   * name its own position could fell every ironbark on the map without moving.
+   */
+  const trees = useMemo(
+    () => forestProps().filter((p) => p.kind === 'tree').map((p) => ({ x: p.x, z: p.z, seed: p.seed })),
+    []
+  );
+  const [stumps, setStumps] = useState<Array<{ id: string; x: number; z: number }>>([]);
+  const felled = useMemo(() => new Set(stumps.map((s) => `${s.x}:${s.z}`)), [stumps]);
+  const [axe, setAxe] = useState<AxeId | null>(null);
+  const [chopping, setChopping] = useState<{ x: number; z: number } | null>(null);
+  const [woodNote, setWoodNote] = useState<string | null>(null);
   const [players, setPlayers] = useState<PlayerView[]>([]);
   const [health, setHealth] = useState<number | null>(null);
   const [position, setPosition] = useState<{ x: number; z: number } | null>(null);
@@ -164,6 +184,53 @@ export default function DeepForestPage() {
     [wallet]
   );
 
+  /**
+   * One full swing, matching CHOP_HZ in Character.
+   *
+   * The request is RACED against this rather than awaited, so the axe visibly
+   * lands before the tree changes. Resolving the instant the server answered
+   * looked like the tree fell because you looked at it.
+   */
+  const chop = useCallback(
+    async (tree: { x: number; z: number }) => {
+      if (!wallet || chopping) return;
+      setChopping({ x: tree.x, z: tree.z });
+      setWoodNote(null);
+      try {
+        const [result] = await Promise.all([
+          api.chopTree(wallet, 'deep-forest', tree.x, tree.z),
+          new Promise((r) => setTimeout(r, 870)),
+        ]);
+        setStumps(result.stumps);
+        setWoodNote(`+${result.logs} ${result.species} · +${result.xp} scouting`);
+      } catch (e) {
+        setWoodNote(e instanceof Error ? e.message : 'That did not come down.');
+      } finally {
+        setChopping(null);
+      }
+    },
+    [wallet, chopping]
+  );
+
+  /** Stumps, and what this fund carries. Slow poll catches other players' work. */
+  useEffect(() => {
+    if (!wallet) return;
+    let live = true;
+    void api.axe(wallet).then((r) => { if (live) setAxe((r.axe?.id as AxeId) ?? null); }).catch(() => {});
+    const pull = () => {
+      void api.stumps(wallet, 'deep-forest').then((r) => { if (live) setStumps(r.stumps); }).catch(() => {});
+    };
+    pull();
+    const timer = setInterval(pull, 20_000);
+    return () => { live = false; clearInterval(timer); };
+  }, [wallet]);
+
+  useEffect(() => {
+    if (!woodNote) return;
+    const timer = setTimeout(() => setWoodNote(null), 3200);
+    return () => clearTimeout(timer);
+  }, [woodNote]);
+
   const open = useMemo(() => DEV_WALLET_BYPASS || state?.allowed === true, [state]);
 
   // The bypass short-circuits the connect prompt as well as the region gate.
@@ -232,10 +299,21 @@ export default function DeepForestPage() {
           follow={here}
           followRef={livePos}
         />
-        <DeepForestScene />
+        <DeepForestScene felled={felled} />
         {piles.map((p) => (
           <Pile key={p.id} pile={p} />
         ))}
+        {/* Trees within reach become click targets. This is where the axe ladder
+            pays off — oak, black pine and ironbark only grow out here. */}
+        <TreeField
+          region="deep-forest"
+          trees={trees}
+          stumps={stumps}
+          playerAt={here}
+          axe={axe}
+          busyAt={chopping}
+          onChop={chop}
+        />
         <CreatureField creatures={creatures} playerAt={here} onAttack={onAttack} />
         <PlayerField players={players} onStrike={onStrike} />
         {wallet && state && (
@@ -247,10 +325,14 @@ export default function DeepForestPage() {
             onPiles={onPiles}
             onCreatures={onCreatures}
             onPlayers={onPlayers}
+            action={chopping ? 'chop' : 'idle'}
             positionRef={livePos}
           />
         )}
       </Canvas>
+
+      {/* What the last swing was worth, or why it was refused. */}
+      {woodNote && <div className="chop-note">{woodNote}</div>}
 
       {state && (
         <ExpeditionHud health={health ?? state.health} maxHealth={state.maxHealth} pack={state.pack} />
