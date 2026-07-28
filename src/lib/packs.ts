@@ -125,7 +125,15 @@ export function assertCanUpgradePack(step: number): PackTier {
  * later would be carryable, and losable, until somebody remembered to exclude
  * it. Adding a class here is a deliberate decision to put it at risk.
  */
-export type CarryClass = 'scrip' | 'component' | 'salvage' | 'ammo' | 'consumable' | 'weapon';
+export type CarryClass =
+  | 'scrip'
+  | 'component'
+  | 'salvage'
+  | 'ammo'
+  | 'consumable'
+  | 'weapon'
+  /** Crafted parts -- a desk frame, and whatever the bench makes next. */
+  | 'material';
 
 export const CARRIABLE: readonly CarryClass[] = [
   'scrip',
@@ -133,6 +141,9 @@ export const CARRIABLE: readonly CarryClass[] = [
   'salvage',
   'ammo',
   'consumable',
+  // Carried, and therefore droppable. A crafted part is worth what the wood in
+  // it was worth, so it travels under the same rule as the wood did.
+  'material',
   /**
    * Weapons are carried, and therefore droppable.
    *

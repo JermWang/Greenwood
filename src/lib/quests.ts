@@ -39,7 +39,9 @@ export type QuestAction =
    */
   | 'enter_region'
   /** Felled a tree. Counted in LOGS, not swings -- an ironbark is worth four. */
-  | 'chop_tree';
+  | 'chop_tree'
+  /** Made something at a bench. Counted per craft, not per item yielded. */
+  | 'craft_item';
 
 export interface QuestDef {
   key: string;
