@@ -30,9 +30,9 @@ import Layer from './instancing';
 import { gridTexture } from './mapkit';
 import { ISO } from './palette';
 import PlaceLabel from './PlaceLabel';
-import { StreetPlanter } from './OutdoorDressing';
+import { StreetPlanter, ParkedVan, Skip, PalletStack } from './OutdoorDressing';
 import { Bench } from './MapDressing';
-import { BOUNDS, DOORS, FOUNTAIN, TOWER, allProps } from '@/lib/hq-map';
+import { BOUNDS, DOORS, FOUNTAIN, TOWER, allProps, perimeter } from '@/lib/hq-map';
 
 const SKY = '#aebac4';
 
@@ -78,6 +78,45 @@ const Ground = memo(function Ground() {
       <planeGeometry args={[span, span]} />
       <meshStandardMaterial map={texture} color="#ffffff" roughness={0.97} metalness={0} />
     </mesh>
+  );
+});
+
+/**
+ * The compound wall.
+ *
+ * The other half of the blank-outskirts problem, and the half cropping the
+ * bounds would not have fixed: the plaza did not so much end as run out. You
+ * walked west until the ground stopped accepting you, with nothing on screen to
+ * say why. An invisible wall is the worst kind of level boundary, because the
+ * player learns where it is by being refused.
+ *
+ * The geometry is derived in lib/hq-map — see perimeter() — rather than built
+ * here, so it can be tested. This component only draws it.
+ */
+const Perimeter = memo(function Perimeter() {
+  const { runs, piers } = useMemo(() => perimeter(), []);
+
+  const pier = useMemo(
+    () => (i: number, d: THREE.Object3D) => {
+      d.position.set(piers[i][0], 0.85, piers[i][1]);
+      d.rotation.set(0, 0, 0);
+      d.scale.set(1, 1, 1);
+    },
+    [piers]
+  );
+
+  return (
+    <>
+      {runs.map((r, i) => (
+        <mesh key={i} position={[r.x, 0.6, r.z]} castShadow receiveShadow>
+          <boxGeometry args={[Math.max(r.w, 0.5), 1.2, Math.max(r.d, 0.5)]} />
+          <meshStandardMaterial color="#7b786f" roughness={0.95} metalness={0} flatShading />
+        </mesh>
+      ))}
+      <Layer count={piers.length} flat="#8c887d" place={pier} roughness={0.92}>
+        <boxGeometry args={[0.78, 1.7, 0.78]} />
+      </Layer>
+    </>
   );
 });
 
@@ -299,12 +338,15 @@ const Fountain = memo(function Fountain() {
  * plaza the only piece of furniture anybody actually looks at.
  */
 const Furniture = memo(function Furniture() {
-  const { lamps, benches, planters } = useMemo(() => {
+  const { lamps, benches, planters, yard } = useMemo(() => {
     const props = allProps();
     return {
       lamps: props.filter((p) => p.kind === 'lamp'),
       benches: props.filter((p) => p.kind === 'bench'),
       planters: props.filter((p) => p.kind === 'planter'),
+      // The yard's three kinds share a list because they share a reason to be
+      // drawn: there are eight of them total and they are all one-offs.
+      yard: props.filter((p) => p.kind === 'van' || p.kind === 'skip' || p.kind === 'pallets'),
     };
   }, []);
 
@@ -348,6 +390,13 @@ const Furniture = memo(function Furniture() {
       {planters.map((p) => (
         <StreetPlanter key={`p${p.x}:${p.z}`} position={[p.x, p.z]} seed={p.seed} />
       ))}
+
+      {yard.map((p) => {
+        const at = { key: `y${p.x}:${p.z}`, position: [p.x, p.z] as [number, number], rotation: p.rotation, seed: p.seed };
+        if (p.kind === 'van') return <ParkedVan {...at} />;
+        if (p.kind === 'skip') return <Skip {...at} />;
+        return <PalletStack {...at} />;
+      })}
     </>
   );
 });
@@ -357,6 +406,7 @@ const HqScene = memo(function HqScene() {
     <>
       <HqLighting />
       <Ground />
+      <Perimeter />
       <Tower />
       <Fountain />
       <Furniture />

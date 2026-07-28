@@ -669,3 +669,113 @@ export function Stump({
     </group>
   );
 }
+
+/**
+ * A van, parked and working.
+ *
+ * Deliberately NOT the WreckedCar above. That one is a ruin for the Deep Forest;
+ * this one has all four wheels, closed doors and clean paint, and the difference
+ * is the entire point of having both. A settlement that still runs deliveries is
+ * a settlement, and one whose vehicles are all wrecks is a set.
+ *
+ * Quarter turns only, like every other placed prop — a service yard is somewhere
+ * people park to a line.
+ */
+export function ParkedVan({
+  position,
+  rotation = 0,
+  seed = 0,
+}: {
+  position: [number, number];
+  rotation?: number;
+  seed?: number;
+}) {
+  const paint = ['#4a5c6b', '#5a5348', '#3f4a52', '#585048'][Math.floor(hash2(seed, 1) * 4)];
+  return (
+    <group position={[position[0], 0, position[1]]} rotation={[0, rotation, 0]}>
+      {/* Box body — a van is a brick with a cab, which is what makes it read as
+          a van rather than a car at this scale. */}
+      <mesh position={[0, 0.62, -0.25]} castShadow receiveShadow>
+        <boxGeometry args={[1.05, 0.86, 1.5]} />
+        {flat(paint, 0.88, 0.18)}
+      </mesh>
+      {/* Cab, lower and set forward. */}
+      <mesh position={[0, 0.46, 0.78]} castShadow>
+        <boxGeometry args={[1.0, 0.54, 0.62]} />
+        {flat(paint, 0.88, 0.18)}
+      </mesh>
+      <mesh position={[0, 0.58, 1.06]}>
+        <boxGeometry args={[0.86, 0.28, 0.06]} />
+        {flat(ISO.glass, 0.25, 0.4)}
+      </mesh>
+      {[
+        [-0.52, 0.62],
+        [0.52, 0.62],
+        [-0.52, -0.72],
+        [0.52, -0.72],
+      ].map(([x, z]) => (
+        <mesh key={`${x}:${z}`} position={[x, 0.19, z]} rotation={[0, 0, Math.PI / 2]} castShadow>
+          <cylinderGeometry args={[0.19, 0.19, 0.13, 6]} />
+          {flat('#1f1e1c', 0.99)}
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * A skip. The least glamorous prop in the game and one of the most useful.
+ *
+ * Nothing says "people work here and generate rubbish" faster, and it is the
+ * cheapest way to stop a service yard reading as a car park with nothing in it.
+ * The tapered sides are what make it a skip rather than a box.
+ */
+export function Skip({ position, rotation = 0, seed = 0 }: { position: [number, number]; rotation?: number; seed?: number }) {
+  return (
+    <group position={[position[0], 0, position[1]]} rotation={[0, rotation, 0]}>
+      <mesh position={[0, 0.36, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.5, 0.72, 0.9]} />
+        {flat('#6b5a3a', 0.96, 0.12)}
+      </mesh>
+      {/* Rim, so the top edge catches light and it does not read as solid. */}
+      <mesh position={[0, 0.73, 0]} castShadow>
+        <boxGeometry args={[1.56, 0.07, 0.96]} />
+        {flat('#7d6a45', 0.9, 0.15)}
+      </mesh>
+      {/* Whatever is in it, spilling slightly over. */}
+      {[0, 1, 2].map((i) => (
+        <mesh
+          key={i}
+          position={[(hash2(seed, i) - 0.5) * 1.1, 0.78 + hash2(seed, i + 3) * 0.1, (hash2(seed, i + 6) - 0.5) * 0.6]}
+          rotation={[hash2(seed, i + 9) * 0.6, hash2(seed, i + 12) * Math.PI, 0.2]}
+          castShadow
+        >
+          <boxGeometry args={[0.34, 0.12, 0.24]} />
+          {flat(i % 2 === 0 ? ISO.woodDark : '#4a4740', 0.98)}
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/** Pallets, stacked. Flat, cheap, and instantly legible as "goods move here". */
+export function PalletStack({ position, rotation = 0, seed = 0 }: { position: [number, number]; rotation?: number; seed?: number }) {
+  const count = 3 + Math.floor(hash2(seed, 1) * 4);
+  return (
+    <group position={[position[0], 0, position[1]]} rotation={[0, rotation, 0]}>
+      {Array.from({ length: count }, (_, i) => (
+        <mesh
+          key={i}
+          // A slight stagger per layer. A perfectly square stack reads as one
+          // block; an offset one reads as things somebody put down.
+          position={[(hash2(seed, i + 2) - 0.5) * 0.12, 0.06 + i * 0.11, (hash2(seed, i + 8) - 0.5) * 0.12]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[0.9, 0.09, 0.7]} />
+          {flat(i % 2 === 0 ? ISO.wood : ISO.woodDark, 0.97)}
+        </mesh>
+      ))}
+    </group>
+  );
+}

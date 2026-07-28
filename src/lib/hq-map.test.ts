@@ -11,9 +11,12 @@ import {
   doorCells,
   inFountain,
   inTower,
+  inYard,
   isWalkable,
   onPath,
   propAt,
+  YARD,
+  perimeter,
 } from './hq-map';
 import { REGIONS, regionById } from './regions';
 // Relative, not aliased: vitest here does not resolve '@/'.
@@ -228,5 +231,149 @@ describe('where HQ sits in the world', () => {
     // table, where a player can see the building they are working toward.
     expect(REGIONS.some((r) => r.id === 'hq-lobby')).toBe(true);
     expect(DOORS.some((d) => d.region === 'hq-lobby')).toBe(true);
+  });
+});
+
+describe('the west service yard', () => {
+  /**
+   * The whole reason it exists. The west margin was six columns of ground you
+   * could see and not enter; if a later change strands the yard again, this is
+   * the assertion that says so rather than a screenshot nobody takes.
+   */
+  it('is reachable on foot from the arrival tile', () => {
+    const seen = new Set<string>();
+    const queue: Array<{ x: number; z: number }> = [{ ...ARRIVAL }];
+    seen.add(`${ARRIVAL.x}:${ARRIVAL.z}`);
+    let reached = false;
+    while (queue.length) {
+      const at = queue.shift()!;
+      if (inYard(at.x, at.z)) { reached = true; break; }
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const x = at.x + dx;
+        const z = at.z + dz;
+        const key = `${x}:${z}`;
+        if (seen.has(key) || !isWalkable(x, z)) continue;
+        seen.add(key);
+        queue.push({ x, z });
+      }
+    }
+    expect(reached, 'no walkable route from arrival to the yard').toBe(true);
+  });
+
+  it('shares an edge with the concourse rather than floating', () => {
+    // YARD.maxX + 1 is the concourse's west column. If that stops being paved
+    // the yard becomes an island, which is the bug this catches.
+    expect(onPath(YARD.maxX + 1, 6)).toBe(true);
+  });
+
+  it('stays inside the map', () => {
+    expect(YARD.minX).toBeGreaterThanOrEqual(BOUNDS.minX);
+    expect(YARD.maxZ).toBeLessThanOrEqual(BOUNDS.maxZ);
+  });
+
+  /**
+   * The yard is the back of the building and must NOT be mirrored — same rule
+   * the service spur follows. A matching yard on the east would turn a working
+   * compound into a symmetrical diagram of one.
+   */
+  it('is not mirrored onto the east side', () => {
+    for (const p of allProps()) {
+      if (p.kind === 'van' || p.kind === 'skip' || p.kind === 'pallets') {
+        expect(p.x, 'yard furniture belongs on the west').toBeLessThan(0);
+      }
+    }
+  });
+
+  /** Vans are solid. Walking through a parked van is the sort of thing that
+      makes a prop read as a decal. */
+  it('parks solid vehicles', () => {
+    const vans = allProps().filter((p) => p.kind === 'van');
+    expect(vans.length).toBeGreaterThan(0);
+    for (const v of vans) expect(isWalkable(v.x, v.z)).toBe(false);
+  });
+});
+
+describe('the plaza is mostly plaza', () => {
+  /**
+   * The complaint that started this: "tons of blank map on the edge outskirts".
+   * Before the yard, 63% of the region was reachable and the rest was scenery
+   * you could not enter. There is no perfect number here, but a region that is
+   * more margin than place is a region that has stopped being composed — so
+   * this holds the line rather than pinning an exact figure.
+   */
+  it('does not spend most of itself on empty margin', () => {
+    let used = 0;
+    let total = 0;
+    for (let x = BOUNDS.minX; x <= BOUNDS.maxX; x += 1) {
+      for (let z = BOUNDS.minZ; z <= BOUNDS.maxZ; z += 1) {
+        total += 1;
+        if (onPath(x, z) || inTower(x, z) || inFountain(x, z)) used += 1;
+      }
+    }
+    expect(used / total).toBeGreaterThan(0.7);
+  });
+});
+
+describe('the compound wall', () => {
+  /**
+   * The bug this exists for.
+   *
+   * The first pass matched doors against the wall LINE (maxZ + 0.5) instead of
+   * the boundary TILE (maxZ), so nothing ever matched and both gates were
+   * walled over — a sealed compound with two doors painted on it. Every other
+   * test passed, because the wall has no collision: isWalkable was still
+   * perfectly happy to let you stand in a gateway with concrete drawn across
+   * it. Only a screenshot would have caught it, and the pane was not
+   * compositing that day.
+   */
+  it('leaves a gap at every door on the boundary', () => {
+    const { runs } = perimeter();
+    const edge = (d: (typeof DOORS)[number]) =>
+      d.z === BOUNDS.maxZ || d.z === BOUNDS.minZ || d.x === BOUNDS.maxX || d.x === BOUNDS.minX;
+
+    const onEdge = DOORS.filter(edge);
+    expect(onEdge.length, 'no door sits on the boundary at all').toBeGreaterThan(0);
+
+    for (const door of onEdge) {
+      for (const r of runs) {
+        const hitsX = Math.abs(r.x - door.x) < (r.w + 1) / 2;
+        const hitsZ = Math.abs(r.z - door.z) < (r.d + 1) / 2;
+        expect(hitsX && hitsZ, `wall run covers the ${door.id} gate`).toBe(false);
+      }
+    }
+  });
+
+  /**
+   * Both ways out have to be in the edge, not near it. A gate set back from the
+   * wall has a wall behind it, which reads as a dead end with a sign on it.
+   */
+  it('puts both ways out in the boundary itself', () => {
+    for (const id of ['grounds', 'treeline']) {
+      const door = DOORS.find((d) => d.id === id)!;
+      const atEdge =
+        door.z === BOUNDS.maxZ || door.z === BOUNDS.minZ || door.x === BOUNDS.maxX || door.x === BOUNDS.minX;
+      expect(atEdge, `the ${id} gate is not on the boundary`).toBe(true);
+    }
+  });
+
+  /** The interior door must NOT punch a hole in the perimeter. */
+  it('does not cut a gap for the tower door', () => {
+    const lobby = DOORS.find((d) => d.id === 'lobby')!;
+    expect(lobby.x).toBeGreaterThan(BOUNDS.minX);
+    expect(lobby.x).toBeLessThan(BOUNDS.maxX);
+    expect(lobby.z).toBeGreaterThan(BOUNDS.minZ);
+    expect(lobby.z).toBeLessThan(BOUNDS.maxZ);
+  });
+
+  it('encloses all four sides', () => {
+    const { runs } = perimeter();
+    for (const [name, has] of [
+      ['north', runs.some((r) => r.z < BOUNDS.minZ)],
+      ['south', runs.some((r) => r.z > BOUNDS.maxZ)],
+      ['west', runs.some((r) => r.x < BOUNDS.minX)],
+      ['east', runs.some((r) => r.x > BOUNDS.maxX)],
+    ] as const) {
+      expect(has, `no wall on the ${name} side`).toBe(true);
+    }
   });
 });

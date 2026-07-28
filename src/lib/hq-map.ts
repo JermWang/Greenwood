@@ -21,7 +21,24 @@
 // floors yet; that is deliberately not being solved here.
 
 /** The playable rectangle. Must match the hq bounds in lib/regions. */
-export const BOUNDS = { minX: -20, maxX: 20, minZ: -16, maxZ: 20 } as const;
+/*
+ * Deliberately NOT symmetric about x = 0, and that is the composition decision
+ * rather than a typo.
+ *
+ * The region used to be ±20 by -16..20 and only 63% of it was ground a player
+ * could stand on. The rest was margin: three empty rows behind the tower, six
+ * dead columns west, six more east holding nothing but the service spur.
+ *
+ * The two sides got opposite treatments because they had opposite problems.
+ * The west now runs out to -20 because the YARD is there and earns it — blank
+ * ground is fixed by giving it a reason, and cropping is only right when no
+ * reason exists. The east had no such reason, so it was cropped to 17: just
+ * enough to carry the spur out to the Treeline gate and stop.
+ *
+ * A plaza wider on its service side than its gate side is what a real compound
+ * looks like. A perfectly square one is what a level editor looks like.
+ */
+export const BOUNDS = { minX: -20, maxX: 17, minZ: -15, maxZ: 20 } as const;
 
 /** Seeds the scatter. Constant, so everyone walks the same plaza forever. */
 export const MAP_SEED = 0x67726871; // "grhq"
@@ -123,7 +140,12 @@ export const DOORS: Doorway[] = [
   },
   {
     id: 'treeline',
-    x: BOUNDS.maxX - 2,
+    // ON the east edge, not two tiles shy of it. It was inset back when the map
+    // just stopped at the boundary and the difference was invisible; now that
+    // there is a compound wall, a gate that does not sit IN the wall is a gate
+    // with a wall behind it. The grounds door uses BOUNDS.maxZ for the same
+    // reason — a way out belongs in the edge it is a way out of.
+    x: BOUNDS.maxX,
     z: -8,
     axis: 'z',
     rotation: Math.PI / 2,
@@ -162,11 +184,37 @@ export function onPath(x: number, z: number): boolean {
   if (x >= 10 && x <= 14 && z >= -12 && z <= BOUNDS.maxZ) return true;
   // The service run east from the apron, out to the gate.
   if (z >= -10 && z <= -6 && x >= 10) return true;
+  // The west yard. Shares an edge with the concourse at x = -14, so it needs no
+  // connector of its own — see YARD.
+  if (inYard(x, z)) return true;
   for (const door of DOORS) {
     if (Math.abs(x - door.x) <= 1 && Math.abs(z - door.z) <= 1) return true;
   }
   return false;
 }
+
+/**
+ * The west service yard.
+ *
+ * The west margin used to be six columns of nothing — 37% of the region was
+ * unreachable ground, and most of it was over here. The temptation was to crop
+ * the bounds in, which would have worked and would have made the plaza smaller
+ * for no reason a player could name.
+ *
+ * A tower needs somewhere for its vans, and the yard is the honest answer: it
+ * gives the west side a job, it explains the tower (things arrive here, people
+ * work here), and it is the sort of place a player wanders into once and then
+ * knows the shape of the region.
+ *
+ * It is NOT mirrored on the east and that is the same rule the service spur
+ * follows — backs of buildings are asymmetric because their contents are.
+ * Sharing the concourse's west edge at x = -14 is what connects it; there is no
+ * separate link path, because two adjacent paved cells are already a route.
+ */
+export const YARD = { minX: -19, maxX: -15, minZ: 0, maxZ: 12 } as const;
+
+export const inYard = (x: number, z: number) =>
+  x >= YARD.minX && x <= YARD.maxX && z >= YARD.minZ && z <= YARD.maxZ;
 
 export const inTower = (x: number, z: number) =>
   x >= TOWER.minX && x <= TOWER.maxX && z >= TOWER.minZ && z <= TOWER.maxZ;
@@ -175,7 +223,83 @@ export const inTower = (x: number, z: number) =>
 export const inFountain = (x: number, z: number) =>
   Math.hypot(x - FOUNTAIN.x, z - FOUNTAIN.z) <= FOUNTAIN.radius;
 
-export type PropKind = 'planter' | 'bench' | 'lamp';
+// ---------------------------------------------------------------------------
+// The compound wall
+// ---------------------------------------------------------------------------
+
+/** Half-width of the opening left for a gate, in tiles. */
+export const GATE_HALF = 2.2;
+
+export interface WallRun {
+  /** Centre of the run. */
+  x: number;
+  z: number;
+  /** Extent. One of these is the wall's thickness. */
+  w: number;
+  d: number;
+}
+
+/**
+ * The perimeter wall, derived rather than listed.
+ *
+ * It lives here rather than in HqScene because it is map data — a pure function
+ * of BOUNDS and DOORS — and because a wall written out by hand is a wall that
+ * disagrees with the map the first time either one moves. This codebase has
+ * paid for that twice already: the gate sign that named the wrong region, and
+ * the Deep Forest's two sets of bounds.
+ *
+ * Being here also makes it testable, which matters more than usual: the failure
+ * mode is a wall drawn ACROSS a gate, and that is invisible to every existing
+ * test (the wall has no collision — isWalkable is still the only authority on
+ * where you may stand) while being immediately obvious to a player. It was in
+ * fact wrong on the first pass, in exactly that way.
+ *
+ * The two coordinates that look interchangeable are not. The wall runs half a
+ * tile OUTSIDE the boundary; the door stands ON the boundary tile. Matching one
+ * against the other finds nothing and seals the compound.
+ */
+export function perimeter(): { runs: WallRun[]; piers: Array<[number, number]> } {
+  const runs: WallRun[] = [];
+  const piers: Array<[number, number]> = [];
+
+  const side = (axis: 'x' | 'z', wallAt: number, tileAt: number, from: number, to: number) => {
+    const gaps = DOORS.filter((door) => (axis === 'x' ? door.z : door.x) === tileAt)
+      .map((door) => (axis === 'x' ? door.x : door.z))
+      .sort((a, b) => a - b);
+
+    let cursor = from;
+    for (const gap of [...gaps, null]) {
+      const end = gap === null ? to : gap - GATE_HALF;
+      if (end > cursor) {
+        const mid = (cursor + end) / 2;
+        const len = end - cursor;
+        runs.push(
+          axis === 'x' ? { x: mid, z: wallAt, w: len, d: 0.5 } : { x: wallAt, z: mid, w: 0.5, d: len }
+        );
+        // Both ends of every run, so each gate is framed by a pair.
+        for (const at of [cursor, end]) piers.push(axis === 'x' ? [at, wallAt] : [wallAt, at]);
+        // Then every fourth tile between. An unbroken run of concrete at this
+        // length reads as a texture rather than a structure.
+        for (let p = Math.ceil(cursor / 4) * 4; p < end; p += 4) {
+          if (p - cursor > 1 && end - p > 1) piers.push(axis === 'x' ? [p, wallAt] : [wallAt, p]);
+        }
+      }
+      if (gap !== null) cursor = gap + GATE_HALF;
+    }
+  };
+
+  const w = BOUNDS.minX - 0.5;
+  const e = BOUNDS.maxX + 0.5;
+  const n = BOUNDS.minZ - 0.5;
+  const s = BOUNDS.maxZ + 0.5;
+  side('x', n, BOUNDS.minZ, w, e);
+  side('x', s, BOUNDS.maxZ, w, e);
+  side('z', w, BOUNDS.minX, n, s);
+  side('z', e, BOUNDS.maxX, n, s);
+  return { runs, piers };
+}
+
+export type PropKind = 'planter' | 'bench' | 'lamp' | 'van' | 'skip' | 'pallets';
 
 export interface MapProp {
   x: number;
@@ -260,6 +384,26 @@ const PLACED: Array<Omit<MapProp, 'seed' | 'solid'>> = [
   { x: 12, z: 2, kind: 'lamp', rotation: 0 },
   { x: 12, z: -4, kind: 'lamp', rotation: 0 },
   { x: 14, z: -8, kind: 'lamp', rotation: 0 },
+
+  /*
+   * The west yard, and it breaks the mirror on purpose for the same reason the
+   * spur does. This is where the vans live.
+   *
+   * The vans are parked nose-east in a rank, quarter-turned like everything
+   * else, because a yard where vehicles sit at angles reads as abandoned and
+   * this one is in use. They are solid: you walk around a van.
+   *
+   * The single lamp is at the yard MOUTH rather than inside it. Lamps mark the
+   * route here, and what a player needs shown is the turning off the concourse,
+   * not the far corner of a car park.
+   */
+  { x: -15, z: 6, kind: 'lamp', rotation: 0 },
+  { x: -17, z: 2, kind: 'van', rotation: Math.PI / 2 },
+  { x: -17, z: 4, kind: 'van', rotation: Math.PI / 2 },
+  { x: -17, z: 7, kind: 'van', rotation: Math.PI / 2 },
+  { x: -18, z: 10, kind: 'skip', rotation: 0 },
+  { x: -16, z: 11, kind: 'pallets', rotation: 0 },
+  { x: -18, z: 12, kind: 'pallets', rotation: Math.PI / 2 },
 ];
 
 /** Placed furniture, keyed by cell so collision stays a lookup. */

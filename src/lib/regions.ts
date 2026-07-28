@@ -177,7 +177,7 @@ export const REGIONS: Region[] = [
     requiresPack: false,
     lighting: 'overcast-afternoon',
     // Must match BOUNDS in lib/hq-map — asserted in hq-map.test.
-    bounds: { minX: -20, maxX: 20, minZ: -16, maxZ: 20 },
+    bounds: { minX: -20, maxX: 17, minZ: -15, maxZ: 20 },
     blurb: 'The plaza, the fountain, and the tower that runs the lights.',
   },
   {
