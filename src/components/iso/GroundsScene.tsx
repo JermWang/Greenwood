@@ -45,6 +45,16 @@ import {
   type MapProp,
 } from '@/lib/grounds-map';
 
+/**
+ * The gate in the fence, looked up rather than assumed.
+ *
+ * Whatever region sits north of the Grounds owns this arch — it was the Treeline,
+ * it is now Greenwood HQ, and it will move again. Found by POSITION rather than
+ * by id so the scene never needs to know which, and so the sign on it can never
+ * again name a different place from the one behind it.
+ */
+const NORTH_GATE = DOORS.find((d) => d.z === FENCE_Z + 1);
+
 /** Foliage greens. Real greens, deliberately not the brand colour. */
 const NEEDLE = ['#4a6b3c', '#537447', '#425f34', '#5c7d4c'];
 const BARK = '#4a3b2c';
@@ -470,7 +480,17 @@ const GroundsScene = memo(function GroundsScene({ felled }: { felled: Set<string
             flatShading
           />
         </mesh>
-        <PlaceLabel position={[0, 4.8, 0]}>The Treeline</PlaceLabel>
+        {/*
+          The sign READS FROM THE DOOR TABLE. It said "The Treeline" while the
+          gate led to Greenwood HQ, because the label existed twice — once as
+          data and once hardcoded here — and only one of them got updated when
+          HQ was slotted between the two regions.
+          A sign that names a different place from the one behind it is worse
+          than no sign: it is the map lying, and a player who walks through
+          expecting a forest and arrives at a plaza stops trusting every other
+          label in the game. Derived, it cannot drift again.
+        */}
+        <PlaceLabel position={[0, 4.8, 0]}>{NORTH_GATE?.label ?? 'The way out'}</PlaceLabel>
       </group>
     </>
   );

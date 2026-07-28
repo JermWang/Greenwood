@@ -94,6 +94,22 @@ describe('doors', () => {
     }
   });
 
+  /**
+   * A sign must name the place behind it.
+   *
+   * The fence gate read "The Treeline" long after it had been repointed at
+   * Greenwood HQ, because the label existed twice — once as data and once
+   * hardcoded in the scene — and only one was updated. A sign naming a
+   * different place is worse than no sign: it is the map lying, and a player who
+   * walks through expecting a forest and arrives at a plaza stops trusting every
+   * other label in the game.
+   */
+  it('labels every door with the name of the region it opens onto', () => {
+    for (const door of DOORS) {
+      expect(door.label, `${door.id} is mislabelled`).toBe(regionById(door.region)!.name);
+    }
+  });
+
   it('every door points at the href its region publishes', () => {
     // Two sources for one route is two routes eventually. The region table owns
     // where a place lives; a door only says which place.
