@@ -89,7 +89,7 @@ Income Note, Trading Floor, The Vault.
 
 ## Known state
 
-- **540 tests pass.** The suite is green; if it is not, that is new.
+- **588 tests pass.** The suite is green; if it is not, that is new.
 - The Deep Forest is playable: map, server-authoritative movement, loot
   visibility, extraction geometry, HUD, and combat against shamblers and wolves.
 - **PvP is live.** Players see each other, can strike each other, and dying

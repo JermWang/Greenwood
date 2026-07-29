@@ -21,7 +21,20 @@
 // meter precisely.
 //
 // This is NOT sybil defence. One wallet is limited; a thousand wallets are a
-// thousand limits. See STARTER_BNTY_GRANT in lib/economy for that problem.
+// thousand limits.
+//
+// The obvious sybil worry — 1,000 free BNTY per address against a desk costing
+// exactly 1,000 — turned out not to be one, and the reasoning is worth keeping
+// because it is not obvious. Once the token is live, spends are real ERC-20
+// transfers and claims pay out real tokens, so the mirrored osr_balance is
+// neither debited nor credited: free BNTY buys nothing and withdraws nothing.
+// starterGrantFor in lib/game now scopes the grant to the demo and the
+// pre-token period, which is where it was always meant to apply.
+//
+// What IS worth guarding at launch is pre-token farming: desks created before
+// the switch keep accruing, and those accruals become real payouts afterwards.
+// That is a launch-sequence problem, not a rate-limit one — wipe before the
+// token address is configured.
 
 import { getDb } from './db';
 import { GameError } from './game';

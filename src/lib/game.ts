@@ -3,6 +3,8 @@
 // read "settles" a node's accrued BNTY up to now, so no background ticker is
 // needed.
 
+import { isDemoWallet } from './demo';
+import { TOKEN_LIVE } from './config';
 import { getDb, getProtocolValue, setProtocolValue } from './db';
 import { rollCrateDrops, unopenedCrates, unseenCrates, type FoundCrate } from './crates';
 import { crateCostBnty } from './economy';
@@ -164,25 +166,55 @@ export function readUser(wallet: string): UserRow {
   return stored ?? unregisteredUser(wallet);
 }
 
+/**
+ * What a new wallet starts with.
+ *
+ * The grant exists for exactly one reason: a fresh operator has to be able to
+ * afford their first desk out of the MIRRORED balance. That is only how the
+ * game works while spends settle off-chain — in the demo, which never signs
+ * anything, and before the token exists.
+ *
+ * Once the token is live a spend is a real ERC-20 transfer and the route passes
+ * settledOnChain, so osr_balance is neither debited by spends nor credited by
+ * claims. Granting free BNTY there puts a number on the screen that cannot buy
+ * anything and cannot be withdrawn: not a drain, but a balance that lies to the
+ * player about what they have.
+ *
+ * This was previously unconditional, which is how every real wallet would have
+ * started with 1,000 BNTY it could never spend.
+ */
+function starterGrantFor(wallet: string): number {
+  if (STARTER_BNTY_GRANT <= 0) return 0;
+  // Demo accounts never settle on-chain, so the mirrored balance is the only
+  // money they will ever have.
+  if (isDemoWallet(wallet)) return STARTER_BNTY_GRANT;
+  // Pre-token, everyone is playing the mirrored game.
+  return TOKEN_LIVE ? 0 : STARTER_BNTY_GRANT;
+}
+
 export function getOrCreateUser(wallet: string): UserRow {
   const db = getDb();
   let user = db.prepare('SELECT * FROM users WHERE wallet = ?').get(wallet) as unknown as UserRow | undefined;
+  const grant = starterGrantFor(wallet);
   if (!user) {
     const now = Date.now();
     // Seed the starter grant so a fresh wallet can afford its first node, and
     // mark dripped so it is credited exactly once per wallet.
     db.prepare(
       'INSERT OR IGNORE INTO users (wallet, osr_balance, created_at, last_seen, dripped) VALUES (?,?,?,?,1)'
-    ).run(wallet, STARTER_BNTY_GRANT, now, now);
+    ).run(wallet, grant, now, now);
     user = db.prepare('SELECT * FROM users WHERE wallet = ?').get(wallet) as unknown as UserRow;
-    if (STARTER_BNTY_GRANT > 0) addLedger(wallet, 'starter_grant', STARTER_BNTY_GRANT, {});
+    if (grant > 0) addLedger(wallet, 'starter_grant', grant, {});
   } else if (!user.dripped) {
     // Wallet predates the starter grant — credit it once and flag it.
+    //
+    // Still flagged when the grant is zero, so a wallet first seen after the
+    // token went live is not re-examined on every request forever.
     db.prepare('UPDATE users SET osr_balance = osr_balance + ?, dripped = 1 WHERE wallet = ?').run(
-      STARTER_BNTY_GRANT,
+      grant,
       wallet
     );
-    addLedger(wallet, 'starter_grant', STARTER_BNTY_GRANT, {});
+    if (grant > 0) addLedger(wallet, 'starter_grant', grant, {});
     db.prepare('UPDATE users SET last_seen = ? WHERE wallet = ?').run(Date.now(), wallet);
     user = db.prepare('SELECT * FROM users WHERE wallet = ?').get(wallet) as unknown as UserRow;
   } else {
