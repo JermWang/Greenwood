@@ -138,7 +138,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
         back into the pool. Protocol ETH revenue (ERC-20 transfer tax (2%)
         + DEX LP fees (2%)) goes to a separate treasury and funds infrastructure/ops, not user
         rewards. The{' '}
-        <Link href="/app/vault" className="text-amber-500 hover:underline">
+        <Link href="/app/vault" className="text-lime-300 hover:underline">
           Vault
         </Link>{' '}
         page shows the protocol&rsquo;s live ledger — reserve balances, burns, and treasury events;
@@ -194,7 +194,7 @@ export default function DocsPage() {
           <ul className="grid gap-1 text-sm sm:grid-cols-2">
             {CONTENTS.map(({ href, label }) => (
               <li key={href}>
-                <a href={href} className="text-steel-300 transition hover:text-amber-500">
+                <a href={href} className="text-steel-300 transition hover:text-lime-300">
                   {label}
                 </a>
               </li>
@@ -235,7 +235,7 @@ export default function DocsPage() {
           <ol className="space-y-4">
             <Step n={1} title="Connect a wallet">
               Open the{' '}
-              <Link href="/app" className="text-amber-500 hover:underline">
+              <Link href="/app" className="text-lime-300 hover:underline">
                 Trading Floor
               </Link>{' '}
               and sign in with email or Google to create a Privy embedded EVM wallet. You can also
@@ -316,27 +316,23 @@ export default function DocsPage() {
           </p>
           <p>
             Yield itself comes from your instruments, not the visual level:{' '}
-            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
+            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">
               your rate = min(your GP / network GP, 30%) × E(t) × welcome boost
             </code>{' '}
             — where GP (yield power) is the Formula D multiplier of your installed instruments.
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {AURA_BANDS.map((band) => (
-              <div key={band.label} className="panel flex flex-col items-center gap-1 p-3">
-                <span
-                  className="font-mono text-lg font-bold"
-                  style={{ color: band.color, textShadow: `0 0 12px ${band.color}66` }}
-                >
-                  {auraRange(band)}
-                </span>
-                <span
-                  className="h-2 w-full rounded-full"
-                  style={{ background: band.color, boxShadow: `0 0 8px ${band.color}88` }}
-                />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-steel-400">
-                  {band.label}
-                </span>
+              <div
+                key={band.label}
+                className="gw-grade"
+                // The colour is a CSS variable so the rail, the glow and the
+                // range text all read the one value — three places to restate
+                // it is three places for it to drift.
+                style={{ ['--grade' as string]: band.color }}
+              >
+                <b>{auraRange(band)}</b>
+                <small>{band.label}</small>
               </div>
             ))}
           </div>
@@ -410,7 +406,7 @@ export default function DocsPage() {
           </p>
           <p>
             Use the{' '}
-            <Link href="/app/inventory" className="text-amber-500 hover:underline">
+            <Link href="/app/inventory" className="text-lime-300 hover:underline">
               Instruments
             </Link>{' '}
             page to move instruments between desks — unequip from one, equip on another. The
@@ -547,7 +543,7 @@ export default function DocsPage() {
           </p>
           <p>
             See the full level table on the{' '}
-            <Link href="/app/tokenomics" className="text-amber-500 hover:underline">
+            <Link href="/app/tokenomics" className="text-lime-300 hover:underline">
               BNTY Model
             </Link>{' '}
             page.
@@ -618,7 +614,7 @@ export default function DocsPage() {
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {WOOD_LADDER.map((w) => (
-              <div key={w.name} className="panel flex flex-col items-center gap-1 p-3">
+              <div key={w.name} className="gw-doc-card flex flex-col items-center gap-1">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-steel-500">
                   T{w.tier}
                 </span>
@@ -671,7 +667,7 @@ export default function DocsPage() {
           <p className="text-xs text-steel-500">
             Mints split 70/30 burn/treasury on the BNTY leg; portfolio upgrades and allocations split
             50/30/20 burn/reserve/treasury. See{' '}
-            <Link href="/app/tokenomics" className="text-amber-500 hover:underline">
+            <Link href="/app/tokenomics" className="text-lime-300 hover:underline">
               BNTY Model
             </Link>{' '}
             for the live numbers straight from the backend.
@@ -709,7 +705,7 @@ export default function DocsPage() {
           </p>
           <p>
             You can always see current global emission and your share on the{' '}
-            <Link href="/app/vault" className="text-amber-500 hover:underline">
+            <Link href="/app/vault" className="text-lime-300 hover:underline">
               Vault
             </Link>{' '}
             page — it&rsquo;s fully public.
@@ -721,7 +717,7 @@ export default function DocsPage() {
           <div className="space-y-2">
             {FAQ.map(({ q, a }) => (
               <details key={q} className="panel group p-0">
-                <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-steel-200 transition hover:text-amber-500">
+                <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-steel-200 transition hover:text-lime-300">
                   {q}
                 </summary>
                 <div className="border-t border-ink-600/60 px-4 py-3 text-sm leading-relaxed text-steel-300">
@@ -736,15 +732,15 @@ export default function DocsPage() {
         <footer className="space-y-2 border-t border-ink-600 pt-4 text-xs text-steel-500">
           <p>
             <strong className="text-steel-300">Continue through the Greenwood terminal:</strong>{' '}
-            <Link href="/app/tokenomics" className="text-amber-500 hover:underline">
+            <Link href="/app/tokenomics" className="text-lime-300 hover:underline">
               BNTY Network Model
             </Link>{' '}
             has live numbers and formulas,{' '}
-            <Link href="/app/vault" className="text-amber-500 hover:underline">
+            <Link href="/app/vault" className="text-lime-300 hover:underline">
               The Vault
             </Link>{' '}
             shows the raw treasury flow,{' '}
-            <Link href="/app/leaderboard" className="text-amber-500 hover:underline">
+            <Link href="/app/leaderboard" className="text-lime-300 hover:underline">
               Leaderboard
             </Link>{' '}
             ranks funds by max level, sum of levels, and total yield.
@@ -839,7 +835,7 @@ function Section({
 }) {
   return (
     <section id={id} className="scroll-mt-20 space-y-4 text-sm leading-relaxed text-steel-300">
-      <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-amber-500">
+      <h2 className="gw-doc-heading">
         {title}
       </h2>
       {children}
@@ -850,7 +846,7 @@ function Section({
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500 font-mono text-sm font-bold text-ink-900">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-lime-400 font-mono text-sm font-bold text-ink-900">
         {n}
       </span>
       <div>
@@ -902,9 +898,9 @@ function NodeCard({
  */
 function RegionCard({ name, gate, body, warn }: { name: string; gate: string; body: string; warn?: boolean }) {
   return (
-    <div className={`panel p-4${warn ? ' border-amber-500/40' : ''}`}>
-      <p className="font-mono text-sm font-bold uppercase tracking-widest text-white">{name}</p>
-      <p className={`mt-1 font-mono text-[11px] ${warn ? 'text-amber-500' : 'text-steel-500'}`}>{gate}</p>
+    <div className={`gw-doc-card gw-region${warn ? ' is-outside' : ''}`}>
+      <h4>{name}</h4>
+      <p className="gw-region-gate mt-1">{gate}</p>
       <p className="mt-2 text-sm text-steel-300">{body}</p>
     </div>
   );

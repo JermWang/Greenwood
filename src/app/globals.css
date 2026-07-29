@@ -1888,3 +1888,92 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 900px) {
   .bench-panel { right: 10px; left: 10px; width: auto; bottom: 108px; max-height: 46vh; }
 }
+
+/* --- Handbook & network-model explainers ---------------------------------- */
+/*
+ * These pages were still wearing the previous project's clothes: soft
+ * translucent .panel cards, amber section headings, and a colour swatch sitting
+ * under a centred label. The CONTENT had been rewritten for Greenwood twice and
+ * it still read as the old game, because none of what you actually look at had
+ * changed.
+ *
+ * So they now speak the same language as the in-world console — gradient body,
+ * hairline border, inset top highlight, and the 8px wide-tracked mono that the
+ * HUD uses for every heading. Nothing here is a new idea; the point is that it
+ * is NOT a new idea, and the handbook should not look like a different product
+ * from the game it documents.
+ */
+.gw-doc-heading {
+  display: flex; align-items: center; gap: 10px;
+  font: 800 9px var(--font-mono), monospace;
+  letter-spacing: .24em; text-transform: uppercase;
+  color: rgba(219, 255, 74, .82);
+}
+/* A short neon rule after the label, so a heading reads as a section marker
+   rather than as small bold text floating above a paragraph. */
+.gw-doc-heading::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(219, 255, 74, .34), transparent);
+}
+
+.gw-doc-card {
+  min-width: 0;
+  border: 1px solid rgba(206, 204, 200, .14);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: linear-gradient(145deg, rgba(46, 45, 41, .93), rgba(23, 22, 20, .96));
+  box-shadow: 0 22px 60px -50px #000, 0 1px 0 rgba(255, 255, 255, .05) inset;
+}
+
+/*
+ * A grade chip.
+ *
+ * The old legend was a centred stack with a colour bar under the name, which is
+ * the single most generic way to draw a legend and was identical to the tier
+ * table it replaced. This hangs the grade colour on a LEFT RAIL instead and
+ * lets it bleed into the card as a corner wash, so the colour is the shape of
+ * the thing rather than a stripe added to it — and the five read as a ramp when
+ * they sit in a row.
+ */
+.gw-grade {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 13px 14px 13px 18px;
+  border: 1px solid rgba(206, 204, 200, .13);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(46, 45, 41, .92), rgba(23, 22, 20, .96));
+}
+.gw-grade::before {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 3px;
+  background: var(--grade); box-shadow: 0 0 14px var(--grade);
+}
+.gw-grade::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(120px 90px at 0% 0%, var(--grade), transparent 72%);
+  opacity: .12;
+}
+.gw-grade b {
+  position: relative; z-index: 1;
+  font: 700 15px var(--font-mono), monospace; letter-spacing: -.01em; color: var(--grade);
+}
+.gw-grade small {
+  position: relative; z-index: 1;
+  font: 800 8px var(--font-mono), monospace; letter-spacing: .2em;
+  text-transform: uppercase; color: rgba(214, 212, 208, .58);
+}
+
+/*
+ * A region card. `is-outside` marks the two that can hurt you — a warm hairline
+ * and a warm gate line, not a skull. The handbook is published by the fund and
+ * the fund would call it a site notice.
+ */
+.gw-region { position: relative; }
+.gw-region .gw-region-gate {
+  font: 800 8px var(--font-mono), monospace; letter-spacing: .16em;
+  text-transform: uppercase; color: rgba(199, 197, 193, .5);
+}
+.gw-region.is-outside { border-color: rgba(232, 168, 92, .3); }
+.gw-region.is-outside .gw-region-gate { color: rgba(232, 168, 92, .9); }
+.gw-region h4 {
+  font: 700 13px var(--font-mono), monospace; letter-spacing: .04em; color: #eceae6;
+}

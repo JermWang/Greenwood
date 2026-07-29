@@ -163,7 +163,7 @@ export default function TokenomicsPage() {
             <div className="grid gap-3 md:grid-cols-2">
               {families.map((f) => (
                 <div key={f.key} className="panel p-4">
-                  <h3 className="font-mono text-sm font-bold uppercase tracking-widest text-amber-500">
+                  <h3 className="font-mono text-sm font-bold uppercase tracking-widest text-lime-300">
                     {f.name}
                   </h3>
                   <p className="mt-1 text-xs text-steel-400">{f.description}</p>
@@ -235,7 +235,7 @@ export default function TokenomicsPage() {
         <Section title="04 / Yield Routing Diagram">
           <div className="mb-4 grid gap-2 md:grid-cols-4">
             {['Acquire BNTY', 'Open desks', 'Farm emissions', 'Reinvest & upgrade'].map((label, index) => (
-              <div key={label} className="panel relative px-3 py-4 text-center font-mono text-[11px] uppercase tracking-wider text-amber-300">
+              <div key={label} className="panel relative px-3 py-4 text-center font-mono text-[11px] uppercase tracking-wider text-lime-300">
                 <span className="mb-2 block text-lg text-white">0{index + 1}</span>
                 {label}
               </div>
@@ -250,7 +250,7 @@ export default function TokenomicsPage() {
         <Section title="05 / BNTY Emission Clock">
           <p className="text-sm leading-relaxed text-steel-300">
             Global BNTY emission follows a Bitcoin-style halving curve. Starting at{' '}
-            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
+            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">
               E₀ = {GENESIS_RATE_PER_SEC.toFixed(1)} BNTY/sec
             </code>{' '}
             at genesis, the rate halves every{' '}
@@ -306,7 +306,7 @@ export default function TokenomicsPage() {
         <Section title="05C / Reserve Safety Interlock">
           <p className="text-sm leading-relaxed text-steel-300">
             Orthogonal to the halving, a runway-based throttle factor{' '}
-            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
+            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">
               f ∈ [0, 1]
             </code>{' '}
             protects against pathological drain on legacy flat-rate families (not used for BNTY under
@@ -318,7 +318,7 @@ export default function TokenomicsPage() {
           <p className="mt-3 text-sm leading-relaxed text-steel-300">
             Under the halving model for BNTY, the emission reserve is pre-minted and cannot deplete
             beyond lifetime emission, so{' '}
-            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">f = 1.0</code>{' '}
+            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">f = 1.0</code>{' '}
             effectively always. When paused by admin, f is forced to 0 across all families.
           </p>
         </Section>
@@ -348,7 +348,7 @@ export default function TokenomicsPage() {
                   const bonus = getShaftBonusSlots(lvl);
                   return (
                     <tr key={lvl}>
-                      <td className="px-4 py-2.5 font-mono text-amber-500">L{lvl}</td>
+                      <td className="px-4 py-2.5 font-mono text-lime-300">L{lvl}</td>
                       <td className="px-4 py-2.5 text-right font-mono text-white">
                         {lvl === 1 ? '—' : `${row.bntyUpgradeCost.toLocaleString()} BNTY`}
                       </td>
@@ -372,20 +372,9 @@ export default function TokenomicsPage() {
           </p>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
             {AURA_BANDS.map((band) => (
-              <div key={band.label} className="panel flex flex-col items-center gap-1 p-3">
-                <span
-                  className="font-mono text-lg font-bold"
-                  style={{ color: band.color, textShadow: `0 0 12px ${band.color}66` }}
-                >
-                  {auraRange(band)}
-                </span>
-                <span
-                  className="h-2 w-full rounded-full"
-                  style={{ background: band.color, boxShadow: `0 0 8px ${band.color}88` }}
-                />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-steel-400">
-                  {band.label}
-                </span>
+              <div key={band.label} className="gw-grade" style={{ ['--grade' as string]: band.color }}>
+                <b>{auraRange(band)}</b>
+                <small>{band.label}</small>
               </div>
             ))}
           </div>
@@ -422,11 +411,11 @@ export default function TokenomicsPage() {
           )}
           <p className="mt-3 text-xs text-steel-400">
             See{' '}
-            <Link href="/app/vault" className="text-amber-500 hover:underline">
+            <Link href="/app/vault" className="text-lime-300 hover:underline">
               <strong>The Vault</strong>
             </Link>{' '}
             for the full event feed and{' '}
-            <Link href="/app/market" className="text-amber-500 hover:underline">
+            <Link href="/app/market" className="text-lime-300 hover:underline">
               <strong>Exchange</strong>
             </Link>{' '}
             for aggregated metrics.
@@ -437,15 +426,15 @@ export default function TokenomicsPage() {
         <Section title="09 / Protocol Source Matrix">
           <p className="text-sm leading-relaxed text-steel-300">
             All constants on this page are imported from{' '}
-            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
+            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">
               @greenwood/protocol
             </code>{' '}
             and{' '}
-            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
+            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">
               @greenwood/yield-engine
             </code>
             , and the live family config comes from{' '}
-            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
+            <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">
               GET /api/nodes/families
             </code>
             , so this page can never drift from what the backend actually enforces. Admin config
@@ -460,9 +449,7 @@ export default function TokenomicsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-3 font-mono text-xs font-bold uppercase tracking-widest text-amber-500">
-        {title}
-      </h2>
+      <h2 className="gw-doc-heading mb-3">{title}</h2>
       {children}
     </section>
   );
