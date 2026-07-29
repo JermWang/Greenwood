@@ -101,3 +101,33 @@ describe('recordPayout', () => {
     expect(() => recordPayout(wallet(7), 100, hash, { ok: true })).toThrow();
   });
 });
+
+/**
+ * The RPC client must not cache the head block.
+ *
+ * Found by running the real settle path against a local chain, and invisible to
+ * every test above: viem defaults cacheTime to the 4s polling interval, and
+ * that cache covers getBlockNumber but NOT getTransactionReceipt. So a fresh
+ * receipt gets compared against a head up to four seconds stale, and on a chain
+ * producing blocks faster than that — Robinhood Chain is ~0.35s, about eleven
+ * blocks per cache window — the head is regularly BEHIND the receipt's own
+ * block.
+ *
+ * The observed symptom was a correctly paid operator refused with "awaiting
+ * confirmations (0/2)" on a payment that had five. Retryable, so no tokens are
+ * lost, but the happy path fails on first attempt and the count in the message
+ * is wrong.
+ *
+ * Asserted against the source because the client is a lazily-built module
+ * singleton with no seam to inspect, and because the failure is a missing
+ * option rather than a wrong value — there is nothing to call that would come
+ * back wrong.
+ */
+describe('the settlement RPC client', () => {
+  test('disables viem block-number caching', () => {
+    const source = fs.readFileSync(path.join(__dirname, 'settlement.ts'), 'utf8');
+    const factory = source.slice(source.indexOf('function publicClient()'));
+    const body = factory.slice(0, factory.indexOf('\n}'));
+    expect(body.includes('cacheTime: 0'), 'publicClient() must pass cacheTime: 0').toBe(true);
+  });
+});

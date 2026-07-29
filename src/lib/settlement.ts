@@ -86,7 +86,32 @@ const chain = {
 
 let clientRef: ReturnType<typeof createPublicClient> | null = null;
 function publicClient() {
-  if (!clientRef) clientRef = createPublicClient({ chain, transport: http(CHAIN.rpcUrl) });
+  if (!clientRef) {
+    clientRef = createPublicClient({
+      chain,
+      transport: http(CHAIN.rpcUrl),
+      /*
+       * NO CACHING, and this is load-bearing rather than a tuning preference.
+       *
+       * viem defaults cacheTime to the polling interval — 4 seconds — and that
+       * cache covers getBlockNumber but NOT getTransactionReceipt. So the
+       * confirmation check below read a fresh receipt against a head that could
+       * be four seconds stale, and on a chain producing blocks faster than that
+       * the head is frequently BEHIND the block the receipt is in.
+       *
+       * The symptom is a correctly paid operator being told "awaiting
+       * confirmations (0/2)" when the payment actually had five. It is
+       * retryable, so nobody loses tokens, but the happy path fails on first
+       * attempt and the number in the message is a lie.
+       *
+       * Robinhood Chain produces a block roughly every 0.35s, so the default
+       * cache spans about eleven blocks. This was found by running the real
+       * settle path against a local chain; it is invisible to a unit test,
+       * because a mocked client has no clock.
+       */
+      cacheTime: 0,
+    });
+  }
   return clientRef;
 }
 
