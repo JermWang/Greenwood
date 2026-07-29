@@ -44,12 +44,30 @@ const CONTENTS: Array<{ href: string; label: string }> = [
   { href: '#components', label: '5. Instruments & Allocations' },
   { href: '#earning', label: '6. Earning & Claiming' },
   { href: '#compounding', label: '7. Portfolio Levels' },
-  { href: '#fees', label: '8. Fees' },
-  { href: '#emission', label: '9. Why rewards can slow down' },
-  { href: '#safety', label: '10. Safety & FAQ' },
+  { href: '#outside', label: '8. Going outside' },
+  { href: '#woodcutting', label: '9. Woodcutting & crafting' },
+  { href: '#fees', label: '10. Fees' },
+  { href: '#emission', label: '11. Why rewards can slow down' },
+  { href: '#safety', label: '12. Safety & FAQ' },
 ];
 
 const rarityLabel = (r: Rarity) => r.charAt(0).toUpperCase() + r.slice(1);
+
+/**
+ * The wood ladder, as a player meets it.
+ *
+ * Written out rather than derived from lib/woodcutting, because "where" is
+ * guidance rather than data — the species table knows tiers and respawn times,
+ * not which region is worth the walk. Tier and order are the parts that must
+ * not drift, and woodcutting.test already pins those.
+ */
+const WOOD_LADDER: Array<{ name: string; tier: number; where: string }> = [
+  { name: 'Pine', tier: 1, where: 'Everywhere' },
+  { name: 'Birch', tier: 1, where: 'Everywhere' },
+  { name: 'Oak', tier: 2, where: 'Grounds, Treeline' },
+  { name: 'Black Pine', tier: 3, where: 'Treeline' },
+  { name: 'Ironbark', tier: 4, where: 'Deep Forest only' },
+];
 
 // Milestones are computed from the halving period rather than written out, so
 // retuning the schedule cannot leave the guide quoting the old curve.
@@ -133,9 +151,9 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     a: (
       <p>
         It scales with your Portfolio Level: 2 per family at L1 up to 8 per family at L10.
-        Treasury Desks add bonus slots on top (+2 at L5, +3 at L7, +4 at L9), so a maxed wallet can run 8
-        Equity Desks and 12 Treasury Desks. The caps keep the 3D scene readable and prevent farming rewards with an
-        unbounded number of bare desks.
+        Treasury Desks add bonus slots on top (+2 at L5, +3 at L7, +4 at L9), so a maxed wallet can
+        run 8 Equity Desks and 12 Treasury Desks. The caps keep the Machine Room walkable and stop
+        anyone farming rewards with an unbounded number of bare desks.
       </p>
     ),
   },
@@ -143,9 +161,10 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     q: 'What happens at Portfolio L10?',
     a: (
       <p>
-        L10 is the current max. From there, yield growth comes from better instruments — higher
-        rarity pools, pity protection on the top tiers, and keeping durability fresh. The prestige
-        black-and-gold finish stays.
+        L10 is the current max for Portfolio Level, but it is not the end of the game. Individual
+        desks keep levelling past it, yield growth comes from better instruments — higher rarity
+        pools and pity protection on the top tiers — and the Deep Forest opens at Total Level 10,
+        which is where the rest of it is.
       </p>
     ),
   },
@@ -191,9 +210,10 @@ export default function DocsPage() {
             burn{' '}
             <strong className="text-white">$BNTY</strong> tokens to open virtual{' '}
             <strong className="text-white">Equity Desks</strong> and{' '}
-            <strong className="text-white">Treasury Desks</strong> in your own 3D portfolio. Those
-            desks earn rewards over time, paid out from a {EMISSION_RESERVE_LABEL} $BNTY
-            Emission Reserve released via a Bitcoin-style halving curve.
+            <strong className="text-white">Treasury Desks</strong> on a Machine Room floor you walk
+            around. Those desks earn rewards over time, paid out from a {EMISSION_RESERVE_LABEL}{' '}
+            $BNTY Emission Reserve released via a Bitcoin-style halving curve. Beyond the floor
+            there is a settlement, and beyond that a treeline.
           </p>
           <p>
             Think of it like an incremental game where every action is on-chain: your Equity and
@@ -453,8 +473,8 @@ export default function DocsPage() {
               ))}
             </div>
             <p className="mt-2 text-xs text-steel-500">
-              Each tile shows that slot at that rarity — rarer tiers add emissive glow that blooms
-              in the scene. The live desk preview above shows the hero model these install into.
+              Each tile shows that slot at that rarity. The live desk preview above shows the model
+              these install into.
             </p>
           </div>
         </Section>
@@ -534,8 +554,94 @@ export default function DocsPage() {
           </p>
         </Section>
 
-        {/* 8. Fees */}
-        <Section id="fees" title="8. Fees">
+        {/*
+          8 and 9 cover the half of the game the handbook did not mention at
+          all: the world, woodcutting and crafting. Written in the fund's own
+          register on purpose — this document is published BY Greenwood, so it
+          calls the outdoors a site and the things living in it wildlife. What
+          is actually out there is for the player to find, and a handbook that
+          spoiled it would undo the pacing the whole design rests on.
+        */}
+        <Section id="outside" title="8. Going outside">
+          <p>
+            Greenwood is a place before it is a dashboard. Your desks sit in the{' '}
+            <strong className="text-white">Machine Room</strong>; the{' '}
+            <strong className="text-white">Trading Floor</strong> is where the stalls and the
+            Outfitter are; and both are buildings on <strong className="text-white">Greenwood
+            Grounds</strong>, which you walk around. There is no menu for travel — you walk to a
+            door and through it.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <RegionCard
+              name="Greenwood Grounds"
+              gate="Open to everyone"
+              body="The hub. Doors to the Machine Room, the Trading Floor, and the way north."
+            />
+            <RegionCard
+              name="Greenwood HQ"
+              gate="Total Level 3"
+              body="The plaza and the tower. The most civilised address on the network, and the last one before the fence means anything."
+            />
+            <RegionCard
+              name="The Treeline"
+              gate="Total Level 6 · desk L3 · pack required"
+              body="Managed woodland outside the fence. Site conditions apply: bring a pack, and expect wildlife."
+              warn
+            />
+            <RegionCard
+              name="The Deep Forest"
+              gate="Total Level 10 · desk L8 · pack required"
+              body="Unmanaged. Other operators are out there and may act against you. Reach an extraction gate to come back with what you are carrying."
+              warn
+            />
+          </div>
+          <p>
+            The two gated regions ask for <strong className="text-white">two different things</strong>,
+            and the difference is deliberate. Total Level measures how long you have played, and can
+            be earned entirely by trading. Desk level measures whether you have actually built
+            something. The outdoors wants both, because everyone out there should have something to
+            lose.
+          </p>
+          <p className="text-xs text-steel-500">
+            If you go down past the fence, your pack opens where you fell and anyone can take what
+            was in it. Your desks, instruments and balance are never at risk — only what you chose
+            to carry.
+          </p>
+        </Section>
+
+        <Section id="woodcutting" title="9. Woodcutting & crafting">
+          <p>
+            Timber is the second economy. Buy an axe with{' '}
+            <strong className="text-white">Scrip</strong> (earned in-game, not bought), fell trees,
+            and take the logs to the <strong className="text-white">craft bench</strong> in the
+            Machine Room. Everything on the bench is made from wood you cut yourself.
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {WOOD_LADDER.map((w) => (
+              <div key={w.name} className="panel flex flex-col items-center gap-1 p-3">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-steel-500">
+                  T{w.tier}
+                </span>
+                <strong className="text-sm text-white">{w.name}</strong>
+                <span className="text-center font-mono text-[10px] text-steel-400">{w.where}</span>
+              </div>
+            ))}
+          </div>
+          <p>
+            Your axe decides how far up that ladder you get, and each axe is cut from wood the
+            previous one could fell — so you climb it or you buy your way up it. A Hatchet takes
+            pine and birch and will bounce off everything else; that is the axe, not you.
+          </p>
+          <p className="text-xs text-steel-500">
+            The bench makes axes, crossbows, bolts, and{' '}
+            <strong className="text-white">Desk Frames</strong>. From desk level 5 an upgrade needs
+            frames as well as BNTY — one per four levels, rounded up — so it is worth cutting timber
+            before you need it rather than after.
+          </p>
+        </Section>
+
+        {/* 10. Fees */}
+        <Section id="fees" title="10. Fees">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <FeeCard label="Mint burn" value="70%" caption="of BNTY cost to burn wallet" />
             <FeeCard label="Mint treasury" value="30%" caption="of BNTY cost to treasury" />
@@ -572,8 +678,8 @@ export default function DocsPage() {
           </p>
         </Section>
 
-        {/* 9. Emission */}
-        <Section id="emission" title="9. How emission works">
+        {/* 11. Emission */}
+        <Section id="emission" title="11. How emission works">
           <p>
             Greenwood uses a <strong className="text-white">halving emission curve</strong>. Global BNTY
             issuance starts at{' '}
@@ -610,8 +716,8 @@ export default function DocsPage() {
           </p>
         </Section>
 
-        {/* 10. Safety & FAQ */}
-        <Section id="safety" title="10. Safety & FAQ">
+        {/* 12. Safety & FAQ */}
+        <Section id="safety" title="12. Safety & FAQ">
           <div className="space-y-2">
             {FAQ.map(({ q, a }) => (
               <details key={q} className="panel group p-0">
@@ -783,6 +889,23 @@ function NodeCard({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * One region, with what it costs to get in.
+ *
+ * `warn` marks the two that can actually hurt you. It is a border and a word,
+ * not a skull: the handbook is written by the fund, and the fund would call it
+ * a site notice.
+ */
+function RegionCard({ name, gate, body, warn }: { name: string; gate: string; body: string; warn?: boolean }) {
+  return (
+    <div className={`panel p-4${warn ? ' border-amber-500/40' : ''}`}>
+      <p className="font-mono text-sm font-bold uppercase tracking-widest text-white">{name}</p>
+      <p className={`mt-1 font-mono text-[11px] ${warn ? 'text-amber-500' : 'text-steel-500'}`}>{gate}</p>
+      <p className="mt-2 text-sm text-steel-300">{body}</p>
     </div>
   );
 }
