@@ -24,7 +24,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const wallet = await requireAuthenticatedWallet(request, body.wallet);
+    const wallet = await requireAuthenticatedWallet(request, body.wallet, 'world');
 
     const region = typeof body.region === 'string' ? body.region : null;
     if (!region) throw new GameError('region is required', 400);

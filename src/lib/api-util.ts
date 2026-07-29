@@ -3,6 +3,7 @@ import { GameError } from './game';
 import { DEV_WALLET } from './dev-mode';
 import { DEMO_COOKIE, isDemoWallet } from './demo';
 import { verifyPrivyWalletOwner } from './privy-server';
+import { enforce, type LimitName } from './rate-limit';
 
 export function ok(data: unknown) {
   return NextResponse.json(data);
@@ -39,7 +40,19 @@ export function requireWallet(w: unknown): string {
  * that anyone could act as any wallet. verifyPrivyWalletOwner answers an
  * unconfigured server with a 503, which is the safe direction to fail.
  */
-export async function requireAuthenticatedWallet(request: Request, value: unknown): Promise<string> {
+export async function requireAuthenticatedWallet(
+  request: Request,
+  value: unknown,
+  /**
+   * Which rate-limit bucket this route counts against.
+   *
+   * Defaults so that adding a route cannot accidentally add an UNLIMITED route
+   * — the failure mode of an opt-in limiter is that the one endpoint somebody
+   * forgot is the one that gets hammered. Routes that need a tighter or looser
+   * rule name their bucket; everything else gets the catch-all.
+   */
+  limit: LimitName = 'default'
+): Promise<string> {
   // Local development without a wallet. DEV_WALLET is null unless the variable
   // is set AND this is a non-production build AND nothing marks the process as
   // deployed, so this branch cannot be reached anywhere real — see lib/dev-mode
@@ -49,7 +62,12 @@ export async function requireAuthenticatedWallet(request: Request, value: unknow
   // the caller's address would turn the bypass into "act as anybody" even
   // locally, and a developer testing multi-wallet behaviour would get results
   // that could never happen once auth is back on.
-  if (DEV_WALLET) return DEV_WALLET;
+  if (DEV_WALLET) {
+    // Limited like anything else, so local behaviour matches production rather
+    // than only failing once it is somewhere it cannot be debugged.
+    enforce(DEV_WALLET, limit);
+    return DEV_WALLET;
+  }
 
   const wallet = requireWallet(value);
 
@@ -78,11 +96,17 @@ export async function requireAuthenticatedWallet(request: Request, value: unknow
       .map((c) => c.trim())
       .find((c) => c.startsWith(`${DEMO_COOKIE}=`))
       ?.slice(DEMO_COOKIE.length + 1);
-    if (cookie && cookie.toLowerCase() === wallet) return wallet;
+    if (cookie && cookie.toLowerCase() === wallet) {
+      enforce(wallet, limit);
+      return wallet;
+    }
     throw new GameError('This demo session has expired. Start a new one.', 401);
   }
 
   await verifyPrivyWalletOwner(request, wallet);
+  // After ownership is proven, so an unauthenticated flood cannot consume the
+  // budget of the wallet it is pretending to be.
+  enforce(wallet, limit);
   return wallet;
 }
 

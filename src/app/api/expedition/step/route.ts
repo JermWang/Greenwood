@@ -28,7 +28,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const wallet = await requireAuthenticatedWallet(request, body.wallet);
+    const wallet = await requireAuthenticatedWallet(request, body.wallet, 'expedition');
 
     // Re-checked on every step, not just on entry. A player whose right to be
     // here lapsed mid-run should stop being able to move, and a client that

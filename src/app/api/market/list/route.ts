@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const wallet = await requireAuthenticatedWallet(request, body.wallet);
+    const wallet = await requireAuthenticatedWallet(request, body.wallet, 'market');
 
     const kind = body.itemKind;
     if (kind !== 'crate' && kind !== 'component' && kind !== 'node') {

@@ -50,7 +50,7 @@ function requireOpenListing(listingId: number, wallet: string): ListingRow {
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const wallet = await requireAuthenticatedWallet(request, body.wallet);
+    const wallet = await requireAuthenticatedWallet(request, body.wallet, 'market');
 
     const nonce = typeof body.nonce === 'string' ? body.nonce : null;
     const txHash = typeof body.txHash === 'string' ? body.txHash : null;

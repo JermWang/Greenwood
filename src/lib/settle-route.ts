@@ -59,7 +59,7 @@ export async function handleSettlementRoute<P>(
 ): Promise<NextResponse> {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const wallet = await requireAuthenticatedWallet(request, body.wallet);
+    const wallet = await requireAuthenticatedWallet(request, body.wallet, 'settle');
 
     // Until the token address and protocol wallet are configured there is
     // nothing on-chain to pay, so the action runs straight through the engine

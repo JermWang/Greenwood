@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const wallet = await requireAuthenticatedWallet(request, body.wallet);
+    const wallet = await requireAuthenticatedWallet(request, body.wallet, 'expedition');
     if (typeof body.id !== 'string') throw new GameError('creature id is required', 400);
     const result = attackCreature(wallet, body.id);
     return NextResponse.json({ ...result, creatures: creaturesFor(wallet) });

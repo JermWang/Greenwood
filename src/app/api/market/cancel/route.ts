@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const wallet = await requireAuthenticatedWallet(request, body.wallet);
+    const wallet = await requireAuthenticatedWallet(request, body.wallet, 'market');
     const listingId = Number(body.listingId);
     if (!Number.isInteger(listingId) || listingId <= 0) {
       throw new GameError('listingId is required', 400);
