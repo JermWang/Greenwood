@@ -25,7 +25,7 @@ export interface NodeInfo {
   layoutSeed: number;
   components: Array<{ slot: string; rarity: string; durability?: number }>;
   componentMultiplier: number;
-  pendingOsr: number;
+  pendingBnty: number;
   storageCap: number;
   nextLevelCost: number;
 }
@@ -39,11 +39,11 @@ export interface CompoundInfo {
   cooldownRemainingMs: number;
   nextUpgradeCost: null | {
     targetLevel: number;
-    totalOsr: number;
+    totalBnty: number;
     feeEth: number;
-    burnOsr: number;
-    reserveOsr: number;
-    treasuryOsr: number;
+    burnBnty: number;
+    reserveBnty: number;
+    treasuryBnty: number;
   };
 }
 
@@ -56,7 +56,7 @@ export interface UserOperation {
   networkGrowPower: number;
   joinedAtMs: number | null;
   welcomeBoostFactor: number;
-  osrBalance: number;
+  bntyBalance: number;
   totalProduced: number;
   totals: Record<string, number>;
   pending: Record<string, number>;
@@ -65,14 +65,14 @@ export interface UserOperation {
   /** Mined, unopened crates held by this wallet. */
   crates: Array<{
     id: number;
-    crateType: 'rig_crate' | 'shaft_crate';
+    crateType: 'equity_allocation' | 'treasury_allocation';
     foundAt: number;
     foundNodeId: number | null;
   }>;
   /** Subset of the above the operator has not been shown yet. */
   unseenCrates: Array<{
     id: number;
-    crateType: 'rig_crate' | 'shaft_crate';
+    crateType: 'equity_allocation' | 'treasury_allocation';
     foundAt: number;
     foundNodeId: number | null;
   }>;
@@ -89,7 +89,7 @@ export interface ProtocolOverview {
   totalSupply: number;
   totalOsrBurned: number;
   totalCreatorRewardsProcessed: number;
-  osrReserveBalance: number;
+  bntyReserveBalance: number;
   treasury: number;
   genesisMs: number;
   halving: {
@@ -402,7 +402,7 @@ export interface MarketListing {
   seller: string;
   itemKind: MarketItemKind;
   itemId: number;
-  priceOsr: number;
+  priceBnty: number;
   createdAt: number;
   item: Record<string, unknown> | null;
 }
@@ -634,7 +634,7 @@ export interface FloorMachine {
 }
 
 export interface FloorEffect {
-  key: 'coolant' | 'packaging' | 'spine' | 'crowding';
+  key: 'coolant' | 'settlement' | 'spine' | 'crowding';
   label: string;
   delta: number;
   lines: number;
@@ -712,7 +712,7 @@ export const api = {
       `/protocol/treasury-events?limit=${limit}`
     ),
   families: () =>
-    request<Array<{ key: string; name: string; description: string; family: 'oil' | 'mine'; burnCostOsr: number; burnShareBps: number; treasuryShareBps: number; mintFeeEth: number }>>(
+    request<Array<{ key: string; name: string; description: string; family: 'oil' | 'mine'; burnCostBnty: number; burnShareBps: number; treasuryShareBps: number; mintFeeEth: number }>>(
       '/nodes/families'
     ),
   crateOdds: (wallet?: string) =>
@@ -907,13 +907,13 @@ export const api = {
       result: Claims;
       txHash?: string;
       /** BNTY withheld to cover the gas of the payout transaction. */
-      gasOsr?: number;
+      gasBnty?: number;
     }>('/rewards/claim', {
       wallet,
       nodeId: nodeId == null ? undefined : Number(nodeId),
       mode,
     });
-    return { ...res.result, txHash: res.txHash, gasOsr: res.gasOsr ?? 0 };
+    return { ...res.result, txHash: res.txHash, gasBnty: res.gasBnty ?? 0 };
   },
 
 
@@ -924,8 +924,8 @@ export const api = {
       kind ? `/market/listings?kind=${kind}` : '/market/listings'
     ),
 
-  marketList: (wallet: string, itemKind: MarketItemKind, itemId: number, priceOsr: number) =>
-    post<{ listing: MarketListing }>('/market/list', { wallet, itemKind, itemId, priceOsr }),
+  marketList: (wallet: string, itemKind: MarketItemKind, itemId: number, priceBnty: number) =>
+    post<{ listing: MarketListing }>('/market/list', { wallet, itemKind, itemId, priceBnty }),
 
   marketCancel: (wallet: string, listingId: number) =>
     post<{ ok: true }>('/market/cancel', { wallet, listingId }),

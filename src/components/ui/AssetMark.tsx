@@ -34,7 +34,7 @@ const CAMERA = { position: ISO_OFFSET, zoom: 74, near: -100, far: 200 } as const
 
 export default memo(function AssetMark({
   kind = 'rack',
-  className = 'gpu-page-mark',
+  className = 'gw-page-mark',
 }: {
   kind?: MachineKind;
   className?: string;

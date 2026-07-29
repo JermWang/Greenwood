@@ -23,8 +23,8 @@ export default function PrivyWalletButton() {
   const attachProvider = useEvmWallet((state) => state.attachProvider);
   const disconnectProvider = useEvmWallet((state) => state.disconnect);
   const nativeBalance = useEvmWallet((state) => state.nativeBalance);
-  const osrBalance = useEvmWallet((state) => state.osrBalance);
-  const osrSymbol = useEvmWallet((state) => state.osrSymbol);
+  const bntyBalance = useEvmWallet((state) => state.bntyBalance);
+  const bntySymbol = useEvmWallet((state) => state.bntySymbol);
   const walletError = useEvmWallet((state) => state.error);
   const setStoreWallet = useWalletStore((state) => state.setWallet);
   const setOperationWallet = useOperation((state) => state.setWallet);
@@ -139,18 +139,18 @@ export default function PrivyWalletButton() {
   return (
     <div className="relative flex items-center gap-2" ref={menuRef}>
       <button
-        className="fab-operator-button"
+        className="gw-operator-button"
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="fab-operator-avatar">{managedWallet.address.slice(2, 4).toUpperCase()}</span>
+        <span className="gw-operator-avatar">{managedWallet.address.slice(2, 4).toUpperCase()}</span>
         <span className="hidden text-left sm:block">
           <span className="block text-[8px] uppercase tracking-[.18em] text-emerald-100/40">Fund linked</span>
           <span className="mt-0.5 block font-mono text-[10px] text-white">{shortAddress(managedWallet.address)}</span>
         </span>
       </button>
       {open && (
-        <div className="fab-account-menu">
-          <div className="fab-account-balance">
+        <div className="gw-account-menu">
+          <div className="gw-account-balance">
             <p className="truncate text-xs text-steel-300">
               {shortAddress(managedWallet.address)}
             </p>
@@ -165,7 +165,7 @@ export default function PrivyWalletButton() {
               <span className="text-steel-400">Token balance</span>
               <span className="font-mono text-white">
                 {TOKEN_LIVE
-                  ? `${displayBalance(osrBalance, 3)} ${osrSymbol}`
+                  ? `${displayBalance(bntyBalance, 3)} ${bntySymbol}`
                   : 'Not live yet'}
               </span>
             </div>
@@ -174,19 +174,19 @@ export default function PrivyWalletButton() {
             <p className="px-2 py-2 text-[11px] text-red-400">{syncError || walletError}</p>
           )}
           <button
-            className="fab-account-action mt-1"
+            className="gw-account-action mt-1"
             onClick={() => void navigator.clipboard.writeText(managedWallet.address)}
           >
             Copy fund address
           </button>
           <button
-            className="fab-account-action"
+            className="gw-account-action"
             onClick={() => linkWallet()}
           >
             Link MetaMask / Robinhood Wallet
           </button>
           <a
-            className="fab-account-action block"
+            className="gw-account-action block"
             href={`${CHAIN.explorer}/address/${managedWallet.address}`}
             target="_blank"
             rel="noreferrer"
@@ -194,7 +194,7 @@ export default function PrivyWalletButton() {
             Inspect on Blockscout ↗
           </a>
           <button
-            className="fab-account-action text-rose-300"
+            className="gw-account-action text-rose-300"
             onClick={() => {
               setOpen(false);
               synced.current = null;

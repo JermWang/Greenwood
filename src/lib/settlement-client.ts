@@ -3,7 +3,7 @@
 // Browser half of settlement.
 //
 // The server quotes an action and returns payment instructions; this module
-// sends the operator's GPU to the protocol treasury as a plain ERC-20 transfer
+// sends the operator's BNTY to the protocol treasury as a plain ERC-20 transfer
 // and hands the tx hash back. Nothing here is trusted — the server verifies the
 // Transfer event on-chain before applying anything.
 //
@@ -20,7 +20,7 @@ import {
   type Address,
   type Hex,
 } from 'viem';
-import { CHAIN, EXPECTED_TOKEN_SYMBOL, OSR_TOKEN_ADDRESS, OSR_TREASURY_ADDRESS, isConfiguredAddress } from './config';
+import { CHAIN, EXPECTED_TOKEN_SYMBOL, BNTY_TOKEN_ADDRESS, BNTY_TREASURY_ADDRESS, isConfiguredAddress } from './config';
 import { requireSettlementProvider, robinhoodChain } from './evm';
 import { confirmTransactionPreview } from './tx-safety';
 
@@ -36,7 +36,7 @@ export interface PaymentRequest {
   to: string;
   /** Base units, decimal string. */
   amount: string;
-  osrAmount: number;
+  bntyAmount: number;
   decimals: number;
   nonce: string;
   deadline: number;
@@ -77,8 +77,8 @@ export function validateWalletContext(
 export function validatePaymentRequest(
   payment: PaymentRequest,
   nowSeconds = Math.floor(Date.now() / 1000),
-  expectedToken = OSR_TOKEN_ADDRESS,
-  expectedTreasury = OSR_TREASURY_ADDRESS
+  expectedToken = BNTY_TOKEN_ADDRESS,
+  expectedTreasury = BNTY_TREASURY_ADDRESS
 ): ValidatedPayment {
   if (!isConfiguredAddress(expectedToken) || !isConfiguredAddress(expectedTreasury)) {
     throw new Error('BNTY settlement addresses are not configured');
@@ -99,18 +99,18 @@ export function validatePaymentRequest(
   if (amount <= 0n) throw new Error('Payment amount must be greater than zero');
   const displayAmount = formatUnits(amount, payment.decimals);
   const displayNumber = Number(displayAmount);
-  if (!Number.isFinite(payment.osrAmount) || payment.osrAmount <= 0 || !Number.isFinite(displayNumber)) {
+  if (!Number.isFinite(payment.bntyAmount) || payment.bntyAmount <= 0 || !Number.isFinite(displayNumber)) {
     throw new Error('Human-readable payment amount is invalid');
   }
-  const tolerance = Math.max(10 ** -Math.min(payment.decimals, 12), Math.abs(payment.osrAmount) * 1e-10);
-  if (Math.abs(displayNumber - payment.osrAmount) > tolerance) {
+  const tolerance = Math.max(10 ** -Math.min(payment.decimals, 12), Math.abs(payment.bntyAmount) * 1e-10);
+  if (Math.abs(displayNumber - payment.bntyAmount) > tolerance) {
     throw new Error('Payment base units do not match the quoted BNTY amount');
   }
   return { token, treasury, amount, displayAmount };
 }
 
 /**
- * Send the quoted GPU to the treasury and return the transaction hash.
+ * Send the quoted BNTY to the treasury and return the transaction hash.
  */
 export async function submitPayment(
   payment: PaymentRequest,

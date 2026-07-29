@@ -24,7 +24,7 @@ export async function POST(request: Request) {
         throw new GameError('compound level changed — request a fresh quote', 409);
       }
       return {
-        osrAmount: next.totalOsr,
+        bntyAmount: next.totalBnty,
         burnBps: SPLIT_BURN_BPS,
         treasuryBps: TREASURY_BPS,
         feeEth: next.feeEth,

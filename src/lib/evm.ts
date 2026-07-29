@@ -11,7 +11,7 @@ import {
   getAddress,
   type Address,
 } from 'viem';
-import { CHAIN, OSR_TOKEN_ADDRESS, isConfiguredAddress } from './config';
+import { CHAIN, BNTY_TOKEN_ADDRESS, isConfiguredAddress } from './config';
 
 export interface Eip1193Provider {
   request: (args: { method: string; params?: readonly unknown[] | object }) => Promise<unknown>;
@@ -55,8 +55,8 @@ interface EvmState {
   address: Address | null;
   chainId: number | null;
   nativeBalance: string | null;
-  osrBalance: string | null;
-  osrSymbol: string;
+  bntyBalance: string | null;
+  bntySymbol: string;
   connecting: boolean;
   initialized: boolean;
   error: string | null;
@@ -118,19 +118,19 @@ async function ensureRobinhoodChain(provider: Eip1193Provider): Promise<void> {
 async function balances(provider: Eip1193Provider, address: Address) {
   const client = createPublicClient({ chain: robinhoodChain, transport: custom(provider) });
   const native = await client.getBalance({ address });
-  let osrBalance: string | null = null;
-  let osrSymbol = 'BNTY';
-  if (isConfiguredAddress(OSR_TOKEN_ADDRESS)) {
-    const token = getAddress(OSR_TOKEN_ADDRESS);
+  let bntyBalance: string | null = null;
+  let bntySymbol = 'BNTY';
+  if (isConfiguredAddress(BNTY_TOKEN_ADDRESS)) {
+    const token = getAddress(BNTY_TOKEN_ADDRESS);
     const [amount, decimals, symbol] = await Promise.all([
       client.readContract({ address: token, abi: erc20Abi, functionName: 'balanceOf', args: [address] }),
       client.readContract({ address: token, abi: erc20Abi, functionName: 'decimals' }),
       client.readContract({ address: token, abi: erc20Abi, functionName: 'symbol' }),
     ]);
-    osrBalance = formatUnits(amount, decimals);
-    osrSymbol = symbol;
+    bntyBalance = formatUnits(amount, decimals);
+    bntySymbol = symbol;
   }
-  return { nativeBalance: formatEther(native), osrBalance, osrSymbol };
+  return { nativeBalance: formatEther(native), bntyBalance, bntySymbol };
 }
 
 function unbindProvider() {
@@ -188,7 +188,7 @@ function bindProvider(provider: Eip1193Provider) {
   };
   activeChainChanged = (...args: unknown[]) => {
     const chainId = Number.parseInt(args[0] as string, 16);
-    useEvmWallet.setState({ chainId, nativeBalance: null, osrBalance: null });
+    useEvmWallet.setState({ chainId, nativeBalance: null, bntyBalance: null });
     if (chainId === CHAIN.id) void useEvmWallet.getState().refreshBalances();
   };
   activeDisconnect = () => useEvmWallet.getState().disconnect();
@@ -203,8 +203,8 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
   address: null,
   chainId: null,
   nativeBalance: null,
-  osrBalance: null,
-  osrSymbol: 'BNTY',
+  bntyBalance: null,
+  bntySymbol: 'BNTY',
   connecting: false,
   initialized: false,
   error: null,
@@ -212,7 +212,7 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
   initialize: () => {
     if (typeof window === 'undefined' || discoveryBound) return;
     discoveryBound = true;
-    const lastRdns = window.localStorage.getItem('gpu:last-wallet-rdns');
+    const lastRdns = window.localStorage.getItem('greenwood:last-wallet-rdns');
     window.addEventListener('eip6963:announceProvider', (event) => {
       const { info, provider } = event.detail;
       if (!info?.uuid || !provider?.request) return;
@@ -256,7 +256,7 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
       const address = getAddress(accounts[0]);
       const chainId = await providerChainId(option.provider);
       bindProvider(option.provider);
-      window.localStorage.setItem('gpu:last-wallet-rdns', option.rdns);
+      window.localStorage.setItem('greenwood:last-wallet-rdns', option.rdns);
       set({ address, chainId, selectedWalletUuid: option.uuid, connecting: false });
       await get().refreshBalances();
       return address;
@@ -319,7 +319,7 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
       chainId: null,
       selectedWalletUuid: null,
       nativeBalance: null,
-      osrBalance: null,
+      bntyBalance: null,
       connecting: false,
       error: null,
     });

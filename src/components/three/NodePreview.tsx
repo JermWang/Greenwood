@@ -39,7 +39,7 @@ export default function NodePreview({
   node: RigNodeData;
   className?: string;
 }) {
-  const kind: MachineKind = node.type === 'oil' ? 'euv' : 'rack';
+  const kind: MachineKind = node.type === 'oil' ? 'equity' : 'rack';
   const accent = accentFor(node.type, node.level);
 
   return (

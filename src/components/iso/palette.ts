@@ -82,7 +82,7 @@ export const ISO_OFFSET: [number, number, number] = [26, 26, 26];
 export const ZOOM = { min: 4, max: 74, initial: 30 } as const;
 
 /** The four machine silhouettes the board can render. */
-export type MachineKind = 'euv' | 'rack' | 'cooling' | 'packaging';
+export type MachineKind = 'equity' | 'rack' | 'cooling' | 'settlement';
 
 /**
  * Declared locally rather than imported from lib/floor.

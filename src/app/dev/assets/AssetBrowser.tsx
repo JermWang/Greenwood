@@ -51,7 +51,7 @@ function Preview({ entry, variant, walking, self, refined }: { entry: AssetEntry
   if (entry.category === 'desk') {
     return (
       <Desk
-        kind={(props.kind as MachineKind) ?? 'euv'}
+        kind={(props.kind as MachineKind) ?? 'equity'}
         accent={ISO.accent}
         livery={props.livery as never}
       />

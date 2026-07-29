@@ -103,20 +103,20 @@ export default function Landing() {
   }, [activeIndex, menuOpen, router]);
 
   return (
-    <main className="gpu-title-screen">
-      <div className="gpu-title-world">
+    <main className="gw-title-screen">
+      <div className="gw-title-world">
         <IsoTwin nodes={SHOWROOM_NODES} selectedNodeId={null} />
       </div>
-      <div className="gpu-title-vignette" />
-      <div className="gpu-title-scanlines" aria-hidden />
+      <div className="gw-title-vignette" />
+      <div className="gw-title-scanlines" aria-hidden />
 
-      <header className="gpu-title-topbar">
-        <Link href="/" className="gpu-title-mark" aria-label="Greenwood home">
+      <header className="gw-title-topbar">
+        <Link href="/" className="gw-title-mark" aria-label="Greenwood home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/gpu-mark.svg" alt="" />
+          <img src="/gw-mark.svg" alt="" />
           <span>Greenwood</span>
         </Link>
-        <div className="gpu-title-top-actions">
+        <div className="gw-title-top-actions">
           {/* Renders nothing until the token address is configured, so it simply
               appears in the top bar the moment the CA goes live. */}
           <CopyContract />
@@ -125,47 +125,47 @@ export default function Landing() {
         </div>
       </header>
 
-      <section className={`gpu-title-center ${menuOpen ? 'is-menu' : ''}`}>
-        <div className="gpu-title-lockup">
+      <section className={`gw-title-center ${menuOpen ? 'is-menu' : ''}`}>
+        <div className="gw-title-lockup">
           <span>REAL-WORLD YIELD</span>
           <h1>Greenwood</h1>
           <p>Build the fund. Own the yield.</p>
         </div>
 
         {!menuOpen ? (
-          <button type="button" className="gpu-press-start" onClick={choose}>
+          <button type="button" className="gw-press-start" onClick={choose}>
             <span>Press Enter</span>
             <small>to start</small>
           </button>
         ) : (
-          <nav className="gpu-main-menu" aria-label="Main menu">
+          <nav className="gw-main-menu" aria-label="Main menu">
             <Link
               href={PRIMARY.href}
-              className={`gpu-menu-primary ${activeIndex === 0 ? 'is-active' : ''}`}
+              className={`gw-menu-primary ${activeIndex === 0 ? 'is-active' : ''}`}
               onMouseEnter={() => setActiveIndex(0)}
               aria-current={activeIndex === 0 ? 'true' : undefined}
             >
-              <span className="gpu-menu-icon">
+              <span className="gw-menu-icon">
                 <PRIMARY.Icon size={22} weight={activeIndex === 0 ? 'fill' : 'duotone'} />
               </span>
               <span>
                 <b>{PRIMARY.label}</b>
                 <small>{PRIMARY.detail}</small>
-                <span className="gpu-menu-rooms">
+                <span className="gw-menu-rooms">
                   {PRIMARY.rooms.map((room) => <span key={room}>{room}</span>)}
                 </span>
               </span>
               <CaretRight size={17} weight="bold" />
             </Link>
 
-            <div className="gpu-menu-pair">
+            <div className="gw-menu-pair">
               {SECONDARY.map(({ label, detail, href, Icon }, index) => {
                 const position = index + 1;
                 return (
                   <Link
                     key={href}
                     href={href}
-                    className={`gpu-menu-tile ${position === activeIndex ? 'is-active' : ''}`}
+                    className={`gw-menu-tile ${position === activeIndex ? 'is-active' : ''}`}
                     onMouseEnter={() => setActiveIndex(position)}
                     aria-current={position === activeIndex ? 'true' : undefined}
                   >
@@ -177,7 +177,7 @@ export default function Landing() {
               })}
             </div>
 
-            <div className="gpu-menu-controls">
+            <div className="gw-menu-controls">
               <kbd>W</kbd><kbd>S</kbd><span>Navigate</span>
               <kbd>ENTER</kbd><span>Select</span>
               <kbd>ESC</kbd><span>Back</span>
@@ -186,8 +186,8 @@ export default function Landing() {
         )}
       </section>
 
-      <footer className="gpu-title-footer">
-        <span className="gpu-title-build"><i /> ROBINHOOD CHAIN // BUILD 02</span>
+      <footer className="gw-title-footer">
+        <span className="gw-title-build"><i /> ROBINHOOD CHAIN // BUILD 02</span>
       </footer>
     </main>
   );

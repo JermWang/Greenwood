@@ -197,7 +197,7 @@ function placeFloor(desks: number, kind: MachineKind): { layout: PlacedMachine[]
   for (let z = -18; z <= 12; z += clusterSpan + 2) {
     const id = `component:pack:${z}`;
     layout.push({ id, x: -1, z, rotation: 0 });
-    kinds.set(id, 'packaging');
+    kinds.set(id, 'settlement');
   }
 
   return { layout, kinds };
@@ -217,7 +217,7 @@ interface Outcome {
 function simulate(strategy: Strategy): Outcome {
   const desks = deskCount(strategy);
   const fitted = fitInstruments(desks);
-  const kind: MachineKind = strategy.mintCost === 750 ? 'rack' : 'euv';
+  const kind: MachineKind = strategy.mintCost === 750 ? 'rack' : 'equity';
 
   const rawPower = fitted.reduce(
     (sum, comps) => sum + levelMultiplier(strategy.deskLevel) * componentMultiplier(comps.map((rarity) => ({ rarity }))),

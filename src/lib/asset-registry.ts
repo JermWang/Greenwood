@@ -122,10 +122,10 @@ function labelFor(key: string): string {
 }
 
 const DESK_KINDS = [
-  { id: 'euv', name: 'Equity Desk', blurb: 'Yield desk. The tall glass-and-panel tower.' },
+  { id: 'equity', name: 'Equity Desk', blurb: 'Yield desk. The tall glass-and-panel tower.' },
   { id: 'rack', name: 'Treasury Desk', blurb: 'Yield desk. Squat vault silhouette.' },
   { id: 'cooling', name: 'Liquidity Desk', blurb: 'Support desk. Boosts yield desks in reach.' },
-  { id: 'packaging', name: 'Structured Desk', blurb: 'Support desk. Wider reach, smaller bonus.' },
+  { id: 'settlement', name: 'Structured Desk', blurb: 'Support desk. Wider reach, smaller bonus.' },
 ];
 
 export const ASSETS: AssetEntry[] = [
@@ -151,7 +151,7 @@ export const ASSETS: AssetEntry[] = [
     animations: [],
     // Shown under an Equity Desk rather than alone: a plinth by itself is a
     // slab, and the thing being judged is how it sits under a machine.
-    variants: plinthVariants().map((v) => ({ ...v, props: { ...v.props, kind: 'euv' } })),
+    variants: plinthVariants().map((v) => ({ ...v, props: { ...v.props, kind: 'equity' } })),
     scale: 1,
   },
   {

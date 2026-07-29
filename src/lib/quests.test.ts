@@ -6,7 +6,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'gpu-quests-test-'));
+const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-quests-test-'));
 process.env.OSR_DATA_DIR = DATA_DIR;
 delete process.env.VERCEL;
 

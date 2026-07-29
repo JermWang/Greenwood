@@ -42,7 +42,7 @@ export default function IsoTwin({
     () =>
       nodes.map((node) => ({
         id: node.id,
-        kind: (node.type === 'oil' ? 'euv' : 'rack') as MachineKind,
+        kind: (node.type === 'oil' ? 'equity' : 'rack') as MachineKind,
         label: `${node.type === 'oil' ? 'Equity' : 'Treasury'} Desk · L${node.level}`,
         accent: accentFor(node.type, node.level),
       })),

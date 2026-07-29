@@ -33,16 +33,16 @@ function routeTitle(pathname: string) {
   return Object.entries(ROUTE_TITLES).find(([path]) => path !== '/app' && pathname.startsWith(path))?.[1] ?? 'Greenwood';
 }
 
-function GpuBalanceModule() {
-  const osrBalance = useEvmWallet((state) => state.osrBalance);
-  const symbol = useEvmWallet((state) => state.osrSymbol);
+function BntyBalanceModule() {
+  const bntyBalance = useEvmWallet((state) => state.bntyBalance);
+  const symbol = useEvmWallet((state) => state.bntySymbol);
   return (
-    <div className="fab-balance-module">
-      <span className="fab-balance-glyph"><Lightning size={14} weight="fill" /></span>
+    <div className="gw-balance-module">
+      <span className="gw-balance-glyph"><Lightning size={14} weight="fill" /></span>
       <span className="hidden sm:block">
         <span className="block font-mono text-[8px] uppercase tracking-[.18em] text-emerald-100/45">Bounty reserve</span>
         <span className="mt-0.5 block font-mono text-[12px] font-bold text-white">
-          {TOKEN_LIVE && osrBalance != null ? Number(osrBalance).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}{' '}
+          {TOKEN_LIVE && bntyBalance != null ? Number(bntyBalance).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}{' '}
           <span className="text-lime-300">{TOKEN_LIVE ? symbol : 'BNTY'}</span>
         </span>
       </span>
@@ -54,17 +54,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const wallet = useOperation((s) => s.wallet);
   return (
-    <div className="gpu-os min-h-screen">
+    <div className="gw-os min-h-screen">
       <DeployNotice />
-      <div className="gpu-stage">
-        <header className="fab-topbar">
+      <div className="gw-stage">
+        <header className="gw-topbar">
           <Link href="/" className="flex items-center gap-2 lg:hidden" aria-label="Greenwood home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/gpu-mark.svg" alt="" className="h-8 w-8 rounded-[10px]" />
+            <img src="/gw-mark.svg" alt="" className="h-8 w-8 rounded-[10px]" />
             <span className="font-mono text-sm font-bold tracking-[.24em] text-white">Greenwood</span>
           </Link>
           <div className="hidden min-w-0 items-center gap-3 lg:flex">
-            <span className="fab-route-chip"><Cpu size={15} weight="duotone" /> {routeTitle(pathname)}</span>
+            <span className="gw-route-chip"><Cpu size={15} weight="duotone" /> {routeTitle(pathname)}</span>
             <span className="h-4 w-px bg-white/10" />
             <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[.18em] text-emerald-100/45">
               <Radio size={13} className="text-lime-300" /> {CHAIN.name} · {CHAIN.id}
@@ -75,13 +75,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 standing between a curious person and this game IS the connect
                 step, so the alternative belongs in the same place. */}
             <DemoBanner />
-            <GpuBalanceModule />
+            <BntyBalanceModule />
             <SoundToggle />
             <DemoButton />
             <WalletButton />
           </div>
         </header>
-        <div className="gpu-stage-content">{children}</div>
+        <div className="gw-stage-content">{children}</div>
         {/* The one menu. Everything else is reached by walking to it. */}
         <MarketHud wallet={wallet} />
       </div>

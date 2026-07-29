@@ -23,21 +23,43 @@ a second camera rig got built while a working one sat two files away.
 
 The single line that matters most: **there is already a camera. Use `IsoRig`.**
 
-## Names you will find confusing
+## Names
 
-The codebase was reskinned from a GPU-fabrication theme and the **internal
-identifiers were deliberately left alone**. An Equity Desk is an `oil_rig`, a
-Treasury Desk is a `mine_shaft`, allocations are `rig_crate`/`shaft_crate`, CSS
-is prefixed `fab-*`, the package is `gpu-fab-game`.
+The codebase passed through two earlier themes — oil/mining, then GPU
+fabrication — and for a long time the internal identifiers were deliberately
+left in that state, on the reasoning that a player opening devtools should find
+the industrial truth before the game tells them.
 
-**Do not "fix" these.** They are canon now — the machinery under the corporate
-skin was always industrial, and a player who opens devtools finds the truth
-before the game tells them.
+**That decision was reversed.** The identifiers now match the skin:
 
-Player-facing vocabulary: Warehouse→Portfolio, Wafer Fab→Equity Desk,
-Cleanroom→Treasury Desk, node→desk, crate→allocation, component→instrument,
-Capacity Contract→Fixed Income Note, Fab Floor→Trading Floor, Treasury Core→The
-Vault.
+| Was | Is |
+|---|---|
+| `oil_rig` / `mine_shaft` | `equity_desk` / `treasury_desk` |
+| `rig_crate` / `shaft_crate` | `equity_allocation` / `treasury_allocation` |
+| `euv` / `packaging` machine kinds | `equity` / `settlement` |
+| `wafer`, `cleanroom` | `desk`, `vault` |
+| `osrBalance`, `osrAmount`, … | `bntyBalance`, `bntyAmount`, … |
+| CSS `fab-*`, `gpu-*` | `gw-*` |
+| package `gpu-fab-game` | `greenwood` |
+
+Two categories were **deliberately not renamed**, and both will bite you if you
+assume otherwise:
+
+- **Env vars are still `OSR_*`** (`OSR_DATA_DIR`, `NEXT_PUBLIC_OSR_TOKEN`,
+  `NEXT_PUBLIC_GPU_TOKEN_SYMBOL`, …). Renaming them means changing Railway in
+  lockstep, and `OSR_DATA_DIR` throws on boot if it is wrong. The TypeScript
+  constants that read them were renamed; the strings were not.
+- **Stored column names are still `osr_*`** (`users.osr_balance`,
+  `rig_crates_opened_today`, `price_osr`). `osr_balance` is the column real
+  payouts are computed from — it gets renamed after backups exist, not before.
+
+Stored *values* were migrated (`renameAllocationKinds` in `lib/db`), because a
+CHECK constraint the code violates is a bug no fresh-database test can see.
+`nodes.family` still stores `'oil'`/`'mine'` for the same reason the columns do.
+
+Player-facing vocabulary: Warehouse→Portfolio, Equity Desk, Treasury Desk,
+node→desk, crate→allocation, component→instrument, Capacity Contract→Fixed
+Income Note, Trading Floor, The Vault.
 
 ## Rules that are load-bearing
 
@@ -67,7 +89,7 @@ Vault.
 
 ## Known state
 
-- **366 tests pass.** The suite is green; if it is not, that is new.
+- **540 tests pass.** The suite is green; if it is not, that is new.
 - The Deep Forest is playable: map, server-authoritative movement, loot
   visibility, extraction geometry, HUD, and combat against shamblers and wolves.
 - **PvP is live.** Players see each other, can strike each other, and dying

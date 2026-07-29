@@ -26,7 +26,7 @@ export interface DeskFamily {
   name: string;
   description: string;
   family: 'oil' | 'mine';
-  burnCostOsr: number;
+  burnCostBnty: number;
 }
 
 /**
@@ -98,7 +98,7 @@ export default function BuildPrompt({
   }, [cell, onClose]);
 
   const cheapest = useMemo(
-    () => (families.length ? Math.min(...families.map((f) => f.burnCostOsr)) : 0),
+    () => (families.length ? Math.min(...families.map((f) => f.burnCostBnty)) : 0),
     [families]
   );
 
@@ -125,7 +125,7 @@ export default function BuildPrompt({
       ) : (
         <div className="build-options">
           {families.map((f) => {
-            const affordable = balance >= f.burnCostOsr;
+            const affordable = balance >= f.burnCostBnty;
             return (
               <button
                 key={f.key}
@@ -135,7 +135,7 @@ export default function BuildPrompt({
               >
                 <b>{f.name}</b>
                 <span>{f.description}</span>
-                <em>{f.burnCostOsr.toLocaleString()} BNTY</em>
+                <em>{f.burnCostBnty.toLocaleString()} BNTY</em>
               </button>
             );
           })}

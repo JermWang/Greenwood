@@ -1,4 +1,4 @@
-// GPU economy constants — matched to the original deployment's reverse-
+// BNTY economy constants — matched to the original deployment's reverse-
 // engineered tables (see README + guide page for the player-facing versions).
 
 import type { Rarity } from './rarity';
@@ -84,25 +84,25 @@ export const PITY = {
   divine: { soft: null as number | null, hard: 1500, rampMax: 1 },
 };
 
-/** Compound level -> capacity + upgrade cost (cost = GPU to REACH this level). */
+/** Compound level -> capacity + upgrade cost (cost = BNTY to REACH this level). */
 export const COMPOUND_LEVELS: Record<
   number,
-  { maxNodes: number; cratesPerDay: number; osrUpgradeCost: number; feeEth: number }
+  { maxNodes: number; cratesPerDay: number; bntyUpgradeCost: number; feeEth: number }
 > = {
-  // Costs doubled across the board so the first upgrade lands at 1,000 GPU.
+  // Costs doubled across the board so the first upgrade lands at 1,000 BNTY.
   // Scaling the whole curve rather than only raising the floor keeps the
   // progression intact — bumping L2 alone to 1,000 would have made it cost the
   // same as L3, so the second upgrade would have been free progress.
-  1: { maxNodes: 2, cratesPerDay: 3, osrUpgradeCost: 0, feeEth: 0 },
-  2: { maxNodes: 3, cratesPerDay: 4, osrUpgradeCost: 1000, feeEth: 0.00001 },
-  3: { maxNodes: 3, cratesPerDay: 5, osrUpgradeCost: 2000, feeEth: 0.00001 },
-  4: { maxNodes: 4, cratesPerDay: 6, osrUpgradeCost: 4000, feeEth: 0.00001 },
-  5: { maxNodes: 4, cratesPerDay: 8, osrUpgradeCost: 8000, feeEth: 0.00001 },
-  6: { maxNodes: 5, cratesPerDay: 10, osrUpgradeCost: 16000, feeEth: 0.00001 },
-  7: { maxNodes: 5, cratesPerDay: 12, osrUpgradeCost: 30000, feeEth: 0.00001 },
-  8: { maxNodes: 6, cratesPerDay: 15, osrUpgradeCost: 50000, feeEth: 0.00001 },
-  9: { maxNodes: 7, cratesPerDay: 18, osrUpgradeCost: 80000, feeEth: 0.00001 },
-  10: { maxNodes: 8, cratesPerDay: 20, osrUpgradeCost: 120000, feeEth: 0.00001 },
+  1: { maxNodes: 2, cratesPerDay: 3, bntyUpgradeCost: 0, feeEth: 0 },
+  2: { maxNodes: 3, cratesPerDay: 4, bntyUpgradeCost: 1000, feeEth: 0.00001 },
+  3: { maxNodes: 3, cratesPerDay: 5, bntyUpgradeCost: 2000, feeEth: 0.00001 },
+  4: { maxNodes: 4, cratesPerDay: 6, bntyUpgradeCost: 4000, feeEth: 0.00001 },
+  5: { maxNodes: 4, cratesPerDay: 8, bntyUpgradeCost: 8000, feeEth: 0.00001 },
+  6: { maxNodes: 5, cratesPerDay: 10, bntyUpgradeCost: 16000, feeEth: 0.00001 },
+  7: { maxNodes: 5, cratesPerDay: 12, bntyUpgradeCost: 30000, feeEth: 0.00001 },
+  8: { maxNodes: 6, cratesPerDay: 15, bntyUpgradeCost: 50000, feeEth: 0.00001 },
+  9: { maxNodes: 7, cratesPerDay: 18, bntyUpgradeCost: 80000, feeEth: 0.00001 },
+  10: { maxNodes: 8, cratesPerDay: 20, bntyUpgradeCost: 120000, feeEth: 0.00001 },
 };
 export const MAX_COMPOUND_LEVEL = 10;
 
@@ -114,14 +114,14 @@ export function getShaftBonusSlots(level: number): number {
   return 0;
 }
 
-/** Flat GPU cost to open a mined crate. */
+/** Flat BNTY cost to open a mined crate. */
 export const CRATE_OPEN_OSR = Number(process.env.NEXT_PUBLIC_OSR_CRATE_OSR ?? 10_000);
 
 /**
- * Optional dollar peg for crate opening. Zero (the default) means the flat GPU
+ * Optional dollar peg for crate opening. Zero (the default) means the flat BNTY
  * price above is used.
  *
- * The peg exists because a flat token price drifts with the market — 500 GPU
+ * The peg exists because a flat token price drifts with the market — 500 BNTY
  * was $0.50 at a $1M cap and $25 at a $50M cap. It is off for now because
  * pegging needs a maintained price feed, and a flat figure that always works
  * beats a pegged one that locks crates whenever the feed goes stale.
@@ -129,15 +129,15 @@ export const CRATE_OPEN_OSR = Number(process.env.NEXT_PUBLIC_OSR_CRATE_OSR ?? 10
 export const CRATE_OPEN_USD = Number(process.env.NEXT_PUBLIC_OSR_CRATE_USD ?? 0);
 
 /**
- * What opening a crate costs, in GPU.
+ * What opening a crate costs, in BNTY.
  *
  * Uses the dollar peg only when one is configured AND a live price is known;
  * otherwise the flat price. Never returns null, so crates cannot become
  * unopenable because a price feed lapsed.
  */
-export function crateCostOsr(osrUsdPrice: number | null): number {
-  if (CRATE_OPEN_USD > 0 && osrUsdPrice && osrUsdPrice > 0) {
-    return Math.max(1, Math.round(CRATE_OPEN_USD / osrUsdPrice));
+export function crateCostBnty(bntyUsdPrice: number | null): number {
+  if (CRATE_OPEN_USD > 0 && bntyUsdPrice && bntyUsdPrice > 0) {
+    return Math.max(1, Math.round(CRATE_OPEN_USD / bntyUsdPrice));
   }
   return CRATE_OPEN_OSR;
 }
@@ -189,10 +189,10 @@ export const MINT_FEE_ETH = 0.0002;
 export const CRATE_FEE_ETH = 0.00002;
 export const COMPOUND_FEE_ETH = 0.00001;
 export const EXPEDITE_FEE_ETH = 0.005;
-/** Mint GPU split. */
+/** Mint BNTY split. */
 export const MINT_BURN_BPS = 7000;
 export const MINT_TREASURY_BPS = 3000;
-/** Upgrade & crate GPU split: burn / reserve / treasury. */
+/** Upgrade & crate BNTY split: burn / reserve / treasury. */
 export const SPLIT_BURN_BPS = 5000;
 export const SPLIT_RESERVE_BPS = 3000;
 export const SPLIT_TREASURY_BPS = 2000;
@@ -285,7 +285,7 @@ export function cosmeticUpgradeLadder(basePriceBnty: number): number[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Lock GPU for a fixed term and be paid a published rate out of the emission
+ * Lock BNTY for a fixed term and be paid a published rate out of the emission
  * reserve. The rates rise faster than the term does — 180 days pays more than
  * six times the 30-day rate — because the point of the instrument is to take
  * float out of circulation for long enough to matter, and a linear ladder gives
@@ -321,18 +321,18 @@ export const STAKE_MAX_OPEN = 8;
  */
 export const STAKE_EARLY_EXIT_PENALTY_BPS = 1000;
 
-/** Interest owed over a full term, in GPU. Simple interest, not compounded. */
+/** Interest owed over a full term, in BNTY. Simple interest, not compounded. */
 export function stakeTermInterest(principal: number, term: StakeTerm): number {
   return principal * (term.aprBps / 10_000) * (term.days / 365);
 }
 
 // Node families
 export interface NodeFamilyDef {
-  key: 'oil_rig' | 'mine_shaft';
+  key: 'equity_desk' | 'treasury_desk';
   name: string;
   description: string;
   family: 'oil' | 'mine';
-  burnCostOsr: number;
+  burnCostBnty: number;
   burnShareBps: number;
   treasuryShareBps: number;
   mintFeeEth: number;
@@ -340,21 +340,21 @@ export interface NodeFamilyDef {
 
 export const NODE_FAMILIES: NodeFamilyDef[] = [
   {
-    key: 'oil_rig',
+    key: 'equity_desk',
     name: 'Equity Desk',
     description: 'Highest base rate of the two families, and the one instrument sets are built around. Claims pay out at the standard 2% fee.',
     family: 'oil',
-    burnCostOsr: 1000,
+    burnCostBnty: 1000,
     burnShareBps: MINT_BURN_BPS,
     treasuryShareBps: MINT_TREASURY_BPS,
     mintFeeEth: MINT_FEE_ETH,
   },
   {
-    key: 'mine_shaft',
+    key: 'treasury_desk',
     name: 'Treasury Desk',
     description: 'Tokenized T-bill desk. Earns BNTY, reinvests coupons at a reduced 0.75% fee, and adds bonus desk slots at L5/L7/L9.',
     family: 'mine',
-    burnCostOsr: 750,
+    burnCostBnty: 750,
     burnShareBps: MINT_BURN_BPS,
     treasuryShareBps: MINT_TREASURY_BPS,
     mintFeeEth: MINT_FEE_ETH,
@@ -363,7 +363,7 @@ export const NODE_FAMILIES: NodeFamilyDef[] = [
 
 // Emission — Bitcoin-style halving curve.
 /**
- * Total GPU supply.
+ * Total BNTY supply.
  *
  * Flap mints every launch at its default max supply of 1e9 with 18 decimals,
  * so that is the figure the app must agree with. Overridable because the true
@@ -372,7 +372,7 @@ export const NODE_FAMILIES: NodeFamilyDef[] = [
  * constant becomes a fallback for the pre-launch period only.
  *
  * Emission is sized from this rather than hardcoded, so the schedule can never
- * promise more GPU than the reserve holds. See EMISSION_RESERVE below.
+ * promise more BNTY than the reserve holds. See EMISSION_RESERVE below.
  */
 export const TOTAL_SUPPLY = Number(
   process.env.NEXT_PUBLIC_OSR_TOTAL_SUPPLY ?? 1_000_000_000
@@ -406,7 +406,7 @@ export const EMISSION_RESERVE_PCT = Number(
   process.env.NEXT_PUBLIC_OSR_EMISSION_RESERVE_PCT ?? 0.05
 );
 
-/** GPU set aside at genesis to fund every reward the protocol will ever pay. */
+/** BNTY set aside at genesis to fund every reward the protocol will ever pay. */
 export const EMISSION_RESERVE = TOTAL_SUPPLY * EMISSION_RESERVE_PCT;
 
 /**
@@ -415,20 +415,20 @@ export const EMISSION_RESERVE = TOTAL_SUPPLY * EMISSION_RESERVE_PCT;
  *
  * A halving schedule's lifetime sum is rate * period * 2, so inverting it gives
  * the only rate that makes lifetime emission equal the reserve. Hardcoding the
- * rate instead is how the previous 262 GPU/sec ended up promising 316.9M
+ * rate instead is how the previous 262 BNTY/sec ended up promising 316.9M
  * against a 229M supply — 38% more than could ever exist.
  */
 export const GENESIS_RATE_PER_SEC = EMISSION_RESERVE / ((HALVING_PERIOD_MS / 1000) * 2);
 
 /** Compact figure for display: 1000000000 -> 1B, 316915200 -> 316.9M. */
-export function compactOsr(n: number): string {
+export function compactBnty(n: number): string {
   if (n >= 1e9) return `${(n / 1e9).toFixed(n % 1e9 === 0 ? 0 : 2)}B`;
   if (n >= 1e6) return `${(n / 1e6).toFixed(n % 1e6 === 0 ? 0 : 1)}M`;
   return Math.round(n).toLocaleString();
 }
 
 /**
- * Total GPU ever paid out as rewards, across every halving cycle.
+ * Total BNTY ever paid out as rewards, across every halving cycle.
  *
  * Equal to EMISSION_RESERVE by construction, since the genesis rate is derived
  * from it. Kept as its own name because the docs need to talk about the
@@ -439,10 +439,10 @@ export const LIFETIME_EMISSION = GENESIS_RATE_PER_SEC * (HALVING_PERIOD_MS / 100
 /** Supply left circulating on the curve once the reserve is set aside. */
 export const PUBLIC_FLOAT = TOTAL_SUPPLY - EMISSION_RESERVE;
 
-export const SUPPLY_LABEL = compactOsr(TOTAL_SUPPLY);
-export const LIFETIME_EMISSION_LABEL = compactOsr(LIFETIME_EMISSION);
-export const EMISSION_RESERVE_LABEL = compactOsr(EMISSION_RESERVE);
-export const PUBLIC_FLOAT_LABEL = compactOsr(PUBLIC_FLOAT);
+export const SUPPLY_LABEL = compactBnty(TOTAL_SUPPLY);
+export const LIFETIME_EMISSION_LABEL = compactBnty(LIFETIME_EMISSION);
+export const EMISSION_RESERVE_LABEL = compactBnty(EMISSION_RESERVE);
+export const PUBLIC_FLOAT_LABEL = compactBnty(PUBLIC_FLOAT);
 export const RESERVE_PCT_LABEL = `${Math.round(EMISSION_RESERVE_PCT * 100)}%`;
 export const FLOAT_PCT_LABEL = `${Math.round((1 - EMISSION_RESERVE_PCT) * 100)}%`;
 
@@ -467,12 +467,12 @@ export const HALVING_SCHEDULE_TEXT = [0, 1, 2, 3]
     const rate = GENESIS_RATE_PER_SEC / Math.pow(2, cycle);
     const emittedPct = Math.round((1 - Math.pow(0.5, cycle)) * 100);
     const tail = cycle === 0 ? '' : `, ${emittedPct}% of lifetime emitted`;
-    return `Day ${String(day).padStart(3)} : ${rate.toFixed(1).padStart(6)} GPU/sec  (${compactOsr(rate * 86400)}/day${tail})`;
+    return `Day ${String(day).padStart(3)} : ${rate.toFixed(1).padStart(6)} BNTY/sec  (${compactBnty(rate * 86400)}/day${tail})`;
   })
   .join('\n');
 
 /** First-day emission, for the docs' summary line. */
-export const DAY_ONE_EMISSION_LABEL = compactOsr(GENESIS_RATE_PER_SEC * 86400);
+export const DAY_ONE_EMISSION_LABEL = compactBnty(GENESIS_RATE_PER_SEC * 86400);
 
 /**
  * Day by which 99% of the reserve has been emitted — the point where the tail
@@ -511,12 +511,12 @@ export function welcomeBoostFactor(joinedAtMs: number | null, nowMs: number): nu
 }
 
 /**
- * One-time GPU credited to a wallet on first sight so a new operator can afford
- * their first node (a Wafer Fab burns 1,000 GPU). Without this a fresh wallet has
+ * One-time BNTY credited to a wallet on first sight so a new operator can afford
+ * their first node (a Desk Fab burns 1,000 BNTY). Without this a fresh wallet has
  * no route to its first node: no nodes means no production means nothing to
- * claim, and crates also cost GPU. Tracked via users.dripped so it grants once.
+ * claim, and crates also cost BNTY. Tracked via users.dripped so it grants once.
  */
-export const STARTER_OSR_GRANT = 1_000;
+export const STARTER_BNTY_GRANT = 1_000;
 
 /** Storage cap = 12h of production. */
 export const STORAGE_CAP_SECONDS = 43_200;

@@ -7,7 +7,7 @@ process.env.OSR_DATA_DIR = mkdtempSync(join(tmpdir(), 'osr-market-'));
 
 const { getDb } = await import('./db');
 const { setOsrUsdPrice } = await import('./price');
-const { crateCostOsr, CRATE_OPEN_OSR, CRATES_FOUND_PER_DAY, CRATE_WALLET_DAILY_CAP } =
+const { crateCostBnty, CRATE_OPEN_OSR, CRATES_FOUND_PER_DAY, CRATE_WALLET_DAILY_CAP } =
   await import('./economy');
 const { rollCrateDrops, unopenedCrates, unseenCrates, markCratesSeen, networkCratesRemaining } =
   await import('./crates');
@@ -24,7 +24,7 @@ function credit(wallet: string, amount: number) {
 }
 
 /** Drop a crate straight into inventory, bypassing the RNG. */
-function giveCrate(wallet: string, type: 'rig_crate' | 'shaft_crate' = 'rig_crate'): number {
+function giveCrate(wallet: string, type: 'equity_allocation' | 'treasury_allocation' = 'equity_allocation'): number {
   const row = getDb()
     .prepare('INSERT INTO crates (wallet, crate_type, found_at) VALUES (?,?,?)')
     .run(wallet, type, Date.now());
@@ -35,20 +35,20 @@ beforeEach(() => {
   const db = getDb();
   db.exec('DELETE FROM listings; DELETE FROM crates; DELETE FROM components; DELETE FROM nodes;');
   db.exec("DELETE FROM protocol WHERE key LIKE 'crates_found_day_%'");
-  setOsrUsdPrice(0.001); // $0.001/GPU -> a $5 crate costs 5,000 GPU
+  setOsrUsdPrice(0.001); // $0.001/BNTY -> a $5 crate costs 5,000 BNTY
 });
 
 afterAll(() => vi.restoreAllMocks());
 
 describe('crate pricing', () => {
-  it('charges the flat GPU price', () => {
-    expect(crateCostOsr(0.001)).toBe(CRATE_OPEN_OSR);
+  it('charges the flat BNTY price', () => {
+    expect(crateCostBnty(0.001)).toBe(CRATE_OPEN_OSR);
   });
 
   it('still prices a crate when no token price is known', () => {
     // The flat price must never leave crates unopenable because a feed lapsed.
-    expect(crateCostOsr(null)).toBe(CRATE_OPEN_OSR);
-    expect(crateCostOsr(0)).toBe(CRATE_OPEN_OSR);
+    expect(crateCostBnty(null)).toBe(CRATE_OPEN_OSR);
+    expect(crateCostBnty(0)).toBe(CRATE_OPEN_OSR);
   });
 });
 
@@ -85,7 +85,7 @@ describe('crates cannot be bought', () => {
 describe('crate mining budget', () => {
   it('never exceeds the network daily budget', () => {
     credit(A, 1e9);
-    const node = mintNode(A, 'oil_rig').node;
+    const node = mintNode(A, 'equity_desk').node;
     const dayAgo = Date.now() - 86_400_000;
     // A wallet with 100% GP share, rolled repeatedly over a full day each time.
     for (let i = 0; i < 200; i++) {
@@ -101,7 +101,7 @@ describe('crate mining budget', () => {
 
   it('drops nothing for a wallet with no grow-power share', () => {
     credit(A, 1e9);
-    const node = mintNode(A, 'oil_rig').node;
+    const node = mintNode(A, 'equity_desk').node;
     const dayAgo = Date.now() - 86_400_000;
     for (let i = 0; i < 50; i++) {
       rollCrateDrops(A, [{ id: node.id, family: 'oil', crateRolledAt: dayAgo }], 0);
@@ -187,7 +187,7 @@ describe('marketplace', () => {
 
   it('sells a node together with the components bolted to it', () => {
     credit(A, 1e9);
-    const node = mintNode(A, 'oil_rig').node;
+    const node = mintNode(A, 'equity_desk').node;
     const crateId = giveCrate(A);
     const opened = openCrate(A, crateId, node.id);
     getDb()

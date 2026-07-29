@@ -50,7 +50,7 @@ export interface LayerProps {
 /**
  * `place` writes a matrix per instance. Done in a layout effect rather than on
  * every frame — scenery never moves, so the matrices are written once and the
- * GPU replays them for free. `instanceMatrix.needsUpdate` is the one thing that
+ * BNTY replays them for free. `instanceMatrix.needsUpdate` is the one thing that
  * must not be forgotten, or nothing appears and nothing errors.
  */
 export default function Layer({

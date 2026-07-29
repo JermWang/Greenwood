@@ -66,7 +66,7 @@ export function ownedMachines(wallet: string): Map<string, MachineKind> {
     .prepare('SELECT id, family FROM nodes WHERE wallet = ?')
     .all(wallet) as unknown as Array<{ id: number; family: string }>;
   for (const node of nodes) {
-    owned.set(`line:${node.id}`, node.family === 'oil' ? 'euv' : 'rack');
+    owned.set(`line:${node.id}`, node.family === 'oil' ? 'equity' : 'rack');
   }
 
   const components = db
@@ -158,7 +158,7 @@ export function saveLayout(wallet: string, input: unknown): PlacedMachine[] {
 // ---------------------------------------------------------------------------
 
 export interface LayoutEffect {
-  key: 'coolant' | 'packaging' | 'spine' | 'crowding';
+  key: 'coolant' | 'settlement' | 'spine' | 'crowding';
   label: string;
   /** Signed contribution to the multiplier, already averaged across lines. */
   delta: number;
@@ -194,13 +194,13 @@ export function scoreLayout(layout: PlacedMachine[], kinds: Map<string, MachineK
     const kind = kinds.get(machine.id);
     return kind ? [{ ...machine, kind }] : [];
   });
-  const lines = withKind.filter((m) => m.kind === 'euv' || m.kind === 'rack');
+  const lines = withKind.filter((m) => m.kind === 'equity' || m.kind === 'rack');
   if (lines.length === 0) {
     return { multiplier: 1, placed: withKind.length, lines: 0, effects: [] };
   }
 
   const coolers = withKind.filter((m) => m.kind === 'cooling');
-  const packers = withKind.filter((m) => m.kind === 'packaging');
+  const packers = withKind.filter((m) => m.kind === 'settlement');
 
   let coolantLines = 0;
   let packagingLines = 0;
@@ -220,7 +220,7 @@ export function scoreLayout(layout: PlacedMachine[], kinds: Map<string, MachineK
   // contextual type and widens `key` back to string.
   const scored: LayoutEffect[] = [
     { key: 'coolant', label: 'Liquidity desk in reach', delta: (coolantLines / lines.length) * COOLANT_BONUS, lines: coolantLines },
-    { key: 'packaging', label: 'Structured desk in reach', delta: (packagingLines / lines.length) * PACKAGING_BONUS, lines: packagingLines },
+    { key: 'settlement', label: 'Structured desk in reach', delta: (packagingLines / lines.length) * PACKAGING_BONUS, lines: packagingLines },
     { key: 'spine', label: 'On the main aisle', delta: (spineLines / lines.length) * SPINE_BONUS, lines: spineLines },
     { key: 'crowding', label: 'Crowded — desks too close', delta: -(crowdedLines / lines.length) * CROWDING_PENALTY, lines: crowdedLines },
   ];
@@ -275,7 +275,7 @@ export function allLayoutMultipliers(): Map<string, number> {
     return map;
   };
   for (const node of nodes) {
-    kindsFor(node.wallet).set(`line:${node.id}`, node.family === 'oil' ? 'euv' : 'rack');
+    kindsFor(node.wallet).set(`line:${node.id}`, node.family === 'oil' ? 'equity' : 'rack');
   }
   for (const component of components) {
     kindsFor(component.wallet).set(

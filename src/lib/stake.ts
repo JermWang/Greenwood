@@ -1,11 +1,11 @@
-// Fab capacity contracts — the GPU staking vault.
+// Fab capacity contracts — the BNTY staking vault.
 //
-// An operator locks GPU for a fixed term and is paid a rate published at the
+// An operator locks BNTY for a fixed term and is paid a rate published at the
 // moment they commit. The interest comes out of the emission reserve, the same
 // pool that funds production rewards, which is what makes solvency the central
 // concern of this module rather than an afterthought.
 //
-// The rule that shapes everything here: the protocol never promises GPU it does
+// The rule that shapes everything here: the protocol never promises BNTY it does
 // not already hold. A contract's full term interest is reserved when it opens,
 // not when it closes, and a new contract is refused if the reserve cannot cover
 // it alongside everything already committed. A vault that accepts deposits it
@@ -75,7 +75,7 @@ export function committedInterest(): number {
 }
 
 /**
- * GPU in the emission reserve right now.
+ * BNTY in the emission reserve right now.
  *
  * Mirrors protocolOverview's figure exactly: the reserve is what was pre-minted
  * for rewards, less everything emitted, plus the reserve share of in-game
@@ -177,7 +177,7 @@ export function stakeTerms() {
        * interest on it has to be reservable at the moment of opening.
        *
        * Clamped to total supply: at a short term and a low rate the reserve can
-       * arithmetically back interest on several times more GPU than will ever
+       * arithmetically back interest on several times more BNTY than will ever
        * exist, and quoting that as available capacity would be a number nobody
        * could act on.
        */
@@ -204,12 +204,12 @@ export function stakeTerms() {
  */
 export function openStake(
   wallet: string,
-  amountOsr: number,
+  amountBnty: number,
   termDays: number,
   opts: { settledOnChain?: boolean } = {}
 ) {
   const term = findTerm(termDays);
-  const principal = Math.floor(amountOsr);
+  const principal = Math.floor(amountBnty);
   if (!Number.isFinite(principal) || principal < STAKE_MIN_OSR) {
     throw new GameError(`minimum Note is ${STAKE_MIN_OSR.toLocaleString()} BNTY`, 400);
   }

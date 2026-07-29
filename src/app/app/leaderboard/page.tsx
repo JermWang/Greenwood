@@ -31,7 +31,7 @@ export default function LeaderboardPage() {
   useEffect(() => {
     const supabase = getBrowserSupabase();
     if (!supabase) { const timer = window.setInterval(() => void load(metric), 30_000); return () => window.clearInterval(timer); }
-    const channel = supabase.channel('gpu-silicon-race').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void load(metric)).subscribe();
+    const channel = supabase.channel('gw-standings').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void load(metric)).subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [metric, load]);
 
@@ -50,12 +50,12 @@ export default function LeaderboardPage() {
         </section>
 
         <section className="race-hero">
-          <div className="race-hero-copy"><span className="fab-scene-kicker">ACTIVE RANKING</span><h2>{activeMetric.label}</h2><p>{activeMetric.description}</p></div>
-          <div className="race-wafer-mark"><span /><b>01</b><small>LEAD</small></div>
+          <div className="race-hero-copy"><span className="gw-scene-kicker">ACTIVE RANKING</span><h2>{activeMetric.label}</h2><p>{activeMetric.description}</p></div>
+          <div className="race-desk-mark"><span /><b>01</b><small>LEAD</small></div>
         </section>
 
-        {error && <div className="fab-system-alert is-error"><span>BOARD</span><p>{error}</p></div>}
-        {loading && rows.length === 0 ? <div className="fab-loading-deck"><span className="fab-loading-scan" /><p>Loading standings…</p></div> : (
+        {error && <div className="gw-system-alert is-error"><span>BOARD</span><p>{error}</p></div>}
+        {loading && rows.length === 0 ? <div className="gw-loading-deck"><span className="gw-loading-scan" /><p>Loading standings…</p></div> : (
           <>
             {podium.length > 0 && (
               <section className="race-podium-deck">
@@ -73,7 +73,7 @@ export default function LeaderboardPage() {
             )}
 
             <section className="race-lanes">
-              <div className="fab-console-heading"><span>NETWORK FIELD</span><span>TOP 100 / AUTO REFRESH</span></div>
+              <div className="gw-console-heading"><span>NETWORK FIELD</span><span>TOP 100 / AUTO REFRESH</span></div>
               {rows.length === 0 ? <div className="race-empty">No fund has entered this ranking yet.</div> : rows.slice(3, 100).map((row) => {
                 const progress = Math.max(3, valueFor(row, metric) / topValue * 100);
                 return (

@@ -13,7 +13,7 @@ import {
 } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
 
-const gpu = (value: number, digits = 0) =>
+const bnty = (value: number, digits = 0) =>
   value.toLocaleString(undefined, { maximumFractionDigits: digits });
 
 const pct = (bps: number) => `${(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)}%`;
@@ -71,7 +71,7 @@ export default function StakePage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const balance = op?.osrBalance ?? 0;
+  const balance = op?.bntyBalance ?? 0;
   const term = useMemo(
     () => rates?.terms.find((candidate) => candidate.days === termDays) ?? null,
     [rates, termDays]
@@ -83,7 +83,7 @@ export default function StakePage() {
   const blocker = (() => {
     if (!term) return 'Pick a term';
     if (!principal) return null;
-    if (rates && principal < rates.minPrincipal) return `Minimum ${gpu(rates.minPrincipal)} BNTY`;
+    if (rates && principal < rates.minPrincipal) return `Minimum ${bnty(rates.minPrincipal)} BNTY`;
     if (principal > balance) return 'More than your balance';
     if (principal > term.maxPrincipal) return 'Beyond what the reserve can back right now';
     return null;
@@ -100,7 +100,7 @@ export default function StakePage() {
       setPositions(result.positions);
       setTotals(result.totals);
       setAmount('');
-      setNotice(`Locked ${gpu(principal)} BNTY for ${term.days} days.`);
+      setNotice(`Locked ${bnty(principal)} BNTY for ${term.days} days.`);
       await Promise.all([load(), refresh()]);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not open that Note');
@@ -121,8 +121,8 @@ export default function StakePage() {
       setTotals(result.totals);
       setNotice(
         result.result.matured
-          ? `Note matured. ${gpu(result.result.payout)} BNTY returned, including ${gpu(result.result.interest)} interest.`
-          : `Closed early. ${gpu(result.result.payout)} BNTY returned after a ${gpu(result.result.penalty)} BNTY penalty.`
+          ? `Note matured. ${bnty(result.result.payout)} BNTY returned, including ${bnty(result.result.interest)} interest.`
+          : `Closed early. ${bnty(result.result.payout)} BNTY returned after a ${bnty(result.result.penalty)} BNTY penalty.`
       );
       await Promise.all([load(), refresh()]);
     } catch (cause) {
@@ -135,7 +135,7 @@ export default function StakePage() {
   if (!wallet) {
     return (
       <PageShell title="Fixed Income" subtitle="Lock BNTY for a fixed term and draw a published rate from the emission reserve.">
-        <section className="fab-floor-gate">
+        <section className="gw-floor-gate">
           <VaultIcon size={38} weight="duotone" />
           <h1>Link a fund.</h1>
           <p>Notes are held against a wallet. Connect one to open a position, or read the current rate card below.</p>
@@ -152,12 +152,12 @@ export default function StakePage() {
       subtitle="Lock BNTY for a fixed term and draw a published rate from the emission reserve. Rates are fixed when a Note opens and never move underneath it."
       maxWidth="max-w-[1500px]"
     >
-      {error && <div className="fab-system-alert is-error"><span>VAULT</span><p>{error}</p></div>}
-      {notice && <div className="fab-system-alert"><span>VAULT</span><p>{notice}</p></div>}
+      {error && <div className="gw-system-alert is-error"><span>VAULT</span><p>{error}</p></div>}
+      {notice && <div className="gw-system-alert"><span>VAULT</span><p>{notice}</p></div>}
 
       <div className="stake-layout">
         <section className="stake-open panel">
-          <div className="fab-console-heading"><span>OPEN A NOTE</span><span>{gpu(balance)} BNTY AVAILABLE</span></div>
+          <div className="gw-console-heading"><span>OPEN A NOTE</span><span>{bnty(balance)} BNTY AVAILABLE</span></div>
 
           <div className="stake-terms">
             {rates?.terms.map((candidate) => (
@@ -180,7 +180,7 @@ export default function StakePage() {
               type="number"
               inputMode="numeric"
               min={rates?.minPrincipal ?? 100}
-              placeholder={`${gpu(rates?.minPrincipal ?? 100)} minimum`}
+              placeholder={`${bnty(rates?.minPrincipal ?? 100)} minimum`}
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
             />
@@ -189,18 +189,18 @@ export default function StakePage() {
 
           {term && principal > 0 && (
             <dl className="stake-projection">
-              <div><dt>Interest at maturity</dt><dd>{gpu(projectedInterest)} BNTY</dd></div>
-              <div><dt>Returned at maturity</dt><dd>{gpu(principal + projectedInterest)} BNTY</dd></div>
+              <div><dt>Interest at maturity</dt><dd>{bnty(projectedInterest)} BNTY</dd></div>
+              <div><dt>Returned at maturity</dt><dd>{bnty(principal + projectedInterest)} BNTY</dd></div>
               <div className="is-warn">
                 <dt>If closed early</dt>
-                <dd>{gpu(principal - principal * ((rates?.earlyExitPenaltyBps ?? 1000) / 10_000))} BNTY</dd>
+                <dd>{bnty(principal - principal * ((rates?.earlyExitPenaltyBps ?? 1000) / 10_000))} BNTY</dd>
               </div>
             </dl>
           )}
 
           <button type="button" className="btn-primary stake-submit" onClick={() => void open()} disabled={busy === 'open' || !principal || Boolean(blocker)}>
             <Lock size={15} weight="duotone" />
-            {busy === 'open' ? (step ? `${step}…` : 'Opening…') : blocker ?? `Lock ${principal ? gpu(principal) : ''} BNTY`}
+            {busy === 'open' ? (step ? `${step}…` : 'Opening…') : blocker ?? `Lock ${principal ? bnty(principal) : ''} BNTY`}
           </button>
 
           {rates && (
@@ -213,9 +213,9 @@ export default function StakePage() {
         </section>
 
         <section className="stake-positions">
-          <div className="fab-console-heading">
+          <div className="gw-console-heading">
             <span>YOUR NOTES</span>
-            <span>{totals?.openContracts ?? 0} OPEN · {gpu(totals?.lockedPrincipal ?? 0)} BNTY LOCKED</span>
+            <span>{totals?.openContracts ?? 0} OPEN · {bnty(totals?.lockedPrincipal ?? 0)} BNTY LOCKED</span>
           </div>
 
           {loading && positions.length === 0 ? (
@@ -229,7 +229,7 @@ export default function StakePage() {
                 return (
                   <article key={position.id} className={`stake-row ${position.status === 'closed' ? 'is-closed' : position.matured ? 'is-matured' : ''}`}>
                     <div className="stake-row-head">
-                      <b>{gpu(position.principal)} <small>BNTY</small></b>
+                      <b>{bnty(position.principal)} <small>BNTY</small></b>
                       <span>{position.termDays}d · {pct(position.aprBps)} APR</span>
                     </div>
                     <div className="stake-row-meter">
@@ -239,12 +239,12 @@ export default function StakePage() {
                       {position.status === 'closed' ? (
                         <>
                           <span>Closed</span>
-                          <b>{gpu((position.paidPrincipal ?? 0) + (position.paidInterest ?? 0))} BNTY returned</b>
+                          <b>{bnty((position.paidPrincipal ?? 0) + (position.paidInterest ?? 0))} BNTY returned</b>
                         </>
                       ) : (
                         <>
                           <span>{position.matured ? 'Matured' : remaining(left)}</span>
-                          <b>{gpu(position.accruedInterest, 2)} / {gpu(position.termInterest, 2)} BNTY interest</b>
+                          <b>{bnty(position.accruedInterest, 2)} / {bnty(position.termInterest, 2)} BNTY interest</b>
                         </>
                       )}
                     </div>
@@ -254,8 +254,8 @@ export default function StakePage() {
                         {busy === position.id
                           ? 'Closing…'
                           : position.matured
-                            ? `Collect ${gpu(position.closeValueNow)} BNTY`
-                            : `Exit early · −${gpu(position.earlyExitPenalty)} BNTY`}
+                            ? `Collect ${bnty(position.closeValueNow)} BNTY`
+                            : `Exit early · −${bnty(position.earlyExitPenalty)} BNTY`}
                       </button>
                     )}
                   </article>
@@ -282,12 +282,12 @@ function RateCard({ rates }: { rates: StakeRates }) {
   const committedShare = rates.reserveBalance > 0 ? rates.committedInterest / rates.reserveBalance : 0;
   return (
     <section className="stake-capacity panel">
-      <div className="fab-console-heading"><span>RESERVE CAPACITY</span><span>LIVE</span></div>
+      <div className="gw-console-heading"><span>RESERVE CAPACITY</span><span>LIVE</span></div>
       <div className="stake-capacity-bar"><i style={{ width: `${Math.min(100, committedShare * 100)}%` }} /></div>
       <dl>
-        <div><dt>Emission reserve</dt><dd>{gpu(rates.reserveBalance)} BNTY</dd></div>
-        <div><dt>Promised to open Notes</dt><dd>{gpu(rates.committedInterest)} BNTY</dd></div>
-        <div><dt>Free to back new Notes</dt><dd>{gpu(rates.uncommittedReserve)} BNTY</dd></div>
+        <div><dt>Emission reserve</dt><dd>{bnty(rates.reserveBalance)} BNTY</dd></div>
+        <div><dt>Promised to open Notes</dt><dd>{bnty(rates.committedInterest)} BNTY</dd></div>
+        <div><dt>Free to back new Notes</dt><dd>{bnty(rates.uncommittedReserve)} BNTY</dd></div>
       </dl>
       <p className="stake-note">
         Every Note&rsquo;s full interest is reserved the moment it opens, so the protocol never promises

@@ -65,7 +65,7 @@ export default function IntroPanel({ wallet }: { wallet: string | null }) {
    */
   const nodeCount = op?.nodes.length ?? 0;
   const produced = op?.totalProduced ?? 0;
-  const balance = op?.osrBalance ?? 0;
+  const balance = op?.bntyBalance ?? 0;
   useEffect(() => { load(); }, [nodeCount, produced, balance, load]);
 
   if (!data || data.intro.finished) return null;

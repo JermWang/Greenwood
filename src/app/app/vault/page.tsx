@@ -71,7 +71,7 @@ export default function VaultPage() {
 
   const reserveFill = useMemo(() => {
     if (!overview) return 0;
-    const reserve = Math.max(0, overview.osrReserveBalance ?? 0);
+    const reserve = Math.max(0, overview.bntyReserveBalance ?? 0);
     const retired = Math.max(0, overview.totalOsrBurned ?? 0);
     return reserve + retired > 0 ? reserve / (reserve + retired) : 0;
   }, [overview]);
@@ -82,15 +82,15 @@ export default function VaultPage() {
   return (
     <PageShell title="The Vault" subtitle="Inspect the emission chamber, custody cells, and every network flow from one proof-of-reserve console." maxWidth="max-w-[1500px]">
       {loading && !overview ? (
-        <div className="fab-loading-deck"><span className="fab-loading-scan" /><p className="font-mono text-[10px] uppercase tracking-[.25em] text-emerald-200">Reading reserve ledger</p></div>
+        <div className="gw-loading-deck"><span className="gw-loading-scan" /><p className="font-mono text-[10px] uppercase tracking-[.25em] text-emerald-200">Reading reserve ledger</p></div>
       ) : error ? (
-        <div className="fab-system-alert is-error"><span>VAULT</span><p>{error}</p><button className="btn-secondary ml-auto" onClick={() => void load()}>Retry link</button></div>
+        <div className="gw-system-alert is-error"><span>VAULT</span><p>{error}</p><button className="btn-secondary ml-auto" onClick={() => void load()}>Retry link</button></div>
       ) : (
         <div className="treasury-layout">
           <section className="treasury-reactor">
             <div className="treasury-reactor-copy">
-              <span className="fab-scene-kicker">EMISSION CHAMBER / LIVE</span>
-              <h2>{compact(overview?.osrReserveBalance)} <small>BNTY</small></h2>
+              <span className="gw-scene-kicker">EMISSION CHAMBER / LIVE</span>
+              <h2>{compact(overview?.bntyReserveBalance)} <small>BNTY</small></h2>
               <p>Unrouted network reserve</p>
               <div className="treasury-flow-legend">
                 <span><i className="is-reserve" /> Reserve {Math.round(reserveFill * 100)}%</span>
@@ -111,7 +111,7 @@ export default function VaultPage() {
           </section>
 
           <section className="treasury-network">
-            <div className="fab-console-heading"><span>EMISSION SCHEDULE</span><span>CYCLE {String((overview?.halving.cycleIndex ?? 0) + 1).padStart(2, '0')}</span></div>
+            <div className="gw-console-heading"><span>EMISSION SCHEDULE</span><span>CYCLE {String((overview?.halving.cycleIndex ?? 0) + 1).padStart(2, '0')}</span></div>
             <div className="treasury-halving">
               <div className="treasury-halving-copy">
                 <span>Next halving</span>
@@ -152,7 +152,7 @@ export default function VaultPage() {
           </section>
 
           <section className="treasury-cells">
-            <div className="fab-console-heading"><span>CUSTODY CELLS</span><span>{TOKEN_LIVE ? 'ON-CHAIN' : 'PRE-TOKEN'}</span></div>
+            <div className="gw-console-heading"><span>CUSTODY CELLS</span><span>{TOKEN_LIVE ? 'ON-CHAIN' : 'PRE-TOKEN'}</span></div>
             {reserves.length === 0 ? (
               <div className="treasury-empty">
                 <span className="treasury-empty-icon">◇</span>
@@ -173,7 +173,7 @@ export default function VaultPage() {
           </section>
 
           <section className="treasury-events">
-            <div className="fab-console-heading"><span>FLOW LEDGER</span><span>{events.length} SIGNALS</span></div>
+            <div className="gw-console-heading"><span>FLOW LEDGER</span><span>{events.length} SIGNALS</span></div>
             <div className="treasury-event-stream">
               {events.length === 0 ? <p className="treasury-event-empty">No indexed treasury movement yet.</p> : events.map((event) => (
                 <article key={event.id}>

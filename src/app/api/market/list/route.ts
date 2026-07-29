@@ -23,12 +23,12 @@ export async function POST(request: Request) {
     }
     const itemId = Number(body.itemId);
     if (!Number.isInteger(itemId) || itemId <= 0) throw new GameError('itemId is required', 400);
-    const priceOsr = Number(body.priceOsr);
-    if (!Number.isFinite(priceOsr) || priceOsr <= 0) {
-      throw new GameError('priceOsr must be a positive number', 400);
+    const priceBnty = Number(body.priceBnty);
+    if (!Number.isFinite(priceBnty) || priceBnty <= 0) {
+      throw new GameError('priceBnty must be a positive number', 400);
     }
 
-    return NextResponse.json({ listing: createListing(wallet, kind as ItemKind, itemId, priceOsr) });
+    return NextResponse.json({ listing: createListing(wallet, kind as ItemKind, itemId, priceBnty) });
   } catch (e) {
     if (e instanceof GameError) return NextResponse.json({ error: e.message }, { status: e.status });
     console.error('[market/list]', e);

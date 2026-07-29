@@ -36,7 +36,7 @@ export const useWalletStore = create<WalletStore>()(
       setTheme: (theme) => set({ theme }),
     }),
     {
-      name: 'gpu-wallet-store',
+      name: 'gw-wallet-store',
       /**
        * Rehydration must not undo the dev wallet.
        *

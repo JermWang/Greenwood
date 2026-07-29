@@ -169,11 +169,11 @@ function migrate(db: DatabaseSync) {
 
     -- Crates are found by mining, not bought. A row here is an unopened crate
     -- sitting in a wallet's inventory: it exists from the moment it drops, and
-    -- opening it (which costs GPU) resolves it into a component.
+    -- opening it (which costs BNTY) resolves it into a component.
     CREATE TABLE IF NOT EXISTS crates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       wallet TEXT NOT NULL REFERENCES users(wallet),
-      crate_type TEXT NOT NULL CHECK (crate_type IN ('rig_crate','shaft_crate')),
+      crate_type TEXT NOT NULL CHECK (crate_type IN ('equity_allocation','treasury_allocation')),
       found_at INTEGER NOT NULL,
       found_node_id INTEGER,
       -- Set when opened; an opened crate is kept for history, never deleted.
@@ -188,7 +188,7 @@ function migrate(db: DatabaseSync) {
     CREATE INDEX IF NOT EXISTS idx_crates_wallet ON crates(wallet, opened_at);
 
     -- Player-to-player marketplace. Custodial: the server is the ledger and
-    -- moves the item, while GPU settles wallet-to-wallet on-chain. A listing is
+    -- moves the item, while BNTY settles wallet-to-wallet on-chain. A listing is
     -- the seller's offer; ownership only moves when a sale is recorded.
     CREATE TABLE IF NOT EXISTS listings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -204,7 +204,7 @@ function migrate(db: DatabaseSync) {
       sold_price_osr REAL,
       fee_osr REAL
     );
-    -- Fab capacity contracts: GPU locked for a fixed term against a rate fixed
+    -- Fab capacity contracts: BNTY locked for a fixed term against a rate fixed
     -- at open. apr_bps and term_interest are stored per row rather than looked
     -- up from the current schedule, so changing the published terms can never
     -- retroactively alter what an already-open contract is owed.
@@ -386,6 +386,7 @@ function migrate(db: DatabaseSync) {
   ensureColumn(db, 'cosmetics_owned', 'upgrade_level', 'INTEGER NOT NULL DEFAULT 0');
 
   widenListingKinds(db);
+  renameAllocationKinds(db);
   dropColumn(db, 'users', 'xstock_xomx');
   dropColumn(db, 'users', 'xstock_cvxx');
 
@@ -467,6 +468,70 @@ function widenListingKinds(db: DatabaseSync) {
       CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller, status);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_listings_item_live
         ON listings(item_kind, item_id) WHERE status = 'open';
+    `);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON;');
+  }
+}
+
+/**
+ * Rename the allocation kinds off the old industrial theme.
+ *
+ * `rig_crate`/`shaft_crate` became `equity_allocation`/`treasury_allocation`.
+ * The schema above already declares the new names, which does exactly nothing
+ * to a database that already exists — so without this, an established install
+ * keeps the OLD CHECK constraint while the code inserts the NEW value, and
+ * every allocation a player earns fails on a constraint that is invisible from
+ * the source. The test suite could never catch it: tests build fresh databases,
+ * where the new schema is simply correct.
+ *
+ * Values are rewritten in the same transaction as the rebuild. A rebuild that
+ * copied the old strings into a table forbidding them would fail the insert and
+ * roll back, which is at least loud; a rewrite without the rebuild would fail
+ * the same way. They have to happen together.
+ *
+ * Guarded on the constraint text so it runs exactly once, matching
+ * widenListingKinds above.
+ */
+function renameAllocationKinds(db: DatabaseSync) {
+  const row = db
+    .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'crates'`)
+    .get() as { sql: string } | undefined;
+  if (!row?.sql || row.sql.includes("'equity_allocation'")) return;
+
+  db.exec('PRAGMA foreign_keys = OFF;');
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.exec(`
+      CREATE TABLE crates_migrated (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        wallet TEXT NOT NULL REFERENCES users(wallet),
+        crate_type TEXT NOT NULL CHECK (crate_type IN ('equity_allocation','treasury_allocation')),
+        found_at INTEGER NOT NULL,
+        found_node_id INTEGER,
+        opened_at INTEGER,
+        result_rarity TEXT,
+        result_slot TEXT,
+        seen_at INTEGER,
+        listing_id INTEGER
+      );
+      INSERT INTO crates_migrated
+        SELECT id, wallet,
+               CASE crate_type
+                 WHEN 'rig_crate' THEN 'equity_allocation'
+                 WHEN 'shaft_crate' THEN 'treasury_allocation'
+                 ELSE crate_type
+               END,
+               found_at, found_node_id, opened_at, result_rarity, result_slot,
+               seen_at, listing_id
+          FROM crates;
+      DROP TABLE crates;
+      ALTER TABLE crates_migrated RENAME TO crates;
+      CREATE INDEX IF NOT EXISTS idx_crates_wallet ON crates(wallet, opened_at);
     `);
     db.exec('COMMIT');
   } catch (error) {

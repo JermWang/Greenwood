@@ -14,7 +14,7 @@ describe('API financial guards', () => {
   });
 
   it('keeps on-chain settlement locked until the token and wallet are set', () => {
-    // The GPU token address is unset in this environment, so the gate must hold
+    // The BNTY token address is unset in this environment, so the gate must hold
     // — and must name the missing piece rather than failing opaquely.
     const blocker = settlementBlocker();
     expect(blocker).not.toBeNull();
@@ -25,13 +25,13 @@ describe('API financial guards', () => {
 
 describe('settlement detail payload', () => {
   it('round-trips the action parameters that bind a receipt to its quote', () => {
-    for (const value of ['oil_rig', 'mine_shaft', 'rig_crate:42', 'L7', 'expedite']) {
+    for (const value of ['equity_desk', 'treasury_desk', 'equity_allocation:42', 'L7', 'expedite']) {
       expect(decodeDetail(encodeDetail(value))).toBe(value);
     }
   });
 
   it('produces a fixed 32-byte payload', () => {
-    expect(encodeDetail('oil_rig')).toHaveLength(66); // 0x + 64 hex chars
+    expect(encodeDetail('equity_desk')).toHaveLength(66); // 0x + 64 hex chars
   });
 
   it('rejects a payload that would not fit on-chain', () => {

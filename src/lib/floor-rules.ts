@@ -7,7 +7,7 @@
 // facing copy now read these same constants, so the panel can never quote a
 // bonus the engine does not actually pay.
 
-export type MachineKind = 'euv' | 'rack' | 'cooling' | 'packaging';
+export type MachineKind = 'equity' | 'rack' | 'cooling' | 'settlement';
 
 /** How close a support desk must be for its bonus to apply, in tiles. */
 export const COOLANT_REACH = 4;
@@ -35,9 +35,9 @@ export const MAX_MULTIPLIER = 1.35;
  */
 export function componentKind(slot: string, family: string): MachineKind {
   const key = slot.toLowerCase();
-  if (/pipeline|rail|elevator/.test(key)) return 'packaging';
+  if (/pipeline|rail|elevator/.test(key)) return 'settlement';
   if (/flare|drill|pump/.test(key)) return 'cooling';
-  return family === 'oil' ? 'euv' : 'rack';
+  return family === 'oil' ? 'equity' : 'rack';
 }
 
 export interface MachineFact {
@@ -67,8 +67,8 @@ const pct = (n: number) => `${n >= 0 ? '+' : ''}${Math.round(n * 100)}%`;
  * most useful thing to tell someone staring at a full desk book, so it leads.
  */
 export const MACHINE_SPECS: Record<MachineKind, MachineSpec> = {
-  euv: {
-    kind: 'euv',
+  equity: {
+    kind: 'equity',
     name: 'Equity Desk',
     role: 'Yield desk',
     summary: 'Earns BNTY every second. The higher-yielding of the two desk families, and the one instrument sets are built around.',
@@ -104,8 +104,8 @@ export const MACHINE_SPECS: Record<MachineKind, MachineSpec> = {
       { label: 'Best placed', value: 'Central to a cluster of yield desks' },
     ],
   },
-  packaging: {
-    kind: 'packaging',
+  settlement: {
+    kind: 'settlement',
     name: 'Structured Desk',
     role: 'Support desk',
     summary: `Earns nothing itself. Pays ${pct(PACKAGING_BONUS)} to every yield desk within ${PACKAGING_REACH} tiles — a wider reach than a Liquidity Desk, for slightly less.`,
@@ -125,4 +125,4 @@ export const LAYOUT_RULES: MachineFact[] = [
   { label: 'Layout multiplier range', value: `${MIN_MULTIPLIER}x – ${MAX_MULTIPLIER}x` },
 ];
 
-export const isSupport = (kind: MachineKind) => kind === 'cooling' || kind === 'packaging';
+export const isSupport = (kind: MachineKind) => kind === 'cooling' || kind === 'settlement';

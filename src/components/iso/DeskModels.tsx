@@ -369,18 +369,18 @@ function StructuredDesk({ accent, selected, hovered, livery }: DeskProps) {
 }
 
 const MODELS: Record<MachineKind, (props: DeskProps) => React.JSX.Element> = {
-  euv: EquityDesk,
+  equity: EquityDesk,
   rack: TreasuryDesk,
   cooling: LiquidityDesk,
-  packaging: StructuredDesk,
+  settlement: StructuredDesk,
 };
 
 /** Approximate model height, so callers can float a label above one. */
 export const DESK_HEIGHT: Record<MachineKind, number> = {
-  euv: 2.6,
+  equity: 2.6,
   rack: 1.3,
   cooling: 1.35,
-  packaging: 0.8,
+  settlement: 0.8,
 };
 
 export default function Desk({ kind, ...props }: DeskProps & { kind: MachineKind }) {

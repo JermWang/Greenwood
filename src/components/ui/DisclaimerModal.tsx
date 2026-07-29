@@ -14,11 +14,11 @@ export default function DisclaimerModal() {
   if (pathname === '/' || pathname?.startsWith('/rarity-test') || isWalletFreeRoute || termsAcceptedAt) return null;
 
   return (
-    <div className="fab-safety-overlay">
-      <div className="fab-safety-modal">
-        <div className="fab-safety-code"><span>SAFETY INTERLOCK</span><span>MAINNET / {CHAIN.id}</span></div>
-        <div className="fab-safety-layout">
-          <div className="fab-safety-wafer" aria-hidden><span>!</span></div>
+    <div className="gw-safety-overlay">
+      <div className="gw-safety-modal">
+        <div className="gw-safety-code"><span>SAFETY INTERLOCK</span><span>MAINNET / {CHAIN.id}</span></div>
+        <div className="gw-safety-layout">
+          <div className="gw-safety-desk" aria-hidden><span>!</span></div>
           <div>
             <h2 className="text-[clamp(2rem,5vw,3.8rem)] font-semibold leading-[.92] tracking-[-.055em] text-white">Real network.<br />Exact review.</h2>
             <p className="mt-5 text-sm leading-relaxed text-emerald-100/58">

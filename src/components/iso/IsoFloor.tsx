@@ -30,10 +30,10 @@ export type { MachineKind, IsoMachine };
 
 /** Catalog glyph per silhouette, so the book reads the same way the board does. */
 const KIND_ICON: Record<MachineKind, typeof ChartLineUp> = {
-  euv: ChartLineUp,
+  equity: ChartLineUp,
   rack: Vault,
   cooling: Drop,
-  packaging: Stack,
+  settlement: Stack,
 };
 
 /** Opening arrangement for the wallet-free demo, so it never starts empty. */
@@ -465,7 +465,7 @@ export default function IsoFloor({
   const selectedMachine = selectedId ? machines.find((m) => m.id === selectedId) : null;
 
   return (
-    <main className="fab-sandbox">
+    <main className="gw-sandbox">
       <IsoScene
         machines={machines}
         layout={layout}
@@ -496,7 +496,7 @@ export default function IsoFloor({
         exclusive — you are either next to a desk or on bare floor, never both.
       */}
       {nearbyDesk && !buildAt && (
-        <div className={`desk-here${nearbyDesk.node.pendingOsr > 0 ? ' is-ready' : ''}`}>
+        <div className={`desk-here${nearbyDesk.node.pendingBnty > 0 ? ' is-ready' : ''}`}>
           <span className="desk-here-head">
             <b>{nearbyDesk.node.type === 'oil' ? 'Equity Desk' : 'Treasury Desk'}</b>
             <em>L{nearbyDesk.node.level}</em>
@@ -514,12 +514,12 @@ export default function IsoFloor({
           <span className="desk-here-bar">
             <i
               style={{
-                width: `${Math.min(100, (nearbyDesk.node.pendingOsr / Math.max(1, nearbyDesk.node.storageCap)) * 100)}%`,
+                width: `${Math.min(100, (nearbyDesk.node.pendingBnty / Math.max(1, nearbyDesk.node.storageCap)) * 100)}%`,
               }}
             />
           </span>
           <span className="desk-here-amount">
-            {nearbyDesk.node.pendingOsr.toFixed(2)}
+            {nearbyDesk.node.pendingBnty.toFixed(2)}
             <small> / {Math.round(nearbyDesk.node.storageCap)} BNTY</small>
           </span>
 
@@ -528,12 +528,12 @@ export default function IsoFloor({
           <button
             className="desk-here-go"
             onClick={() => void routeYield()}
-            disabled={routing || nearbyDesk.node.pendingOsr <= 0}
+            disabled={routing || nearbyDesk.node.pendingBnty <= 0}
           >
             {routing
               ? 'Routing…'
-              : nearbyDesk.node.pendingOsr > 0
-                ? `Route ${nearbyDesk.node.pendingOsr.toFixed(2)} BNTY`
+              : nearbyDesk.node.pendingBnty > 0
+                ? `Route ${nearbyDesk.node.pendingBnty.toFixed(2)} BNTY`
                 : 'Nothing to route yet'}
           </button>
 
@@ -545,7 +545,7 @@ export default function IsoFloor({
             <button
               className="desk-here-up"
               onClick={() => void upgradeHere()}
-              disabled={upgrading || (op?.osrBalance ?? 0) < nearbyDesk.node.nextLevelCost}
+              disabled={upgrading || (op?.bntyBalance ?? 0) < nearbyDesk.node.nextLevelCost}
             >
               {upgrading
                 ? 'Building…'
@@ -578,26 +578,26 @@ export default function IsoFloor({
 
       <BuildPrompt
         cell={buildAt}
-        balance={op?.osrBalance ?? 0}
+        balance={op?.bntyBalance ?? 0}
         busy={building}
         error={buildError}
         onBuild={build}
         onClose={() => { setBuildAt(null); setBuildError(null); }}
       />
 
-      <header className="fab-sandbox-top">
+      <header className="gw-sandbox-top">
         <div>
           <b>{demo ? 'DEMO MACHINE ROOM' : 'MACHINE ROOM'}</b>
           <span>{holdingId ? 'CLICK A TILE TO PLACE' : `${layout.length}/${machines.length} DESKS RUNNING`}</span>
         </div>
       </header>
 
-      <aside className="fab-build-catalog is-open">
-        <button className="fab-build-title" onClick={() => setBookOpen((v) => !v)} aria-expanded={bookOpen}>
+      <aside className="gw-build-catalog is-open">
+        <button className="gw-build-title" onClick={() => setBookOpen((v) => !v)} aria-expanded={bookOpen}>
           <span>DESK BOOK</span>
           <b>{layout.length}/{machines.length} placed {bookOpen ? <CaretUp size={10} weight="bold" /> : <CaretDown size={10} weight="bold" />}</b>
         </button>
-        <div className="fab-build-items" hidden={!bookOpen}>
+        <div className="gw-build-items" hidden={!bookOpen}>
           {machines.map((machine) => {
             const isPlaced = placedIds.has(machine.id);
             const active = holdingId === machine.id || selectedId === machine.id;
@@ -616,17 +616,17 @@ export default function IsoFloor({
                 <b>
                   {machine.label}
                   {machine.cost != null && (
-                    <em className="fab-build-cost">{Math.round(machine.cost).toLocaleString()} BNTY</em>
+                    <em className="gw-build-cost">{Math.round(machine.cost).toLocaleString()} BNTY</em>
                   )}
                 </b>
-                {machine.detail && <small className="fab-build-detail">{machine.detail}</small>}
+                {machine.detail && <small className="gw-build-detail">{machine.detail}</small>}
                 {machine.blurb && <small>{machine.blurb}</small>}
                 <small>{isPlaced ? 'Placed · click a tile to move' : 'Click a tile to place'}</small>
               </button>
             );
           })}
         </div>
-        <div className="fab-build-actions" hidden={!bookOpen}>
+        <div className="gw-build-actions" hidden={!bookOpen}>
           <button onClick={rotateSelected} disabled={!selectedId}><ArrowsClockwise size={15} /> Rotate</button>
           <button onClick={storeSelected} disabled={!selectedId}><Trash size={15} /> Store</button>
         </div>
@@ -635,14 +635,14 @@ export default function IsoFloor({
             a separate modal because this is the moment the player is choosing
             where to put it — the multipliers are the decision. */}
         {bookOpen && selectedMachine && (
-          <div className="fab-build-spec">
+          <div className="gw-build-spec">
             <MachineSpec kind={selectedMachine.kind} />
           </div>
         )}
       </aside>
 
-      <aside className="fab-yield-panel">
-        <button className="fab-yield-head" onClick={() => setYieldOpen((v) => !v)} aria-expanded={yieldOpen}>
+      <aside className="gw-yield-panel">
+        <button className="gw-yield-head" onClick={() => setYieldOpen((v) => !v)} aria-expanded={yieldOpen}>
           <span>LAYOUT YIELD</span>
           <b className={bonus && bonus.multiplier < 1 ? 'is-down' : 'is-up'}>
             {bonus ? `${bonus.multiplier >= 1 ? '+' : ''}${Math.round((bonus.multiplier - 1) * 100)}%` : '—'}
@@ -665,7 +665,7 @@ export default function IsoFloor({
           )}
         </ul>
         {/* The placement rules the score is computed from, stated outright. */}
-        <dl className="fab-layout-rules" hidden={!yieldOpen}>
+        <dl className="gw-layout-rules" hidden={!yieldOpen}>
           {LAYOUT_RULES.map((rule) => (
             <div key={rule.label}>
               <dt>{rule.label}</dt>
@@ -686,7 +686,7 @@ export default function IsoFloor({
         </footer>
       </aside>
 
-      <div className="fab-sandbox-controls">
+      <div className="gw-sandbox-controls">
         {selectedMachine ? (
           <><b>{selectedMachine.label}</b><kbd>R</kbd><span>Rotate</span><kbd>DEL</kbd><span>Store</span></>
         ) : (
@@ -695,7 +695,7 @@ export default function IsoFloor({
       </div>
 
       {demo && (
-        <div className="fab-demo-exit">
+        <div className="gw-demo-exit">
           <span><b>DEMO MODE</b><small>No wallet. Layout saved only on this device.</small></span>
           <Link href="/start">Create your fund</Link>
         </div>

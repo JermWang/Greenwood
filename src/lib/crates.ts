@@ -2,7 +2,7 @@
 //
 // Crates are found, not bought. Every node accrues a chance to turn one up as
 // it mines; the whole network shares a fixed daily budget, and a single wallet
-// can only take so much of it. Opening a crate is what costs GPU.
+// can only take so much of it. Opening a crate is what costs BNTY.
 //
 // The budget is the point. Letting operators buy crates on demand made supply
 // infinite and the drop meaningless — the scarcity here is what makes a find
@@ -16,7 +16,7 @@ import {
 
 export interface FoundCrate {
   id: number;
-  crateType: 'rig_crate' | 'shaft_crate';
+  crateType: 'equity_allocation' | 'treasury_allocation';
   foundAt: number;
   foundNodeId: number | null;
 }
@@ -108,7 +108,7 @@ export function rollCrateDrops(
       // but this keeps a single stale node from consuming it in one roll.
       const p = 1 - Math.exp(-perNodePerSecond * Math.min(elapsedS, 86_400));
       if (Math.random() < p) {
-        const crateType = node.family === 'oil' ? 'rig_crate' : 'shaft_crate';
+        const crateType = node.family === 'oil' ? 'equity_allocation' : 'treasury_allocation';
         const result = insert.run(wallet, crateType, nowMs, node.id);
         found.push({
           id: Number(result.lastInsertRowid),
@@ -147,7 +147,7 @@ export function unopenedCrates(wallet: string): FoundCrate[] {
     )
     .all(wallet) as Array<{
     id: number;
-    crate_type: 'rig_crate' | 'shaft_crate';
+    crate_type: 'equity_allocation' | 'treasury_allocation';
     found_at: number;
     found_node_id: number | null;
   }>;
@@ -170,7 +170,7 @@ export function unseenCrates(wallet: string): FoundCrate[] {
     )
     .all(wallet) as Array<{
     id: number;
-    crate_type: 'rig_crate' | 'shaft_crate';
+    crate_type: 'equity_allocation' | 'treasury_allocation';
     found_at: number;
     found_node_id: number | null;
   }>;

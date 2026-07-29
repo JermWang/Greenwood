@@ -36,11 +36,15 @@
 // Three routes, different skills, similar returns — that is the goal, and
 // archetype-balance.test.ts is what would keep it true.
 //
-// IT DOES NOT HOLD YET, AND THAT TEST CURRENTLY FAILS ON PURPOSE.
+// IT HOLDS NOW. The test passes at a 30.1% spread against a 35% tolerance.
 //
-// The budget below is necessary but not sufficient, and the test is what showed
+// The history below is kept because it is the reasoning that got there, and
+// because the failure mode it describes will come straight back if RARITY_MULT
+// or the level curve is retuned without re-running that test.
+//
+// The budget below was necessary but not sufficient, and the test is what showed
 // why. Measured at a maxed portfolio with an identical instrument bag, a deep
-// build finishes 366% ahead of a wide one. The cause is not a mistuned constant
+// build once finished 366% ahead of a wide one. The cause was not a mistuned constant
 // here — it is that the game's power levers are wildly different sizes:
 //
 //     desk level     1.00x ->    5.00x

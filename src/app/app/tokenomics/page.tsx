@@ -34,7 +34,7 @@ interface FamilyEcon {
   name: string;
   description: string;
   family: 'oil' | 'mine';
-  burnCostOsr: number;
+  burnCostBnty: number;
   burnShareBps: number;
   treasuryShareBps: number;
   mintFeeEth: number;
@@ -168,15 +168,15 @@ export default function TokenomicsPage() {
                   </h3>
                   <p className="mt-1 text-xs text-steel-400">{f.description}</p>
                   <dl className="mt-3 space-y-1.5 text-sm">
-                    <Row k="Mint cost" v={`${f.burnCostOsr.toLocaleString()} BNTY`} />
+                    <Row k="Mint cost" v={`${f.burnCostBnty.toLocaleString()} BNTY`} />
                     <Row
                       k="→ burned (70%)"
-                      v={`${((f.burnCostOsr * f.burnShareBps) / 10000).toLocaleString()} BNTY`}
+                      v={`${((f.burnCostBnty * f.burnShareBps) / 10000).toLocaleString()} BNTY`}
                       dim
                     />
                     <Row
                       k="→ treasury (30%)"
-                      v={`${((f.burnCostOsr * f.treasuryShareBps) / 10000).toLocaleString()} BNTY`}
+                      v={`${((f.burnCostBnty * f.treasuryShareBps) / 10000).toLocaleString()} BNTY`}
                       dim
                     />
                     <Row k="ETH mint fee" v={`${f.mintFeeEth} ETH`} />
@@ -350,7 +350,7 @@ export default function TokenomicsPage() {
                     <tr key={lvl}>
                       <td className="px-4 py-2.5 font-mono text-amber-500">L{lvl}</td>
                       <td className="px-4 py-2.5 text-right font-mono text-white">
-                        {lvl === 1 ? '—' : `${row.osrUpgradeCost.toLocaleString()} BNTY`}
+                        {lvl === 1 ? '—' : `${row.bntyUpgradeCost.toLocaleString()} BNTY`}
                       </td>
                       <td className="px-4 py-2.5 text-right font-mono text-white">{row.maxNodes}</td>
                       <td className="px-4 py-2.5 text-right font-mono text-steel-300">
@@ -414,7 +414,7 @@ export default function TokenomicsPage() {
               />
               <LiveCard
                 label="BNTY Reserve"
-                value={overview.osrReserveBalance.toLocaleString()}
+                value={overview.bntyReserveBalance.toLocaleString()}
                 suffix="BNTY"
                 color="#ffd24d"
               />
@@ -438,11 +438,11 @@ export default function TokenomicsPage() {
           <p className="text-sm leading-relaxed text-steel-300">
             All constants on this page are imported from{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
-              @gpu-fab/protocol
+              @gw-fab/protocol
             </code>{' '}
             and{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
-              @gpu-fab/silicon-engine
+              @greenwood/yield-engine
             </code>
             , and the live family config comes from{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">

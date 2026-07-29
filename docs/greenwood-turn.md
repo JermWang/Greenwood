@@ -25,9 +25,9 @@ The player is never told this. They work it out.
 ### The detail that makes it land
 
 The reskin never renamed the internal identifiers. In the code as it stands
-today, an Equity Desk is an `oil_rig`, a Treasury Desk is a `mine_shaft`, the
-allocation crates are `rig_crate` and `shaft_crate`, and the CSS is prefixed
-`fab-*`. That was a pragmatic decision about churn.
+today, an Equity Desk is an `equity_desk`, a Treasury Desk is a `treasury_desk`, the
+allocation crates are `equity_allocation` and `treasury_allocation`, and the CSS is prefixed
+`gw-*`. That was a pragmatic decision about churn.
 
 It is now canon. The corporate skin is the layer on top; the machinery
 underneath was always industrial, and a player who opens devtools finds the

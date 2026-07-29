@@ -5,7 +5,7 @@
 // Polls /api/status and exposes two things the UI needs during a release:
 //
 //   deploying   — a deploy window is open, so risky actions must be refused.
-//                 A spend sends GPU on-chain BEFORE the server records anything,
+//                 A spend sends BNTY on-chain BEFORE the server records anything,
 //                 so a cutover landing between those two steps costs the player
 //                 real tokens and leaves us owing a refund. Refusing to start is
 //                 far cheaper than reconciling afterwards.

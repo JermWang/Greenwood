@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     // The fee split is applied by the engine when the purchase lands, not here:
     // buyCosmetic is the single place that decides where a cosmetic's 2% goes,
     // and duplicating that policy at the quote would let the two drift.
-    price: (_wallet, p) => ({ osrAmount: cosmeticDef(p.key).bnty }),
+    price: (_wallet, p) => ({ bntyAmount: cosmeticDef(p.key).bnty }),
     apply: (wallet, p, opts) => ({
       ...buyCosmetic(wallet, p.key, 'BNTY', opts),
       catalog: cosmeticsCatalog(wallet),

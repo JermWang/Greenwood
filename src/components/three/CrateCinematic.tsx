@@ -69,7 +69,7 @@ function playTone(freq: number, dur: number, type: OscillatorType = 'sine', gain
 
 function CrateModel({ rarity, phase, phaseT }: { rarity: Rarity; phase: Phase; phaseT: number }) {
   // The reveal drives the shared procedural supply pod rather than a GLB, so the
-  // crate people open is the same fab-styled object as everywhere else. This
+  // crate people open is the same gw-styled object as everywhere else. This
   // group carries the suspend/shake/reveal motion; the pod carries the seam glow
   // and the four-petal burst, fed by the glow and open values below.
   const group = useRef<THREE.Group>(null);

@@ -3,14 +3,14 @@
 // SPENDS (mint, upgrade, crate, compound, expedite):
 //   1. QUOTE   the server prices the action, records a settlement row, and
 //              returns payment instructions (token, treasury address, amount).
-//   2. PAY     the operator sends that many OSR to the treasury wallet — an
+//   2. PAY     the operator sends that many BNTY to the treasury wallet — an
 //              ordinary ERC-20 transfer signed in their own wallet.
 //   3. SETTLE  the operator hands back the tx hash. The server reads the
 //              receipt, verifies the token's Transfer event really moved the
 //              quoted amount from them to the treasury, and only then applies
 //              the game-state change.
 //
-// PAYOUTS (claim): the server sends OSR from the protocol wallet to the player.
+// PAYOUTS (claim): the server sends BNTY from the protocol wallet to the player.
 // That wallet is a Privy server wallet, so signing happens inside Privy via the
 // app secret — no private key is ever stored by this app.
 //
@@ -21,7 +21,7 @@
 import { createPublicClient, http, decodeEventLog, parseAbi, encodeFunctionData, erc20Abi, type Hex } from 'viem';
 import { getDb } from './db';
 import { GameError } from './game';
-import { CHAIN, OSR_TOKEN_ADDRESS, isConfiguredAddress } from './config';
+import { CHAIN, BNTY_TOKEN_ADDRESS, isConfiguredAddress } from './config';
 
 export type SettlementAction =
   | 'MintNode'
@@ -58,14 +58,14 @@ const PAYOUT_RECEIPT_TIMEOUT_MS = 60_000;
 const QUOTE_TTL_SECONDS = 15 * 60;
 
 export const SETTLEMENT_CONFIGURED =
-  isConfiguredAddress(OSR_TOKEN_ADDRESS) &&
+  isConfiguredAddress(BNTY_TOKEN_ADDRESS) &&
   isConfiguredAddress(TREASURY) &&
   TREASURY_WALLET_ID.length > 0 &&
   PRIVY_APP_SECRET.length > 0;
 
 /** Why writes are still off-chain. Surfaced verbatim so the reason is the true one. */
 export function settlementBlocker(): string | null {
-  if (!isConfiguredAddress(OSR_TOKEN_ADDRESS)) return 'OSR token address is not set yet';
+  if (!isConfiguredAddress(BNTY_TOKEN_ADDRESS)) return 'BNTY token address is not set yet';
   if (!isConfiguredAddress(TREASURY)) return 'protocol treasury wallet is not set';
   if (!TREASURY_WALLET_ID) return 'protocol wallet id is not configured';
   if (!PRIVY_APP_SECRET) return 'Privy app secret is not configured';
@@ -98,7 +98,7 @@ async function tokenDecimals(): Promise<number> {
   if (decimalsRef != null) return decimalsRef;
   try {
     decimalsRef = await publicClient().readContract({
-      address: OSR_TOKEN_ADDRESS as Hex,
+      address: BNTY_TOKEN_ADDRESS as Hex,
       abi: erc20Abi,
       functionName: 'decimals',
     });
@@ -132,8 +132,8 @@ function randomNonce(): string {
 export interface Quote {
   action: SettlementAction;
   detail: Hex;
-  /** Whole OSR (not base units). */
-  osrAmount: number;
+  /** Whole BNTY (not base units). */
+  bntyAmount: number;
 }
 
 export interface PaymentRequest {
@@ -145,7 +145,7 @@ export interface PaymentRequest {
   /** Base units, as a decimal string. */
   amount: string;
   /** Human amount, for the UI. */
-  osrAmount: number;
+  bntyAmount: number;
   decimals: number;
   nonce: string;
   deadline: number;
@@ -159,11 +159,11 @@ export async function quoteSpend(wallet: string, quote: Quote): Promise<PaymentR
   // payment by checking a Transfer to the treasury of at least the owed amount,
   // and every transfer clears an owed of zero — so a zero quote turns the whole
   // verification into a formality that a 0-value transfer satisfies.
-  if (!Number.isFinite(quote.osrAmount) || quote.osrAmount <= 0) {
+  if (!Number.isFinite(quote.bntyAmount) || quote.bntyAmount <= 0) {
     throw new GameError('refusing to quote a non-positive amount', 400);
   }
   const decimals = await tokenDecimals();
-  const amount = toUnits(quote.osrAmount, decimals);
+  const amount = toUnits(quote.bntyAmount, decimals);
   // Guards the same hole from the other side: an amount small enough to round
   // down to zero base units is not payable either.
   if (amount <= 0n) throw new GameError('quoted amount rounds to zero', 400);
@@ -181,10 +181,10 @@ export async function quoteSpend(wallet: string, quote: Quote): Promise<PaymentR
 
   return {
     action: quote.action,
-    token: OSR_TOKEN_ADDRESS,
+    token: BNTY_TOKEN_ADDRESS,
     to: TREASURY,
     amount: amount.toString(),
-    osrAmount: quote.osrAmount,
+    bntyAmount: quote.bntyAmount,
     decimals,
     nonce,
     deadline,
@@ -247,8 +247,8 @@ export async function settleSpend<T>(
   // A nonce is only redeemable at the action it was priced for. Without this the
   // stored detail — which every route trusts over the request body — gets handed
   // to a different route's decoder, and the payment verified is the one this row
-  // quoted, not the one that route charges. A 250 GPU node upgrade would settle
-  // a 10,000 GPU crate, since both are just "a nonce with a paid amount".
+  // quoted, not the one that route charges. A 250 BNTY node upgrade would settle
+  // a 10,000 BNTY crate, since both are just "a nonce with a paid amount".
   if (row.action !== action) throw new GameError('settlement was quoted for a different action', 409);
   if (row.status === 'settled') {
     // Idempotent replay: hand back what was already applied.
@@ -294,8 +294,8 @@ export async function settleSpend<T>(
     throw new GameError(`awaiting confirmations (${confirmations}/${MIN_CONFIRMATIONS})`, 425);
   }
 
-  // Find an OSR Transfer in this tx that pays the treasury at least the quote.
-  const token = OSR_TOKEN_ADDRESS.toLowerCase();
+  // Find an BNTY Transfer in this tx that pays the treasury at least the quote.
+  const token = BNTY_TOKEN_ADDRESS.toLowerCase();
   const treasury = TREASURY.toLowerCase();
   let paid = false;
   for (const log of receipt.logs) {
@@ -353,7 +353,7 @@ export async function settleSpend<T>(
       // The action can never succeed, so releasing the claim would strand the
       // payment: every retry fails identically and nothing records that the
       // operator is owed. Two buyers racing one listing is the ordinary case —
-      // both pay, one gets the item, and the loser's GPU is already in the
+      // both pay, one gets the item, and the loser's BNTY is already in the
       // treasury. Mark the row owed so there is something to reconcile against.
       db.prepare(
         `UPDATE settlements SET status = 'owed', applied_result = ?, settled_at = ?
@@ -405,54 +405,54 @@ async function privyWalletRpc(body: Record<string, unknown>): Promise<Record<str
 }
 
 /**
- * Send `osrAmount` OSR from the protocol wallet to an operator, returning the
+ * Send `bntyAmount` BNTY from the protocol wallet to an operator, returning the
  * transaction hash. Used for reward claims.
  */
 /**
  * What the claimer is charged for the gas the protocol spends paying them.
  *
  * Operators pay their own gas on spends — they sign those transfers. A payout
- * moves OSR *out of* the treasury, so only the treasury key can sign it and the
+ * moves BNTY *out of* the treasury, so only the treasury key can sign it and the
  * claimer cannot be the one to pay the gas directly. Reimbursing in ETH would
  * cost the claimer more gas than the payout it reimburses, and a standing
  * allowance they could pull from would let anyone drain the treasury. So the
- * cost is passed on in OSR instead: the protocol fronts the ETH and deducts the
+ * cost is passed on in BNTY instead: the protocol fronts the ETH and deducts the
  * equivalent from the amount sent.
  *
- * The conversion needs an OSR/ETH rate, which does not exist until the token
+ * The conversion needs an BNTY/ETH rate, which does not exist until the token
  * trades. While OSR_PER_ETH is unset the protocol absorbs the gas rather than
  * inventing a price — at roughly a cent a claim the 2% claim fee covers it
- * many times over. Set it once OSR has a market and claimers pay their own way.
+ * many times over. Set it once BNTY has a market and claimers pay their own way.
  */
 const OSR_PER_ETH = Number(process.env.OSR_PER_ETH ?? '0');
 
 export interface PayoutResult {
   hash: string;
-  /** OSR actually sent, after the gas deduction. */
-  sentOsr: number;
-  /** OSR withheld to cover gas. Zero when no rate is configured. */
-  gasOsr: number;
+  /** BNTY actually sent, after the gas deduction. */
+  sentBnty: number;
+  /** BNTY withheld to cover gas. Zero when no rate is configured. */
+  gasBnty: number;
 }
 
 /**
- * Estimate what this payout will cost in gas, priced in OSR.
+ * Estimate what this payout will cost in gas, priced in BNTY.
  *
  * Estimated rather than measured because the amount to send has to be decided
  * before the transaction exists. A plain ERC-20 transfer is predictable, and
  * the estimate is padded so a small gas rise does not leave the protocol short.
  */
-export async function estimatePayoutGasOsr(toWallet: string, osrAmount: number): Promise<number> {
+export async function estimatePayoutGasBnty(toWallet: string, bntyAmount: number): Promise<number> {
   if (!(OSR_PER_ETH > 0)) return 0;
   const decimals = await tokenDecimals();
   const data = encodeFunctionData({
     abi: erc20Abi,
     functionName: 'transfer',
-    args: [toWallet as Hex, toUnits(osrAmount, decimals)],
+    args: [toWallet as Hex, toUnits(bntyAmount, decimals)],
   });
-  return estimateGasOsr(OSR_TOKEN_ADDRESS as Hex, data);
+  return estimateGasBnty(BNTY_TOKEN_ADDRESS as Hex, data);
 }
 
-async function estimateGasOsr(to: Hex, data: Hex): Promise<number> {
+async function estimateGasBnty(to: Hex, data: Hex): Promise<number> {
   if (!(OSR_PER_ETH > 0)) return 0;
   try {
     const [gas, gasPrice] = await Promise.all([
@@ -469,9 +469,9 @@ async function estimateGasOsr(to: Hex, data: Hex): Promise<number> {
   }
 }
 
-export async function payoutOsr(toWallet: string, osrAmount: number): Promise<PayoutResult> {
+export async function payoutBnty(toWallet: string, bntyAmount: number): Promise<PayoutResult> {
   requireSettlement();
-  if (!(osrAmount > 0)) throw new GameError('payout amount must be positive');
+  if (!(bntyAmount > 0)) throw new GameError('payout amount must be positive');
 
   const decimals = await tokenDecimals();
   const encode = (value: number) =>
@@ -481,9 +481,9 @@ export async function payoutOsr(toWallet: string, osrAmount: number): Promise<Pa
       args: [toWallet as Hex, toUnits(value, decimals)],
     });
 
-  const gasOsr = await estimateGasOsr(OSR_TOKEN_ADDRESS as Hex, encode(osrAmount));
-  const sentOsr = osrAmount - gasOsr;
-  if (!(sentOsr > 0)) {
+  const gasBnty = await estimateGasBnty(BNTY_TOKEN_ADDRESS as Hex, encode(bntyAmount));
+  const sentBnty = bntyAmount - gasBnty;
+  if (!(sentBnty > 0)) {
     throw new GameError(
       'this claim is too small to cover its own network fee — let more rewards accrue first',
       400
@@ -493,7 +493,7 @@ export async function payoutOsr(toWallet: string, osrAmount: number): Promise<Pa
   const json = await privyWalletRpc({
     method: 'eth_sendTransaction',
     caip2: `eip155:${CHAIN.id}`,
-    params: { transaction: { to: OSR_TOKEN_ADDRESS, data: encode(sentOsr), value: '0x0' } },
+    params: { transaction: { to: BNTY_TOKEN_ADDRESS, data: encode(sentBnty), value: '0x0' } },
   });
 
   const payload = (json.data ?? json) as Record<string, unknown>;
@@ -527,7 +527,7 @@ export async function payoutOsr(toWallet: string, osrAmount: number): Promise<Pa
     throw new GameError(`payout ${hash} reverted on-chain`, 502);
   }
 
-  return { hash, sentOsr, gasOsr };
+  return { hash, sentBnty, gasBnty };
 }
 
 /**
@@ -540,13 +540,13 @@ export async function payoutOsr(toWallet: string, osrAmount: number): Promise<Pa
  * NULL`): a literal like 'PENDING' inserts once and then collides on every
  * later failure, which is exactly when the debt most needs recording.
  *
- * Status distinguishes the two: 'settled' means OSR moved, 'owed' means it did
+ * Status distinguishes the two: 'settled' means BNTY moved, 'owed' means it did
  * not. Both are terminal — nothing retries an owed row automatically, so they
  * are settled by hand.
  */
 export function recordPayout(
   wallet: string,
-  osrAmount: number,
+  bntyAmount: number,
   txHash: string | null,
   result: unknown
 ) {
@@ -561,7 +561,7 @@ export function recordPayout(
     .run(
       randomNonce(),
       wallet,
-      String(osrAmount),
+      String(bntyAmount),
       settled ? 'settled' : 'owed',
       txHash,
       JSON.stringify(result ?? null),

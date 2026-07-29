@@ -3,8 +3,8 @@ import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { GameError, claimRewards, settleUser } from '@/lib/game';
 import {
   SETTLEMENT_CONFIGURED,
-  estimatePayoutGasOsr,
-  payoutOsr,
+  estimatePayoutGasBnty,
+  payoutBnty,
   recordPayout,
 } from '@/lib/settlement';
 import { CLAIM_FEE_BPS, COMPOUND_REINVEST_FEE_BPS } from '@/lib/economy';
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 /**
  * Claiming runs the opposite way to the priced actions: the protocol pays the
  * operator, so there is nothing for them to send and no two-phase quote. The
- * server settles the accrual and transfers GPU from the protocol wallet.
+ * server settles the accrual and transfers BNTY from the protocol wallet.
  *
  * Order matters. The accrual is consumed BEFORE the transfer is sent: if it
  * were sent first and the state write then failed, the same rewards could be
@@ -47,10 +47,10 @@ export async function POST(request: Request) {
     const eligible = nodes
       .filter((n) => (nodeId == null ? true : n.row.id === nodeId))
       .filter((n) => (mode === 'compound' ? n.row.family === 'mine' : true));
-    const gross = eligible.reduce((sum, n) => sum + n.pendingOsr, 0);
+    const gross = eligible.reduce((sum, n) => sum + n.pendingBnty, 0);
     if (gross <= 0) {
       throw new GameError(
-        mode === 'compound' ? 'nothing to compound in this cleanroom yet' : 'nothing to claim yet'
+        mode === 'compound' ? 'nothing to compound in this vault yet' : 'nothing to claim yet'
       );
     }
     const feeBps = mode === 'compound' ? COMPOUND_REINVEST_FEE_BPS : CLAIM_FEE_BPS;
@@ -59,8 +59,8 @@ export async function POST(request: Request) {
     // Check the claim can cover its own gas BEFORE consuming the accrual —
     // rejecting afterwards would burn the operator's rewards for a payout that
     // never went out, and there is no way to hand them back.
-    const gasOsr = await estimatePayoutGasOsr(wallet, estimatedNet);
-    if (estimatedNet - gasOsr <= 0) {
+    const gasBnty = await estimatePayoutGasBnty(wallet, estimatedNet);
+    if (estimatedNet - gasBnty <= 0) {
       throw new GameError(
         'this claim is too small to cover its own network fee — let more rewards accrue first',
         400
@@ -84,12 +84,12 @@ export async function POST(request: Request) {
       throw new GameError('those rewards have already been claimed', 409);
     }
 
-    let payout: Awaited<ReturnType<typeof payoutOsr>>;
+    let payout: Awaited<ReturnType<typeof payoutBnty>>;
     try {
-      payout = await payoutOsr(wallet, payable);
+      payout = await payoutBnty(wallet, payable);
     } catch (payoutError) {
       // Every failure from here owes the operator, because the accrual is
-      // already gone. That includes the 400 payoutOsr raises when gas has risen
+      // already gone. That includes the 400 payoutBnty raises when gas has risen
       // enough to swallow the payout between the estimate above and the send:
       // this used to rethrow it untouched, consuming the rewards and leaving no
       // record that anything was owed.
@@ -102,15 +102,15 @@ export async function POST(request: Request) {
     }
 
     // Record what actually left the treasury, not what was owed before gas.
-    recordPayout(wallet, payout.sentOsr, payout.hash, result);
+    recordPayout(wallet, payout.sentBnty, payout.hash, result);
     return NextResponse.json({
       settled: true,
       result,
       txHash: payout.hash,
       // Report the claim that actually happened, not the pre-consume read.
       gross: result.claims.reduce((sum, claim) => sum + claim.gross, 0),
-      net: payout.sentOsr,
-      gasOsr: payout.gasOsr,
+      net: payout.sentBnty,
+      gasBnty: payout.gasBnty,
       mode,
     });
   } catch (e) {

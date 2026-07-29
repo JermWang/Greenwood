@@ -9,7 +9,7 @@ function node(over: Partial<NodeInfo> = {}): NodeInfo {
   return {
     id: 'n1', type: 'mine', level: 1, productionRate: 0.1, isActive: true,
     totalProduced: 0, createdAt: '', layoutSeed: 0, components: [],
-    componentMultiplier: 1, pendingOsr: 0, storageCap: 1000, nextLevelCost: 500,
+    componentMultiplier: 1, pendingBnty: 0, storageCap: 1000, nextLevelCost: 500,
     ...over,
   };
 }
@@ -17,7 +17,7 @@ function node(over: Partial<NodeInfo> = {}): NodeInfo {
 function op(over: Partial<UserOperation> = {}): UserOperation {
   return {
     level: 1, maxNodes: 2, shaftBonusSlots: 0, productionRate: 0, growPower: 0,
-    networkGrowPower: 1, joinedAtMs: 0, welcomeBoostFactor: 1, osrBalance: 0,
+    networkGrowPower: 1, joinedAtMs: 0, welcomeBoostFactor: 1, bntyBalance: 0,
     totalProduced: 0, totals: {}, pending: {}, claimCooldownRemainingMs: 0,
     crateCooldown: { rigCratesRemaining: 0, shaftCratesRemaining: 0 },
     crates: [], unseenCrates: [],
@@ -28,7 +28,7 @@ function op(over: Partial<UserOperation> = {}): UserOperation {
 }
 
 const part = (over: Partial<InventoryItem> = {}): InventoryItem => ({
-  id: 1, slot: 'drill_bit', family: 'mine', nodeType: 'mine', rarity: 'rare',
+  id: 1, slot: 'instrument', family: 'mine', nodeType: 'mine', rarity: 'rare',
   equippedNodeId: null, createdAt: 0, durability: 100, multiplier: 1.6, ...over,
 });
 
@@ -39,7 +39,7 @@ describe('decideNextStep — priority order', () => {
 
   test('pending yield off cooldown beats everything else', () => {
     const s = decideNextStep(
-      op({ nodes: [node()], pending: { n1: 42 }, osrBalance: 999999, crates: [{ id: 1, crateType: 'shaft_crate', foundAt: 0, foundNodeId: null }] }),
+      op({ nodes: [node()], pending: { n1: 42 }, bntyBalance: 999999, crates: [{ id: 1, crateType: 'treasury_allocation', foundAt: 0, foundNodeId: null }] }),
       [part()]
     );
     expect(s.id).toBe('claim');
@@ -60,21 +60,21 @@ describe('decideNextStep — priority order', () => {
 
   test('a part for a family you do NOT own is ignored', () => {
     // Own only a mine line; hold an oil part -> should not suggest equip.
-    const s = decideNextStep(op({ nodes: [node({ type: 'mine' })], osrBalance: 0 }), [part({ family: 'oil' })]);
+    const s = decideNextStep(op({ nodes: [node({ type: 'mine' })], bntyBalance: 0 }), [part({ family: 'oil' })]);
     expect(s.id).not.toBe('equip');
   });
 
   test('a held pod only shows once affordable', () => {
-    const held = { crates: [{ id: 1, crateType: 'shaft_crate' as const, foundAt: 0, foundNodeId: null }] };
+    const held = { crates: [{ id: 1, crateType: 'treasury_allocation' as const, foundAt: 0, foundNodeId: null }] };
     // Can't afford: skip the pod.
-    expect(decideNextStep(op({ nodes: [node()], osrBalance: 9999, ...held }), []).id).not.toBe('open-pod');
+    expect(decideNextStep(op({ nodes: [node()], bntyBalance: 9999, ...held }), []).id).not.toBe('open-pod');
     // Can afford: offer it.
-    expect(decideNextStep(op({ nodes: [node()], osrBalance: 10000, ...held }), []).id).toBe('open-pod');
+    expect(decideNextStep(op({ nodes: [node()], bntyBalance: 10000, ...held }), []).id).toBe('open-pod');
   });
 
   test('affordable warehouse upgrade off cooldown -> upgrade', () => {
     const s = decideNextStep(
-      op({ nodes: [node({ nextLevelCost: 1e9 })], osrBalance: 5000, compound: { level: 1, maxNodes: 2, shaftBonusSlots: 0, cratesPerDay: 10, crateCost: 10000, cooldownRemainingMs: 0, nextUpgradeCost: { targetLevel: 2, totalOsr: 1000, feeEth: 0, burnOsr: 0, reserveOsr: 0, treasuryOsr: 1000 } } }),
+      op({ nodes: [node({ nextLevelCost: 1e9 })], bntyBalance: 5000, compound: { level: 1, maxNodes: 2, shaftBonusSlots: 0, cratesPerDay: 10, crateCost: 10000, cooldownRemainingMs: 0, nextUpgradeCost: { targetLevel: 2, totalBnty: 1000, feeEth: 0, burnBnty: 0, reserveBnty: 0, treasuryBnty: 1000 } } }),
       []
     );
     expect(s.id).toBe('upgrade');
@@ -83,7 +83,7 @@ describe('decideNextStep — priority order', () => {
 
   test('upgrade on cooldown falls through to expand', () => {
     const s = decideNextStep(
-      op({ nodes: [node({ nextLevelCost: 1e9 })], osrBalance: 5000, maxNodes: 4, compound: { level: 1, maxNodes: 4, shaftBonusSlots: 0, cratesPerDay: 10, crateCost: 10000, cooldownRemainingMs: 60000, nextUpgradeCost: { targetLevel: 2, totalOsr: 1000, feeEth: 0, burnOsr: 0, reserveOsr: 0, treasuryOsr: 1000 } } }),
+      op({ nodes: [node({ nextLevelCost: 1e9 })], bntyBalance: 5000, maxNodes: 4, compound: { level: 1, maxNodes: 4, shaftBonusSlots: 0, cratesPerDay: 10, crateCost: 10000, cooldownRemainingMs: 60000, nextUpgradeCost: { targetLevel: 2, totalBnty: 1000, feeEth: 0, burnBnty: 0, reserveBnty: 0, treasuryBnty: 1000 } } }),
       []
     );
     expect(s.id).toBe('expand');
@@ -91,14 +91,14 @@ describe('decideNextStep — priority order', () => {
 
   test('capacity full + can only afford a level-up -> level up', () => {
     const s = decideNextStep(
-      op({ nodes: [node({ id: 'a', type: 'oil', nextLevelCost: 400 }), node({ id: 'b', type: 'mine', nextLevelCost: 400 })], osrBalance: 500, maxNodes: 1 }),
+      op({ nodes: [node({ id: 'a', type: 'oil', nextLevelCost: 400 }), node({ id: 'b', type: 'mine', nextLevelCost: 400 })], bntyBalance: 500, maxNodes: 1 }),
       []
     );
     expect(s.id).toBe('level-up');
   });
 
   test('producing with nothing affordable -> the calm wait state', () => {
-    const s = decideNextStep(op({ nodes: [node({ nextLevelCost: 1e9 })], osrBalance: 10, maxNodes: 1 }), []);
+    const s = decideNextStep(op({ nodes: [node({ nextLevelCost: 1e9 })], bntyBalance: 10, maxNodes: 1 }), []);
     expect(s.id).toBe('producing');
     expect(s.tone).toBe('wait');
   });
@@ -130,7 +130,7 @@ const region = (over: Partial<RegionView> & { id: string }): RegionView => ({
 });
 
 /** A fund with nothing left to do indoors — where the outdoor branches live. */
-const idle = () => op({ nodes: [node({ nextLevelCost: 1e9 })], osrBalance: 10, maxNodes: 1 });
+const idle = () => op({ nodes: [node({ nextLevelCost: 1e9 })], bntyBalance: 10, maxNodes: 1 });
 
 describe('decideNextStep — the outdoors', () => {
   test('without region data it behaves exactly as before', () => {

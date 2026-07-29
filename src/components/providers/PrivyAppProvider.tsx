@@ -34,7 +34,7 @@ export default function PrivyAppProvider({ children }: { children: React.ReactNo
         appearance: {
           theme: 'dark',
           accentColor: '#f59e0b',
-          logo: '/gpu-mark.svg',
+          logo: '/gw-mark.svg',
           showWalletLoginFirst: true,
           walletChainType: 'ethereum-only',
           walletList: [

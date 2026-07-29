@@ -11,12 +11,12 @@ const TREASURY_BPS = 10_000 - SPLIT_BURN_BPS - SPLIT_RESERVE_BPS;
  * exactly like the upgrade action it carries out, with the expedite fee added to
  * the ETH leg.
  *
- * It used to quote zero GPU, on the stated reasoning that the upgrade had
+ * It used to quote zero BNTY, on the stated reasoning that the upgrade had
  * "already been settled by the upgrade action". Nothing had: upgradeCompound is
  * the level increment, and this route is the only thing that calls it with the
  * cooldown skipped. Quoting zero meant settleSpend compared the paid amount
  * against an owed of zero, which any transfer satisfies — nine zero-value
- * transfers took an operator L1 to L10 for gas, skipping 231,000 GPU of the
+ * transfers took an operator L1 to L10 for gas, skipping 231,000 BNTY of the
  * economy's largest sink and booking burns that never happened.
  */
 export async function POST(request: Request) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         throw new GameError('compound level changed — request a fresh quote', 409);
       }
       return {
-        osrAmount: next.totalOsr,
+        bntyAmount: next.totalBnty,
         burnBps: SPLIT_BURN_BPS,
         treasuryBps: TREASURY_BPS,
         feeEth: next.feeEth + EXPEDITE_FEE_ETH,

@@ -183,7 +183,7 @@ export default function DocsPage() {
           </ul>
         </nav>
 
-        {/* 1. What is GPU? */}
+        {/* 1. What is BNTY? */}
         <Section id="overview" title="1. What is Greenwood?">
           <p>
             <strong className="text-white">Greenwood — Real-World Yield</strong> is a gamified,
@@ -260,7 +260,7 @@ export default function DocsPage() {
                   <strong className="text-white">Claim-only</strong> in v1 — direct reinvesting is a
                   Treasury Desk feature
                 </>,
-                <>Slots: Lithography Machine, Wafer Stack, Etch Chamber, Power Bus</>,
+                <>Slots: Execution Terminal, Order Router, Market Data Feed, Settlement Rail</>,
               ]}
             />
             <NodeCard
@@ -276,7 +276,7 @@ export default function DocsPage() {
                   <strong className="text-white">Bonus desk slots</strong> at Portfolio L5/L7/L9
                   (+2/+3/+4 Treasury Desks)
                 </>,
-                <>Slots: Dicing Saw, Packaging Line, Test Handler, Cooling Array</>,
+                <>Slots: Custody Module, Coupon Engine, Maturity Ladder, Liquidity Buffer</>,
               ]}
             />
           </div>
@@ -387,7 +387,7 @@ export default function DocsPage() {
           <p>
             <strong className="text-white">Slot compatibility:</strong> Equity Desk instruments fit only
             in Equity Desks, Treasury Desk instruments fit only in Treasury Desks. Each instrument has a specific
-            slot (you can&rsquo;t put a Lithography Machine in a Wafer Stack socket).
+            slot (you can&rsquo;t put an Execution Terminal in an Order Router socket).
           </p>
           <p>
             Use the{' '}

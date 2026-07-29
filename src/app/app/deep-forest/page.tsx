@@ -284,7 +284,7 @@ export default function DeepForestPage() {
       {/*
         gl flags, in order of what they buy:
 
-        powerPreference asks the browser for the discrete GPU on dual-GPU
+        powerPreference asks the browser for the discrete BNTY on dual-BNTY
         laptops — without it a machine with a real card can quietly render this
         on integrated graphics.
 

@@ -28,8 +28,8 @@ function InjectedWalletButton() {
     address,
     chainId,
     nativeBalance,
-    osrBalance,
-    osrSymbol,
+    bntyBalance,
+    bntySymbol,
     connecting,
     initialized,
     error,
@@ -98,7 +98,7 @@ function InjectedWalletButton() {
               <div className="mt-1.5 flex items-center justify-between text-xs">
                 <span className="text-steel-400">Token balance</span>
                 <span className="font-mono text-white">
-                  {TOKEN_LIVE ? `${displayBalance(osrBalance, 3)} ${osrSymbol}` : 'Not live yet'}
+                  {TOKEN_LIVE ? `${displayBalance(bntyBalance, 3)} ${bntySymbol}` : 'Not live yet'}
                 </span>
               </div>
             </div>

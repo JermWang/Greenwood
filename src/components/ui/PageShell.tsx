@@ -32,8 +32,8 @@ export default function PageShell({ title, subtitle, backHref, backLabel, maxWid
   const routeCode = ROUTE_CODES[pathname] ?? 'GREENWOOD / FUND MODULE';
 
   return (
-    <main className={`gpu-page mx-auto w-full ${maxWidth}`}>
-      <header className="gpu-page-header">
+    <main className={`gw-page mx-auto w-full ${maxWidth}`}>
+      <header className="gw-page-header">
         <div className="relative z-10 min-w-0">
           {backHref && (
             <Link href={backHref} className="mb-4 inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[.2em] text-emerald-200/55 transition hover:text-lime-300">
@@ -58,7 +58,7 @@ export default function PageShell({ title, subtitle, backHref, backLabel, maxWid
         */}
         <AssetMark kind="rack" />
       </header>
-      <div className="gpu-page-content">{children}</div>
+      <div className="gw-page-content">{children}</div>
     </main>
   );
 }

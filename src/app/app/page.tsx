@@ -1,6 +1,6 @@
 'use client';
 
-// Fab Floor — the GPU campus cockpit, digital twin, and production controls.
+// Fab Floor — the BNTY campus cockpit, digital twin, and production controls.
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -51,7 +51,7 @@ const SLOT_GLYPH: Record<string, string> = {
   pump_jack: '◫',
   pipeline: '⌬',
   flare_stack: 'ϟ',
-  drill_bit: '◉',
+  instrument: '◉',
   ore_cart: '◇',
   rail_track: '⊞',
   elevator: '≈',
@@ -78,7 +78,7 @@ export default function CommandPage() {
   const [deployOpen, setDeployOpen] = useState(false);
   const [crateOpen, setCrateOpen] = useState(false);
   const [crateResult, setCrateResult] = useState<CrateResult | null>(null);
-  const [lastCrateType, setLastCrateType] = useState<'rig_crate' | 'shaft_crate'>('rig_crate');
+  const [lastCrateType, setLastCrateType] = useState<'equity_allocation' | 'treasury_allocation'>('equity_allocation');
   const [cameraFocusId, setCameraFocusId] = useState<string | null>(null);
   // Read once here and handed to both the profile card (Total Level, XP tracks)
   // and the schedule panel (daily reset). QuestPanel keeps its own copy because
@@ -176,7 +176,7 @@ export default function CommandPage() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [cycleCameraFocus]);
   const pendingTotal = Object.values(op?.pending ?? {}).reduce((a, b) => a + b, 0);
-  const dailyOsr = (op?.productionRate ?? 0) * 86400;
+  const dailyBnty = (op?.productionRate ?? 0) * 86400;
   const networkShare =
     op && overview && overview.halving.currentRatePerSec > 0
       ? (op.productionRate / (overview.halving.currentRatePerSec * op.welcomeBoostFactor || 1)) * 100
@@ -186,7 +186,7 @@ export default function CommandPage() {
     async (label: string, fn: (onStep: StepHandler) => Promise<unknown>, success?: string) => {
       if (!wallet) return say('Connect your wallet first');
       // Refuse to start anything while a deploy is rolling out. A spend puts
-      // GPU on-chain before the server records it, so a cutover landing between
+      // BNTY on-chain before the server records it, so a cutover landing between
       // those two steps costs the player real tokens and leaves us owing a
       // refund. Waiting a couple of minutes is much cheaper than reconciling.
       if (useDeployStatus.getState().deploying) {
@@ -226,14 +226,14 @@ export default function CommandPage() {
       const n = r.claims.length;
       if (n === 0) return say('Nothing to claim');
       // Name the network fee rather than letting the payout quietly arrive short.
-      const gas = r.gasOsr > 0 ? ` — ${r.gasOsr.toFixed(2)} BNTY network fee` : '';
+      const gas = r.gasBnty > 0 ? ` — ${r.gasBnty.toFixed(2)} BNTY network fee` : '';
       say(`Rewards claimed (${n})${gas}`);
     });
 
   const openCrate = (crateId: number) =>
     run('crate', async (onStep) => {
       const crate = op?.crates.find((c) => c.id === crateId);
-      setLastCrateType(crate?.crateType ?? 'rig_crate');
+      setLastCrateType(crate?.crateType ?? 'equity_allocation');
       const res = await api.openCrate(wallet!, crateId, selected?.id, onStep);
       setCrateOpen(false);
       setCrateResult(res);
@@ -244,12 +244,12 @@ export default function CommandPage() {
 
   if (!storeWallet) {
     return (
-      <div className="gpu-page mx-auto max-w-[1180px]">
-        <div className="fab-uplink-empty">
-          <div className="fab-uplink-visual" aria-hidden>
-            <span className="fab-uplink-orbit orbit-a" />
-            <span className="fab-uplink-orbit orbit-b" />
-            <span className="fab-uplink-chip">BNTY</span>
+      <div className="gw-page mx-auto max-w-[1180px]">
+        <div className="gw-uplink-empty">
+          <div className="gw-uplink-visual" aria-hidden>
+            <span className="gw-uplink-orbit orbit-a" />
+            <span className="gw-uplink-orbit orbit-b" />
+            <span className="gw-uplink-chip">BNTY</span>
           </div>
           <div className="relative z-10 max-w-xl">
             <div className="font-mono text-[9px] font-bold uppercase tracking-[.28em] text-lime-300">Fund uplink offline</div>
@@ -263,7 +263,7 @@ export default function CommandPage() {
                 ['02', 'Open a desk'],
                 ['03', 'Start yield'],
               ].map(([step, label]) => (
-                <div key={step} className="fab-uplink-step"><span>{step}</span>{label}</div>
+                <div key={step} className="gw-uplink-step"><span>{step}</span>{label}</div>
               ))}
             </div>
             <p className="mt-5 font-mono text-[9px] uppercase tracking-[.15em] text-emerald-100/35">Use the connect control in the command bar to begin</p>
@@ -275,9 +275,9 @@ export default function CommandPage() {
 
   if (!op) {
     return (
-      <div className="gpu-page mx-auto max-w-[1180px]">
-        <div className="fab-loading-deck">
-          <span className="fab-loading-scan" />
+      <div className="gw-page mx-auto max-w-[1180px]">
+        <div className="gw-loading-deck">
+          <span className="gw-loading-scan" />
           <div className="font-mono text-[10px] uppercase tracking-[.28em] text-lime-300">Synchronizing fund analytics</div>
           <p className="mt-2 text-sm text-emerald-100/45">Reading desks, yield buffers, and network share…</p>
         </div>
@@ -286,13 +286,13 @@ export default function CommandPage() {
   }
 
   return (
-    <main className="fab-command-page">
+    <main className="gw-command-page">
       <FundProfileCard
         wallet={wallet}
         quests={quests}
         tier={op.level}
         deskCount={nodes.length}
-        bntyBalance={op.osrBalance}
+        bntyBalance={op.bntyBalance}
       />
 
       {/*
@@ -310,8 +310,8 @@ export default function CommandPage() {
         profile card, and this row carries only the two figures that are not
         stated anywhere else on the page.
       */}
-      <section className="fab-command-bar">
-        <div className="fab-command-actions">
+      <section className="gw-command-bar">
+        <div className="gw-command-actions">
           <button className="btn-secondary" onClick={() => setDeployOpen(true)} disabled={capacityFull}>+ Open desk</button>
           <button
             className="btn-primary"
@@ -321,22 +321,22 @@ export default function CommandPage() {
             {busy === 'claim' ? 'Routing yield…' : op.claimCooldownRemainingMs > 0 ? `Buffer locked · ${Math.ceil(op.claimCooldownRemainingMs / 60000)}m` : `Route ${fmt(pendingTotal)} BNTY`}
           </button>
         </div>
-        <div className="fab-command-metrics">
-          <div><span>FLOW</span><strong>{nodes.length ? fmt(dailyOsr, 0) : '0'}</strong><small>BNTY / day</small></div>
+        <div className="gw-command-metrics">
+          <div><span>FLOW</span><strong>{nodes.length ? fmt(dailyBnty, 0) : '0'}</strong><small>BNTY / day</small></div>
           <div><span>SHARE</span><strong>{networkShare.toFixed(1)}%</strong><small>Emission grid</small></div>
         </div>
       </section>
 
-      <div className="fab-alert-stack">
-        {!TOKEN_LIVE && <div className="fab-system-alert"><span>SIM</span><p>Pre-token simulation is active. Fund activity is tracked now and settles when BNTY goes live.</p></div>}
+      <div className="gw-alert-stack">
+        {!TOKEN_LIVE && <div className="gw-system-alert"><span>SIM</span><p>Pre-token simulation is active. Fund activity is tracked now and settles when BNTY goes live.</p></div>}
         {unseen.length > 0 && (
-          <button className="fab-system-alert is-reward" onClick={() => { setCrateOpen(true); void api.markCratesSeen(wallet!).then(refresh).catch(() => {}); }}>
+          <button className="gw-system-alert is-reward" onClick={() => { setCrateOpen(true); void api.markCratesSeen(wallet!).then(refresh).catch(() => {}); }}>
             <CrateThumb size={34} rarity="legendary" />
             <p><strong>{unseen.length} sealed {unseen.length === 1 ? 'allocation' : 'allocations'}</strong><br />Recovered by your desks · inspect contents</p>
             <span className="ml-auto">OPEN</span>
           </button>
         )}
-        {error && <div className="fab-system-alert is-error"><span>ERR</span><p>{/^\d{3}\b|auth|privy|token|unauthor/i.test(error) ? `Fund uplink verification failed (${error}) · retrying` : `Fund API unreachable (${error}) · retrying`}</p></div>}
+        {error && <div className="gw-system-alert is-error"><span>ERR</span><p>{/^\d{3}\b|auth|privy|token|unauthor/i.test(error) ? `Fund uplink verification failed (${error}) · retrying` : `Fund API unreachable (${error}) · retrying`}</p></div>}
       </div>
 
       <NextStep
@@ -347,23 +347,23 @@ export default function CommandPage() {
         onOpenPod={() => setCrateOpen(true)}
       />
 
-      <div className="fab-command-grid">
-        <section className="fab-digital-twin" aria-label="Interactive fund digital twin">
-          <div className="fab-scene-head">
-            <div><span className="fab-scene-kicker">DIGITAL TWIN / REALTIME</span><strong>{focusedRig ? `${focusedRig.type === 'oil' ? 'EQUITY DESK' : 'TREASURY DESK'} · L${focusedRig.level}` : 'FUND OVERVIEW'}</strong></div>
-            <div className="fab-lighting-tabs" aria-label="Board legend">
+      <div className="gw-command-grid">
+        <section className="gw-digital-twin" aria-label="Interactive fund digital twin">
+          <div className="gw-scene-head">
+            <div><span className="gw-scene-kicker">DIGITAL TWIN / REALTIME</span><strong>{focusedRig ? `${focusedRig.type === 'oil' ? 'EQUITY DESK' : 'TREASURY DESK'} · L${focusedRig.level}` : 'FUND OVERVIEW'}</strong></div>
+            <div className="gw-lighting-tabs" aria-label="Board legend">
               <span>DRAG TO PAN</span>
               <span>SCROLL TO ZOOM</span>
             </div>
           </div>
-          <div className="fab-scene-canvas">
+          <div className="gw-scene-canvas">
             <IsoTwin
               nodes={sceneNodes}
               selectedNodeId={selectedNodeId}
               onSelect={(id) => { selectNode(id || null); setCameraFocusId(id || null); }}
             />
             {focusedRig && (
-              <div className="fab-focus-card">
+              <div className="gw-focus-card">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: auraHex(focusedRig.level), boxShadow: `0 0 12px ${auraHex(focusedRig.level)}` }} />
                   <strong>{auraLabel(focusedRig.level)} DESK</strong>
@@ -378,7 +378,7 @@ export default function CommandPage() {
                 </div>
               </div>
             )}
-            <div className="fab-scene-nav">
+            <div className="gw-scene-nav">
               <button onClick={() => cycleCameraFocus(-1)} aria-label="Previous desk">←</button>
               <button onClick={() => setCameraFocusId(null)}>{focusedRig ? 'Release focus' : 'Fund view'}</button>
               <button onClick={() => cycleCameraFocus(1)} aria-label="Next desk">→</button>
@@ -386,27 +386,27 @@ export default function CommandPage() {
           </div>
         </section>
 
-        <aside className="fab-console-stack">
-          <section className="fab-console-card is-yield">
-            <div className="fab-console-heading"><span>YIELD BUFFER</span><span>{overview ? `HALVING ${overview.halving.cycleIndex + 2}` : 'SYNCING'}</span></div>
+        <aside className="gw-console-stack">
+          <section className="gw-console-card is-yield">
+            <div className="gw-console-heading"><span>YIELD BUFFER</span><span>{overview ? `HALVING ${overview.halving.cycleIndex + 2}` : 'SYNCING'}</span></div>
             <div className="mt-5 flex items-end justify-between gap-4">
               <div><strong className="text-[clamp(2.2rem,5vw,4.2rem)] font-semibold leading-none tracking-[-.06em] text-white">{fmt(pendingTotal)}</strong><span className="ml-2 font-mono text-[10px] text-lime-300">BNTY</span></div>
               <span className="font-mono text-[9px] text-emerald-100/42">{fmt(op.productionRate, 4)} / SEC</span>
             </div>
-            <div className="fab-flow-track"><span style={{ width: `${Math.max(4, Math.min(100, networkShare))}%` }} /></div>
+            <div className="gw-flow-track"><span style={{ width: `${Math.max(4, Math.min(100, networkShare))}%` }} /></div>
             <div className="mt-2 flex justify-between font-mono text-[8px] uppercase tracking-[.14em] text-emerald-100/38"><span>Grid ownership {networkShare.toFixed(2)}%</span><span>{overview ? <Countdown ms={Math.max(0, overview.halving.nextHalvingMs - Date.now())} /> : '—'}</span></div>
-            {boostActive && <div className="fab-boost-chip">WELCOME ACCELERATOR · {op.welcomeBoostFactor.toFixed(2)}× · {Math.round(boostPct * 100)}% WINDOW</div>}
+            {boostActive && <div className="gw-boost-chip">WELCOME ACCELERATOR · {op.welcomeBoostFactor.toFixed(2)}× · {Math.round(boostPct * 100)}% WINDOW</div>}
           </section>
 
-          <section className="fab-console-card" id="production-lines">
-            <div className="fab-console-heading"><span>DESKS</span><span>{nodes.length}/{totalCapacity}</span></div>
+          <section className="gw-console-card" id="production-lines">
+            <div className="gw-console-heading"><span>DESKS</span><span>{nodes.length}/{totalCapacity}</span></div>
             <div className="mt-3 space-y-2">
-              {nodes.length === 0 && <button className="fab-empty-line" onClick={() => setDeployOpen(true)}><span>+</span><strong>Open your first desk</strong><small>Start earning yield</small></button>}
+              {nodes.length === 0 && <button className="gw-empty-line" onClick={() => setDeployOpen(true)}><span>+</span><strong>Open your first desk</strong><small>Start earning yield</small></button>}
               {nodes.map((node, index) => (
-                <button key={node.id} onClick={() => { selectNode(node.id); setCameraFocusId(node.id); }} className={`fab-line-row ${node.id === selectedNodeId ? 'is-active' : ''}`}>
-                  <span className="fab-line-index">{String(index + 1).padStart(2, '0')}</span>
+                <button key={node.id} onClick={() => { selectNode(node.id); setCameraFocusId(node.id); }} className={`gw-line-row ${node.id === selectedNodeId ? 'is-active' : ''}`}>
+                  <span className="gw-line-index">{String(index + 1).padStart(2, '0')}</span>
                   <span className="min-w-0 text-left"><strong>{node.type === 'oil' ? 'Equity Desk' : 'Treasury Desk'}</strong><small>{auraLabel(node.level)} · {fmt(node.productionRate, 4)} BNTY/s</small></span>
-                  <span className="ml-auto text-right"><strong style={{ color: auraHex(node.level) }}>L{node.level}</strong><small>{fmt(node.pendingOsr)} BNTY</small></span>
+                  <span className="ml-auto text-right"><strong style={{ color: auraHex(node.level) }}>L{node.level}</strong><small>{fmt(node.pendingBnty)} BNTY</small></span>
                 </button>
               ))}
             </div>
@@ -428,18 +428,18 @@ export default function CommandPage() {
         <RecentUpdates />
       </div>
 
-      <div className="fab-lower-grid">
+      <div className="gw-lower-grid">
         <div id="compound-panel" className="contents"><CompoundPanel busy={busy} run={run} /></div>
         {selected ? <NodeDetail node={selected} busy={busy} run={run} onOpenCrate={() => setCrateOpen(true)} /> : (
-          <section className="fab-console-card fab-inspector-empty"><div className="fab-console-heading"><span>DESK INSPECTOR</span><span>STANDBY</span></div><div className="mt-7"><strong>Select a desk in the digital twin.</strong><p>Inspect fitted instruments, storage saturation, yield rate, and calibration options without leaving the trading floor.</p></div></section>
+          <section className="gw-console-card gw-inspector-empty"><div className="gw-console-heading"><span>DESK INSPECTOR</span><span>STANDBY</span></div><div className="mt-7"><strong>Select a desk in the digital twin.</strong><p>Inspect fitted instruments, storage saturation, yield rate, and calibration options without leaving the trading floor.</p></div></section>
         )}
-        <section className="fab-console-card">
-          <div className="fab-console-heading"><span>ALLOCATIONS</span><span>{op.crates.length} SEALED</span></div>
+        <section className="gw-console-card">
+          <div className="gw-console-heading"><span>ALLOCATIONS</span><span>{op.crates.length} SEALED</span></div>
           <div className="mt-4 flex items-center gap-4"><CrateThumb size={68} rarity={unseen.length ? 'legendary' : 'rare'} /><div><strong className="text-white">Open allocations</strong><p className="mt-1 text-xs leading-5 text-emerald-100/45">Your desks recover randomized instruments. Fit them in Instruments to increase yield power.</p></div></div>
           <button className="btn-secondary mt-4 w-full text-xs" onClick={() => setCrateOpen(true)}>Open allocation inventory</button>
         </section>
-        <section className="fab-console-card is-co-yield">
-          <div className="fab-console-heading"><span>THE OUTFITTER</span><span>TRADING FLOOR</span></div>
+        <section className="gw-console-card is-co-yield">
+          <div className="gw-console-heading"><span>THE OUTFITTER</span><span>TRADING FLOOR</span></div>
           <div className="mt-5 text-3xl font-semibold tracking-[-.04em] text-white">Make the fund yours.</div>
           <p className="mt-3 text-xs leading-5 text-emerald-100/46">Buy a look, then refine it up a five-step track. Cosmetics never touch yield — what they buy is the finish, Trading XP, and something worth reselling.</p>
           <Link href="/app/outfitter" className="btn-secondary mt-4 block w-full text-center text-xs">Open the Outfitter</Link>
@@ -449,7 +449,7 @@ export default function CommandPage() {
       {deployOpen && <DeployModal onClose={() => setDeployOpen(false)} busy={busy} counts={{ oil: oilCount, mine: mineCount }} capacities={{ oil: oilCapacity, mine: mineCapacity }} onDeploy={(familyKey) => run('mint', async (onStep) => { await api.mintNode(wallet!, familyKey, onStep); setDeployOpen(false); say('Desk opened'); })} />}
       {crateOpen && <CratePicker onClose={() => setCrateOpen(false)} busy={busy} op={op} onOpen={openCrate} />}
       {crateResult && <CrateCinematic result={crateResult} onClose={() => setCrateResult(null)} onOpenAnother={() => { setCrateResult(null); setCrateOpen(true); }} />}
-      {toast && <div className="fab-toast">{toast}</div>}
+      {toast && <div className="gw-toast">{toast}</div>}
     </main>
   );
 
@@ -476,7 +476,7 @@ function CompoundPanel({
       {next ? (
         <>
           <div className="text-sm text-steel-300">
-            {next.totalOsr.toLocaleString()} BNTY
+            {next.totalBnty.toLocaleString()} BNTY
             <span className="text-[11px] text-steel-500"> · 50/30/20 burn/reserve/treasury · +0.00001 ETH</span>
           </div>
           {cooling && (
@@ -536,7 +536,7 @@ function NodeDetail({
 }) {
   const { wallet } = useOperation();
   const slots = NODE_SLOTS[node.type === 'oil' ? 'oil' : 'mine'];
-  const fill = node.storageCap > 0 ? Math.min(1, node.pendingOsr / node.storageCap) : 0;
+  const fill = node.storageCap > 0 ? Math.min(1, node.pendingBnty / node.storageCap) : 0;
   const fillColor = fill >= 0.999 ? '#dc2626' : fill >= 0.85 ? '#ea580c' : fill >= 0.5 ? '#f59e0b' : '#71717a';
   return (
     <div className="panel p-4">
@@ -574,7 +574,7 @@ function NodeDetail({
         <div className="flex justify-between text-[11px] text-steel-400">
           <span>Storage {fill >= 0.999 ? '· FULL' : ''}</span>
           <span className="font-mono">
-            {fmt(node.pendingOsr)} / {fmt(node.storageCap)}
+            {fmt(node.pendingBnty)} / {fmt(node.storageCap)}
           </span>
         </div>
         <div className="mt-1 h-1.5 overflow-hidden rounded bg-ink-700">
@@ -626,7 +626,7 @@ function NodeDetail({
           Level Up · {node.nextLevelCost.toLocaleString()} BNTY
         </button>
       </div>
-      {node.type === 'mine' && node.pendingOsr > 0 && (
+      {node.type === 'mine' && node.pendingBnty > 0 && (
         <button
           className="btn-secondary mt-2 w-full text-xs"
           disabled={busy === 'compound'}
@@ -657,7 +657,7 @@ function DeployModal({
   capacities: Record<'oil' | 'mine', number>;
 }) {
   const [families, setFamilies] = useState<Awaited<ReturnType<typeof api.families>> | null>(null);
-  const [sel, setSel] = useState<string>('oil_rig');
+  const [sel, setSel] = useState<string>('equity_desk');
   const [loadError, setLoadError] = useState<string | null>(null);
   const loadFamilies = useCallback(async () => {
     setFamilies(null);
@@ -704,7 +704,7 @@ function DeployModal({
             <div className="flex items-center gap-2">
               <span className="font-semibold text-white">{f.name}</span>
               <span className="ml-auto font-mono text-sm text-lime-300">
-                {f.burnCostOsr.toLocaleString()} BNTY
+                {f.burnCostBnty.toLocaleString()} BNTY
               </span>
             </div>
             <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-steel-500">
@@ -712,8 +712,8 @@ function DeployModal({
             </div>
             <p className="mt-1 text-xs text-steel-400">{f.description}</p>
             <div className="mt-2 grid grid-cols-3 gap-1 text-[10px] text-steel-500">
-              <span>→ burned {(f.burnCostOsr * f.burnShareBps) / 10000}</span>
-              <span>→ treasury {(f.burnCostOsr * f.treasuryShareBps) / 10000}</span>
+              <span>→ burned {(f.burnCostBnty * f.burnShareBps) / 10000}</span>
+              <span>→ treasury {(f.burnCostBnty * f.treasuryShareBps) / 10000}</span>
               <span>+ {f.mintFeeEth} ETH fee</span>
             </div>
             </button>
@@ -799,15 +799,15 @@ function CratePicker({
             <div
               key={crate.id}
               className={`flex items-center gap-2.5 rounded border p-2 ${
-                crate.crateType === 'rig_crate'
+                crate.crateType === 'equity_allocation'
                   ? 'border-amber-500/40 bg-amber-500/5'
                   : 'border-steel-500/40 bg-steel-500/5'
               }`}
             >
-              <CrateThumb size={44} rarity={crate.crateType === 'rig_crate' ? 'legendary' : 'epic'} />
+              <CrateThumb size={44} rarity={crate.crateType === 'equity_allocation' ? 'legendary' : 'epic'} />
               <div className="min-w-0">
                 <div className="text-xs font-semibold text-white">
-                  {crate.crateType === 'rig_crate' ? 'Equity Allocation' : 'Treasury Allocation'}
+                  {crate.crateType === 'equity_allocation' ? 'Equity Allocation' : 'Treasury Allocation'}
                 </div>
                 <div className="text-[10px] text-steel-500">
                   Allocated {new Date(crate.foundAt).toLocaleDateString()}

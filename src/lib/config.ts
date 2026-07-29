@@ -21,8 +21,8 @@ export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
  * every action is an ordinary ERC-20 transfer between these two, so these are
  * the only two addresses the app needs.
  */
-export const OSR_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_OSR_TOKEN ?? ZERO_ADDRESS;
-export const OSR_TREASURY_ADDRESS = process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET ?? ZERO_ADDRESS;
+export const BNTY_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_OSR_TOKEN ?? ZERO_ADDRESS;
+export const BNTY_TREASURY_ADDRESS = process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET ?? ZERO_ADDRESS;
 /** On-chain identity required before any browser wallet prompt is allowed. */
 export const EXPECTED_TOKEN_SYMBOL = process.env.NEXT_PUBLIC_GPU_TOKEN_SYMBOL ?? 'BNTY';
 
@@ -39,7 +39,7 @@ export function isConfiguredAddress(value: string): value is `0x${string}` {
  * disagree about whether transactions are real.
  */
 export const TOKEN_LIVE =
-  isConfiguredAddress(OSR_TOKEN_ADDRESS) && isConfiguredAddress(OSR_TREASURY_ADDRESS);
+  isConfiguredAddress(BNTY_TOKEN_ADDRESS) && isConfiguredAddress(BNTY_TREASURY_ADDRESS);
 
 export const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? '';
 export const PRIVY_CLIENT_ID = process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID ?? '';

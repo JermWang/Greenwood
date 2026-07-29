@@ -44,7 +44,7 @@ export default function OpsPage() {
       ) : op ? (
         <div className="telemetry-layout">
           <section className="telemetry-overview">
-            <div className="fab-console-heading"><span>FUND DIAGNOSTIC</span><span>LIVE</span></div>
+            <div className="gw-console-heading"><span>FUND DIAGNOSTIC</span><span>LIVE</span></div>
             <div className="telemetry-gauges">
               <StatCard label="Desk occupancy" value={`${op.nodes.length}/${op.maxNodes}`} tone="lime" />
               <StatCard label="Fund tier" value={`0${op.level}`} tone="cobalt" />
@@ -53,8 +53,8 @@ export default function OpsPage() {
             </div>
           </section>
 
-          <section className="fab-console-card">
-            <div className="fab-console-heading"><span>BUFFER ROUTING</span><span>{Object.keys(op.pending).length} ASSETS</span></div>
+          <section className="gw-console-card">
+            <div className="gw-console-heading"><span>BUFFER ROUTING</span><span>{Object.keys(op.pending).length} ASSETS</span></div>
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
               {Object.entries(op.pending).length === 0 ? <p className="text-sm text-emerald-100/45">All yield buffers are clear.</p> : Object.entries(op.pending).map(([asset, amount]) => (
                 <div key={asset} className="telemetry-buffer"><span>{asset}</span><strong>{amount.toFixed(6)}</strong><small>Awaiting your route</small></div>
@@ -62,11 +62,11 @@ export default function OpsPage() {
             </div>
           </section>
 
-          <section className="fab-console-card telemetry-lines">
-            <div className="fab-console-heading"><span>DESK-BY-DESK STATUS</span><span>{op.nodes.length} ONLINE</span></div>
+          <section className="gw-console-card telemetry-lines">
+            <div className="gw-console-heading"><span>DESK-BY-DESK STATUS</span><span>{op.nodes.length} ONLINE</span></div>
             <div className="mt-4 space-y-2">
               {op.nodes.length === 0 ? <p className="text-sm text-emerald-100/45">No open desks.</p> : op.nodes.map((node, index) => {
-                const storage = node.storageCap > 0 ? Math.min(100, (node.pendingOsr / node.storageCap) * 100) : 0;
+                const storage = node.storageCap > 0 ? Math.min(100, (node.pendingBnty / node.storageCap) * 100) : 0;
                 return (
                   <div key={node.id} className="telemetry-line-row">
                     <span className="telemetry-line-number">{String(index + 1).padStart(2, '0')}</span>

@@ -29,7 +29,7 @@ const {
   compoundInfo,
   crateAllowance,
 } = await import('./game');
-const { SHARE_CAP, STARTER_OSR_GRANT, GENESIS_RATE_PER_SEC } = await import('./economy');
+const { SHARE_CAP, STARTER_BNTY_GRANT, GENESIS_RATE_PER_SEC } = await import('./economy');
 const { getDb } = await import('./db');
 const { setOsrUsdPrice } = await import('./price');
 
@@ -53,12 +53,12 @@ afterAll(() => {
 });
 
 describe('new wallet bootstrap', () => {
-  test('starter grant covers the first Wafer Fab', () => {
+  test('starter grant covers the first Desk Fab', () => {
     const w = wallet(1);
     const user = getOrCreateUser(w);
-    expect(user.osr_balance).toBe(STARTER_OSR_GRANT);
+    expect(user.osr_balance).toBe(STARTER_BNTY_GRANT);
     // The whole point: a brand-new wallet can reach its first node unaided.
-    expect(() => mintNode(w, 'oil_rig')).not.toThrow();
+    expect(() => mintNode(w, 'equity_desk')).not.toThrow();
   });
 
   test('grant is credited exactly once', () => {
@@ -82,8 +82,8 @@ describe('emission share', () => {
     getOrCreateUser(b);
     fund(a, 100_000);
     fund(b, 100_000);
-    mintNode(a, 'oil_rig');
-    mintNode(b, 'oil_rig');
+    mintNode(a, 'equity_desk');
+    mintNode(b, 'equity_desk');
 
     const sa = settleUser(a);
     const sb = settleUser(b);
@@ -110,7 +110,7 @@ describe('emission share', () => {
     const incumbent = wallet(12);
     getOrCreateUser(incumbent);
     fund(incumbent, 100_000);
-    mintNode(incumbent, 'oil_rig');
+    mintNode(incumbent, 'equity_desk');
 
     const before = settleUser(incumbent);
     const shareBefore = before.userGp / before.networkGp;
@@ -118,7 +118,7 @@ describe('emission share', () => {
     const rival = wallet(13);
     getOrCreateUser(rival);
     fund(rival, 100_000);
-    mintNode(rival, 'oil_rig');
+    mintNode(rival, 'equity_desk');
 
     const after = settleUser(incumbent);
     const shareAfter = after.userGp / after.networkGp;
@@ -137,9 +137,9 @@ describe('emission share', () => {
     getOrCreateUser(small);
     fund(big, 500_000);
     fund(small, 500_000);
-    mintNode(small, 'oil_rig');
-    mintNode(big, 'oil_rig');
-    mintNode(big, 'mine_shaft');
+    mintNode(small, 'equity_desk');
+    mintNode(big, 'equity_desk');
+    mintNode(big, 'treasury_desk');
 
     const sBig = settleUser(big);
     const sSmall = settleUser(small);
@@ -151,7 +151,7 @@ describe('emission share', () => {
     const solo = wallet(30);
     getOrCreateUser(solo);
     fund(solo, 100_000);
-    mintNode(solo, 'oil_rig');
+    mintNode(solo, 'equity_desk');
     const s = settleUser(solo);
     const share = Math.min(s.userGp / s.networkGp, SHARE_CAP);
     expect(share).toBeLessThanOrEqual(SHARE_CAP + 1e-9);
@@ -166,13 +166,13 @@ describe('full game cycle', () => {
     getOrCreateUser(w);
     fund(w, 200_000);
 
-    const minted = mintNode(w, 'oil_rig');
+    const minted = mintNode(w, 'equity_desk');
     expect(minted.node.level).toBe(1);
     const nodeId = minted.node.id;
 
     advance(w, 3_600_000);
     const settled = settleUser(w);
-    expect(settled.nodes[0].pendingOsr).toBeGreaterThan(0);
+    expect(settled.nodes[0].pendingBnty).toBeGreaterThan(0);
 
     const claimed = claimRewards(w);
     expect(claimed.claims.length).toBeGreaterThan(0);
@@ -185,7 +185,7 @@ describe('full game cycle', () => {
     // Crates are dollar-priced, so the engine needs a token price to charge.
     setOsrUsdPrice(0.001);
     const crateRow = getDb()
-      .prepare("INSERT INTO crates (wallet, crate_type, found_at) VALUES (?,'rig_crate',?)")
+      .prepare("INSERT INTO crates (wallet, crate_type, found_at) VALUES (?,'equity_allocation',?)")
       .run(w, Date.now());
     const crate = openCrate(w, Number(crateRow.lastInsertRowid), nodeId);
     expect(crate.inventoryItemId).toBeGreaterThan(0);
@@ -215,7 +215,7 @@ describe('full game cycle', () => {
     const w = wallet(50);
     getOrCreateUser(w);
     fund(w, 0);
-    expect(() => mintNode(w, 'oil_rig')).toThrow(/Not enough BNTY/);
+    expect(() => mintNode(w, 'equity_desk')).toThrow(/Not enough BNTY/);
   });
 
   test('claim cooldown is enforced', () => {
@@ -232,7 +232,7 @@ describe('full game cycle', () => {
     const w = wallet(61);
     getOrCreateUser(w);
     fund(w, 10_000_000);
-    mintNode(w, 'mine_shaft');
+    mintNode(w, 'treasury_desk');
 
     const total = (r: { claims: Array<{ net: number }> }) =>
       r.claims.reduce((sum, c) => sum + c.net, 0);
@@ -313,7 +313,7 @@ describe('full game cycle', () => {
     const w = wallet(62);
     getOrCreateUser(w);
     fund(w, 10_000_000);
-    const nodeId = mintNode(w, 'oil_rig').node.id;
+    const nodeId = mintNode(w, 'equity_desk').node.id;
 
     expect(upgradeNode(w, nodeId, undefined, 1).level).toBe(2);
     expect(() => upgradeNode(w, nodeId, undefined, 1)).toThrow(/level moved/i);

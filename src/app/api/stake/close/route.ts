@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { GameError } from '@/lib/game';
-import { SETTLEMENT_CONFIGURED, payoutOsr, recordPayout } from '@/lib/settlement';
+import { SETTLEMENT_CONFIGURED, payoutBnty, recordPayout } from '@/lib/settlement';
 import { closeStake, stakePositions } from '@/lib/stake';
 import { requireNoActiveDeploy } from '@/lib/deploy-guard';
 
@@ -40,13 +40,13 @@ export async function POST(request: Request) {
 
     const result = closeStake(wallet, stakeId, { settledOnChain: true });
 
-    let payout: Awaited<ReturnType<typeof payoutOsr>>;
+    let payout: Awaited<ReturnType<typeof payoutBnty>>;
     try {
-      payout = await payoutOsr(wallet, result.payout);
+      payout = await payoutBnty(wallet, result.payout);
     } catch (payoutError) {
       // Every failure past closeStake owes the operator: the contract is already
       // closed and the principal already left their position. That includes the
-      // 400 payoutOsr raises when gas has grown to swallow the payout, which
+      // 400 payoutBnty raises when gas has grown to swallow the payout, which
       // used to rethrow untouched and leave no record of the debt at all.
       recordPayout(wallet, result.payout, null, { stakeId, error: String(payoutError), result });
       console.error('[stake/close] payout failed after the contract was closed', payoutError);
@@ -56,13 +56,13 @@ export async function POST(request: Request) {
       );
     }
 
-    recordPayout(wallet, payout.sentOsr, payout.hash, { stakeId, ...result });
+    recordPayout(wallet, payout.sentBnty, payout.hash, { stakeId, ...result });
     return NextResponse.json({
       settled: true,
       result,
       txHash: payout.hash,
-      net: payout.sentOsr,
-      gasOsr: payout.gasOsr,
+      net: payout.sentBnty,
+      gasBnty: payout.gasBnty,
       ...stakePositions(wallet),
     });
   } catch (e) {

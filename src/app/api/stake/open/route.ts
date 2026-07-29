@@ -13,7 +13,7 @@ interface Params {
 /**
  * Open a capacity contract.
  *
- * This is a spend — GPU leaves the operator and sits with the protocol for the
+ * This is a spend — BNTY leaves the operator and sits with the protocol for the
  * term — so it runs through the same quote / pay / settle machinery as minting
  * and crates. That means the on-chain path verifies a real Transfer receipt
  * before a contract exists, and the pre-token path debits the mirrored balance
@@ -33,14 +33,14 @@ export async function POST(request: Request) {
       return { amount, termDays };
     },
     // Both numbers, colon separated — comfortably inside the 32-byte detail
-    // payload even at a billion GPU, and it is what the settle phase reads the
+    // payload even at a billion BNTY, and it is what the settle phase reads the
     // contract back out of rather than trusting the request body.
     encode: (params) => `${params.termDays}:${params.amount}`,
     decode: (detail) => {
       const [days, amount] = detail.split(':');
       return { termDays: Number(days), amount: Number(amount) };
     },
-    price: (_wallet, params) => ({ osrAmount: params.amount }),
+    price: (_wallet, params) => ({ bntyAmount: params.amount }),
     apply: (wallet, params, opts) => openStake(wallet, params.amount, params.termDays, opts),
   });
 }

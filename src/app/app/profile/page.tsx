@@ -94,7 +94,7 @@ export default function ProfilePage() {
     if (!supabase) return;
     const normalized = wallet.toLowerCase();
     const channel = supabase
-      .channel(`gpu-operator-profile-${normalized}`)
+      .channel(`gw-operator-profile-${normalized}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'profiles', filter: `wallet=eq.${normalized}` },

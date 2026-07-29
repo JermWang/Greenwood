@@ -1,4 +1,4 @@
-// GPU rarity system — 7 component tiers + 10 node aura levels.
+// BNTY rarity system — 7 component tiers + 10 node aura levels.
 // Multipliers/colors match the original game spec (ORS MODELS/rarity_system.js).
 
 import { AURA_TIERS, auraLabel } from './aura';
@@ -79,18 +79,38 @@ export type NodeFamily = 'oil' | 'mine';
 
 export const NODE_SLOTS: Record<NodeFamily, string[]> = {
   oil: ['derrick', 'pump_jack', 'pipeline', 'flare_stack'],
-  mine: ['drill_bit', 'ore_cart', 'rail_track', 'elevator'],
+  mine: ['instrument', 'ore_cart', 'rail_track', 'elevator'],
 };
 
+/**
+ * What a player sees in an instrument socket.
+ *
+ * The KEYS are stored in `components.slot` and stay as they are — they are the
+ * oldest layer in the codebase and renaming them is a data migration for no
+ * player-visible gain. The LABELS are display strings and were, until now, the
+ * loudest surviving leak in the game: a level-one operator opening their first
+ * allocation in a fund-management game was told they had received a
+ * "Lithography Machine".
+ *
+ * That is worse than an inconsistency, because it leaks the turn early. The
+ * reveal is supposed to land between levels three and ten, environmentally —
+ * and industrial hardware named on the character sheet gets there first and
+ * without the atmosphere that makes it worth anything.
+ *
+ * So these read as trading infrastructure, and each is a word that would also
+ * be at home on a generator: a rail, a feed, an engine, a buffer. That
+ * ambiguity is the point. Nothing here is a lie a player can catch, and nothing
+ * here answers the question before the world does.
+ */
 export const SLOT_LABELS: Record<string, string> = {
-  derrick: 'Lithography Machine',
-  pump_jack: 'Wafer Stack',
-  pipeline: 'Etch Chamber',
-  flare_stack: 'Power Bus',
-  drill_bit: 'Dicing Saw',
-  ore_cart: 'Packaging Line',
-  rail_track: 'Test Handler',
-  elevator: 'Cooling Array',
+  derrick: 'Execution Terminal',
+  pump_jack: 'Order Router',
+  pipeline: 'Market Data Feed',
+  flare_stack: 'Settlement Rail',
+  instrument: 'Custody Module',
+  ore_cart: 'Coupon Engine',
+  rail_track: 'Maturity Ladder',
+  elevator: 'Liquidity Buffer',
 };
 
 /** Average multiplier across 4 slots; empty slots count as 1.0x. */

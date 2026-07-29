@@ -11,9 +11,9 @@ import { useOperation } from '@/lib/useOperation';
 
 function componentKind(item: InventoryItem): MachineKind {
   const slot = item.slot.toLowerCase();
-  if (/pipeline|rail|elevator/.test(slot)) return 'packaging';
+  if (/pipeline|rail|elevator/.test(slot)) return 'settlement';
   if (/flare|drill|pump/.test(slot)) return 'cooling';
-  return item.family === 'oil' ? 'euv' : 'rack';
+  return item.family === 'oil' ? 'equity' : 'rack';
 }
 
 export default function CompanyFloorPage() {
@@ -45,7 +45,7 @@ export default function CompanyFloorPage() {
    */
   const machines = useMemo<IsoMachine[]>(() => [
     ...(op?.nodes ?? []).map((node, index) => {
-      const kind = (node.type === 'oil' ? 'euv' : 'rack') as MachineKind;
+      const kind = (node.type === 'oil' ? 'equity' : 'rack') as MachineKind;
       return {
         id: `line:${node.id}`,
         kind,
@@ -71,18 +71,18 @@ export default function CompanyFloorPage() {
 
   if (!wallet) {
     return (
-      <div className="gpu-page mx-auto max-w-[900px]">
-        <section className="fab-floor-gate"><Flask size={38} weight="duotone" /><h1>Walk the floor first.</h1><p>Connect a fund to organize your owned instruments, or enter the wallet-free demo immediately.</p><div><Link href="/demo" className="btn-primary">Play demo</Link><Link href="/start" className="btn-secondary">Link fund</Link></div></section>
+      <div className="gw-page mx-auto max-w-[900px]">
+        <section className="gw-floor-gate"><Flask size={38} weight="duotone" /><h1>Walk the floor first.</h1><p>Connect a fund to organize your owned instruments, or enter the wallet-free demo immediately.</p><div><Link href="/demo" className="btn-primary">Play demo</Link><Link href="/start" className="btn-secondary">Link fund</Link></div></section>
       </div>
     );
   }
 
-  if (loading && machines.length === 0) return <div className="fab-floor-loading">Loading owned instruments…</div>;
+  if (loading && machines.length === 0) return <div className="gw-floor-loading">Loading owned instruments…</div>;
   return (
     <IsoFloor
       machines={machines}
       wallet={wallet.toLowerCase()}
-      storageKey={`gpu:company-floor:${wallet.toLowerCase()}:v1`}
+      storageKey={`greenwood:company-floor:${wallet.toLowerCase()}:v1`}
     />
   );
 }

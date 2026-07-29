@@ -46,7 +46,7 @@ export interface NextStepView {
   action?: NextAction;
 }
 
-function gpu(n: number): string {
+function bnty(n: number): string {
   if (!Number.isFinite(n)) return '—';
   if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
@@ -143,7 +143,7 @@ export function decideNextStep(
   regions?: RegionView[]
 ): NextStepView {
   const nodes = op.nodes ?? [];
-  const balance = op.osrBalance ?? 0;
+  const balance = op.bntyBalance ?? 0;
   const pending = Object.values(op.pending ?? {}).reduce((a, b) => a + b, 0);
   const families = new Set(nodes.map((n) => n.type));
 
@@ -166,11 +166,11 @@ export function decideNextStep(
     return {
       id: 'claim',
       tag: 'Step 2 · Route yield',
-      title: `Route your ${gpu(pending)} BNTY`,
+      title: `Route your ${bnty(pending)} BNTY`,
       body:
         'Your desks have produced BNTY. Route it to your balance so you can spend it — and so your desks, which stop earning once full, keep producing.',
       tone: 'act',
-      action: { kind: 'claim', label: `Route ${gpu(pending)} BNTY` },
+      action: { kind: 'claim', label: `Route ${bnty(pending)} BNTY` },
     };
   }
 
@@ -196,7 +196,7 @@ export function decideNextStep(
       id: 'open-pod',
       tag: 'Step 4 · Open an allocation',
       title: unseen > 0 ? 'Open your new allocation' : 'Open an allocation',
-      body: `You have a sealed allocation. Opening it (${gpu(op.compound.crateCost)} BNTY) yields a random instrument you can fit to a desk for more output.`,
+      body: `You have a sealed allocation. Opening it (${bnty(op.compound.crateCost)} BNTY) yields a random instrument you can fit to a desk for more output.`,
       tone: 'act',
       action: { kind: 'openPod', label: 'Open an allocation' },
     };
@@ -204,12 +204,12 @@ export function decideNextStep(
 
   // 5) Warehouse upgrade affordable and off cooldown — more lines, better pods.
   const up = op.compound.nextUpgradeCost;
-  if (up && balance >= up.totalOsr && op.compound.cooldownRemainingMs <= 0) {
+  if (up && balance >= up.totalBnty && op.compound.cooldownRemainingMs <= 0) {
     return {
       id: 'upgrade',
       tag: 'Step 5 · Upgrade',
       title: `Upgrade your portfolio to Tier ${up.targetLevel}`,
-      body: `You can afford the upgrade (${gpu(up.totalOsr)} BNTY). It raises your desk capacity, daily allocation finds, and the rarity of instruments you can recover.`,
+      body: `You can afford the upgrade (${bnty(up.totalBnty)} BNTY). It raises your desk capacity, daily allocation finds, and the rarity of instruments you can recover.`,
       tone: 'act',
       action: { kind: 'scroll', label: 'Upgrade portfolio', scrollTo: 'compound-panel' },
     };
@@ -241,7 +241,7 @@ export function decideNextStep(
       id: 'level-up',
       tag: 'Step 7 · Level up',
       title: 'Level up a desk',
-      body: `You can afford to level up a desk (${gpu(affordableLevel.nextLevelCost)} BNTY). Higher levels produce more BNTY per second.`,
+      body: `You can afford to level up a desk (${bnty(affordableLevel.nextLevelCost)} BNTY). Higher levels produce more BNTY per second.`,
       tone: 'act',
       action: { kind: 'scroll', label: 'Inspect desks', scrollTo: 'production-lines' },
     };
@@ -254,7 +254,7 @@ export function decideNextStep(
   const outdoors = regions ? decideOutdoors(regions) : null;
   if (outdoors?.tone === 'act') return outdoors;
 
-  // 9) Nothing to act on — lines are producing. Point idle GPU at the vault.
+  // 9) Nothing to act on — lines are producing. Point idle BNTY at the vault.
   if (pending > 0 && op.claimCooldownRemainingMs > 0) {
     const mins = Math.ceil(op.claimCooldownRemainingMs / 60000);
     return {

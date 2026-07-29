@@ -1,11 +1,11 @@
-// GPU game engine — all economy state transitions live here. Route handlers
+// BNTY game engine — all economy state transitions live here. Route handlers
 // are thin wrappers around these functions. Production accrual is lazy: every
-// read "settles" a node's accrued GPU up to now, so no background ticker is
+// read "settles" a node's accrued BNTY up to now, so no background ticker is
 // needed.
 
 import { getDb, getProtocolValue, setProtocolValue } from './db';
 import { rollCrateDrops, unopenedCrates, unseenCrates, type FoundCrate } from './crates';
-import { crateCostOsr } from './economy';
+import { crateCostBnty } from './economy';
 import { getOsrUsdPrice } from './price';
 import {
   RARITY_MULT,
@@ -36,7 +36,7 @@ import {
   EXPEDITE_FEE_ETH,
   TOTAL_SUPPLY,
   EMISSION_RESERVE,
-  STARTER_OSR_GRANT,
+  STARTER_BNTY_GRANT,
 } from './economy';
 import { DESK_MATERIAL, deskFrames, nodeUpgradeCost } from './capital';
 import { spendMaterial } from './materials';
@@ -173,16 +173,16 @@ export function getOrCreateUser(wallet: string): UserRow {
     // mark dripped so it is credited exactly once per wallet.
     db.prepare(
       'INSERT OR IGNORE INTO users (wallet, osr_balance, created_at, last_seen, dripped) VALUES (?,?,?,?,1)'
-    ).run(wallet, STARTER_OSR_GRANT, now, now);
+    ).run(wallet, STARTER_BNTY_GRANT, now, now);
     user = db.prepare('SELECT * FROM users WHERE wallet = ?').get(wallet) as unknown as UserRow;
-    if (STARTER_OSR_GRANT > 0) addLedger(wallet, 'starter_grant', STARTER_OSR_GRANT, {});
+    if (STARTER_BNTY_GRANT > 0) addLedger(wallet, 'starter_grant', STARTER_BNTY_GRANT, {});
   } else if (!user.dripped) {
     // Wallet predates the starter grant — credit it once and flag it.
     db.prepare('UPDATE users SET osr_balance = osr_balance + ?, dripped = 1 WHERE wallet = ?').run(
-      STARTER_OSR_GRANT,
+      STARTER_BNTY_GRANT,
       wallet
     );
-    addLedger(wallet, 'starter_grant', STARTER_OSR_GRANT, {});
+    addLedger(wallet, 'starter_grant', STARTER_BNTY_GRANT, {});
     db.prepare('UPDATE users SET last_seen = ? WHERE wallet = ?').run(Date.now(), wallet);
     user = db.prepare('SELECT * FROM users WHERE wallet = ?').get(wallet) as unknown as UserRow;
   } else {
@@ -270,7 +270,7 @@ export function componentMultiplier(comps: { rarity: Rarity }[]): number {
 }
 
 /**
- * Options for any action that costs GPU.
+ * Options for any action that costs BNTY.
  *
  * When settlement is live the operator pays in real ERC-20 through
  * OSRGame.execute() before the server ever applies the state change. Debiting
@@ -383,7 +383,7 @@ interface SettledNode {
   comps: ComponentRow[];
   gp: number;
   rate: number;
-  pendingOsr: number;
+  pendingBnty: number;
   storageCap: number;
 }
 
@@ -442,7 +442,7 @@ export function settleUser(wallet: string, create = true): {
       row.accrued = accrued;
       row.accrued_updated_at = now;
     }
-    return { row, comps, gp, rate, pendingOsr: accrued, storageCap };
+    return { row, comps, gp, rate, pendingBnty: accrued, storageCap };
   });
 
   // Crates drop as a by-product of mining, so they are rolled here rather than
@@ -524,7 +524,7 @@ export function crateOdds(user: UserRow | null) {
   const total = Object.values(weights).reduce((a, b) => a + b, 0);
   return {
     level,
-    crateCost: crateCostOsr(getOsrUsdPrice().usdPerOsr),
+    crateCost: crateCostBnty(getOsrUsdPrice().usdPerBnty),
     odds: RARITIES.map((rarity) => ({ rarity, chance: weights[rarity] / total })),
     guarantees: {
       legendaryPlus: PITY.legendary.hard,
@@ -577,7 +577,7 @@ export function openCrate(
       `SELECT id, crate_type, opened_at, listing_id FROM crates WHERE id = ? AND wallet = ?`
     )
     .get(crateId, wallet) as
-    | { id: number; crate_type: 'rig_crate' | 'shaft_crate'; opened_at: number | null; listing_id: number | null }
+    | { id: number; crate_type: 'equity_allocation' | 'treasury_allocation'; opened_at: number | null; listing_id: number | null }
     | undefined;
   if (!crateRow) throw new GameError('allocation not found in your inventory', 404);
   if (crateRow.opened_at != null) throw new GameError('that allocation has already been opened', 400);
@@ -586,12 +586,12 @@ export function openCrate(
   }
   const crateType = crateRow.crate_type;
 
-  const cost = crateCostOsr(getOsrUsdPrice().usdPerOsr);
+  const cost = crateCostBnty(getOsrUsdPrice().usdPerBnty);
   const debit = offChainDebit(user, cost, opts, (have) =>
     `Not enough BNTY to open that allocation: need ${cost.toLocaleString()} BNTY (you have ${have}). Route rewards or earn more BNTY first.`
   );
 
-  const family: NodeFamily = crateType === 'rig_crate' ? 'oil' : 'mine';
+  const family: NodeFamily = crateType === 'equity_allocation' ? 'oil' : 'mine';
   const slots = NODE_SLOTS[family];
   const slot = opts?.forceSlot && slots.includes(opts.forceSlot)
     ? opts.forceSlot
@@ -612,8 +612,8 @@ export function openCrate(
   const now = Date.now();
   const today = dayIndex(now);
   const tier = RARITIES.indexOf(rarity);
-  const rigIncrement = crateType === 'rig_crate' ? 1 : 0;
-  const shaftIncrement = crateType === 'shaft_crate' ? 1 : 0;
+  const rigIncrement = crateType === 'equity_allocation' ? 1 : 0;
+  const shaftIncrement = crateType === 'treasury_allocation' ? 1 : 0;
   const charged = db.prepare(
     `UPDATE users SET
        osr_balance = osr_balance - ?,
@@ -711,12 +711,12 @@ export function mintNode(wallet: string, familyKey: string, opts?: SpendOpts) {
    * see FRAMES_FROM_LEVEL in lib/capital — which is where the wood ladder is
    * both required and reachable.
    */
-  const debit = offChainDebit(user, fam.burnCostOsr, opts, (have) =>
-    `Not enough BNTY: need ${fam.burnCostOsr.toLocaleString()} BNTY (you have ${have}). Route rewards or open allocations first.`
+  const debit = offChainDebit(user, fam.burnCostBnty, opts, (have) =>
+    `Not enough BNTY: need ${fam.burnCostBnty.toLocaleString()} BNTY (you have ${have}). Route rewards or open allocations first.`
   );
 
-  const burn = (fam.burnCostOsr * fam.burnShareBps) / 10000;
-  const treasury = (fam.burnCostOsr * fam.treasuryShareBps) / 10000;
+  const burn = (fam.burnCostBnty * fam.burnShareBps) / 10000;
+  const treasury = (fam.burnCostBnty * fam.treasuryShareBps) / 10000;
   const now = Date.now();
   requireDebited(
     db
@@ -727,7 +727,7 @@ export function mintNode(wallet: string, familyKey: string, opts?: SpendOpts) {
       .run(debit, now, wallet, debit),
     'Not enough BNTY to open that desk.'
   );
-  paySplits(wallet, 'mint_node', fam.burnCostOsr, { burn, treasury }, fam.mintFeeEth, {
+  paySplits(wallet, 'mint_node', fam.burnCostBnty, { burn, treasury }, fam.mintFeeEth, {
     familyKey,
   });
   const res = db
@@ -783,7 +783,7 @@ export function claimRewards(
   }> = [];
 
   for (const n of targets) {
-    const gross = n.pendingOsr;
+    const gross = n.pendingBnty;
     if (gross <= 0) continue;
     const isCompound = mode === 'compound' && n.row.family === 'mine';
     if (mode === 'compound' && n.row.family !== 'mine') continue;
@@ -794,7 +794,7 @@ export function claimRewards(
     db.prepare(
       'UPDATE nodes SET accrued = 0, accrued_updated_at = ?, last_claim_at = ? WHERE id = ?'
     ).run(now, now, n.row.id);
-    // A settled claim already moved real GPU out of the vault into the
+    // A settled claim already moved real BNTY out of the vault into the
     // operator's wallet, so crediting the mirrored balance too would pay twice.
     // This holds for compound mode as well: once settlement is live, compounding
     // is a claim at the lower reinvest fee that still lands real tokens on-chain,
@@ -831,21 +831,21 @@ export function compoundInfo(wallet: string, create = true) {
     maxNodes: COMPOUND_LEVELS[Math.min(level, MAX_COMPOUND_LEVEL)].maxNodes,
     shaftBonusSlots: getShaftBonusSlots(level),
     cratesPerDay: COMPOUND_LEVELS[Math.min(level, MAX_COMPOUND_LEVEL)].cratesPerDay,
-    crateCost: crateCostOsr(getOsrUsdPrice().usdPerOsr),
+    crateCost: crateCostBnty(getOsrUsdPrice().usdPerBnty),
     cooldownRemainingMs,
     nextUpgradeCost:
       level >= MAX_COMPOUND_LEVEL || !nextDef
         ? null
         : {
             targetLevel: next,
-            totalOsr: nextDef.osrUpgradeCost,
+            totalBnty: nextDef.bntyUpgradeCost,
             feeEth: COMPOUND_FEE_ETH,
-            burnOsr: (nextDef.osrUpgradeCost * SPLIT_BURN_BPS) / 10000,
-            reserveOsr: (nextDef.osrUpgradeCost * SPLIT_RESERVE_BPS) / 10000,
-            treasuryOsr:
-              nextDef.osrUpgradeCost -
-              (nextDef.osrUpgradeCost * SPLIT_BURN_BPS) / 10000 -
-              (nextDef.osrUpgradeCost * SPLIT_RESERVE_BPS) / 10000,
+            burnBnty: (nextDef.bntyUpgradeCost * SPLIT_BURN_BPS) / 10000,
+            reserveBnty: (nextDef.bntyUpgradeCost * SPLIT_RESERVE_BPS) / 10000,
+            treasuryBnty:
+              nextDef.bntyUpgradeCost -
+              (nextDef.bntyUpgradeCost * SPLIT_BURN_BPS) / 10000 -
+              (nextDef.bntyUpgradeCost * SPLIT_RESERVE_BPS) / 10000,
           },
   };
 }
@@ -862,7 +862,7 @@ export function upgradeCompound(
   if (!info.nextUpgradeCost) throw new GameError('already at max portfolio level');
   if (!expedite && info.cooldownRemainingMs > 0)
     throw new GameError('Portfolio upgrade is cooling down — expedite for 0.005 ETH or wait.');
-  const { totalOsr, burnOsr, reserveOsr, treasuryOsr, targetLevel } = info.nextUpgradeCost;
+  const { totalBnty, burnBnty, reserveBnty, treasuryBnty, targetLevel } = info.nextUpgradeCost;
   // The caller priced a specific level. Re-deriving "whatever is next" here
   // instead would let several quotes taken at one level be settled in sequence,
   // each granting the next level for the price of the first: L1 costs 1,000, so
@@ -870,8 +870,8 @@ export function upgradeCompound(
   if (expectTargetLevel != null && expectTargetLevel !== targetLevel) {
     throw new GameError('portfolio level moved since the quote — request a fresh one', 409);
   }
-  const debit = offChainDebit(user, totalOsr, opts, (have) =>
-    `Not enough BNTY for portfolio upgrade: need ${totalOsr.toLocaleString()} BNTY (you have ${have}).`
+  const debit = offChainDebit(user, totalBnty, opts, (have) =>
+    `Not enough BNTY for portfolio upgrade: need ${totalBnty.toLocaleString()} BNTY (you have ${have}).`
   );
 
   const now = Date.now();
@@ -887,8 +887,8 @@ export function upgradeCompound(
   paySplits(
     wallet,
     expedite ? 'compound_expedite' : 'compound_upgrade',
-    totalOsr,
-    { burn: burnOsr, reserve: reserveOsr, treasury: treasuryOsr },
+    totalBnty,
+    { burn: burnBnty, reserve: reserveBnty, treasury: treasuryBnty },
     COMPOUND_FEE_ETH + (expedite ? EXPEDITE_FEE_ETH : 0),
     { targetLevel }
   );
@@ -1002,7 +1002,7 @@ export function upgradeNode(
   if (!node) throw new GameError('Desk not found', 404);
   // Upgrade cost climbs with level, and quotes are free and unlimited, so ten
   // taken while the node sits at L1 must not settle in sequence to reach L11 at
-  // L1's price — 2,500 GPU against a true cost near 45,000.
+  // L1's price — 2,500 BNTY against a true cost near 45,000.
   if (expectFromLevel != null && expectFromLevel !== node.row.level) {
     throw new GameError('desk level moved since the quote — request a fresh one', 409);
   }
@@ -1069,10 +1069,10 @@ export function userOperation(wallet: string) {
     networkGrowPower: networkGp,
     joinedAtMs: user.welcome_started_at,
     welcomeBoostFactor: boost,
-    osrBalance: user.osr_balance,
+    bntyBalance: user.osr_balance,
     totalProduced: totals.t,
     totals: { BNTY: totals.t },
-    pending: { BNTY: nodes.reduce((s, n) => s + n.pendingOsr, 0) },
+    pending: { BNTY: nodes.reduce((s, n) => s + n.pendingBnty, 0) },
     claimCooldownRemainingMs,
     crateCooldown: {
       rigCratesRemaining: allowance.rigCratesRemaining,
@@ -1094,7 +1094,7 @@ export function userOperation(wallet: string) {
       layoutSeed: n.row.id * 7919 + i,
       components: n.comps.map((c) => ({ id: c.id, slot: c.slot, rarity: c.rarity, durability: 1, multiplier: RARITY_MULT[c.rarity] ?? 1 })),
       componentMultiplier: componentMultiplier(n.comps),
-      pendingOsr: n.pendingOsr,
+      pendingBnty: n.pendingBnty,
       storageCap: n.storageCap,
       nextLevelCost: nodeUpgradeCost(n.row.level),
     })),
@@ -1139,7 +1139,7 @@ export function protocolOverview() {
     totalCreatorRewardsProcessed: counters.solRevenue,
     // What is left in the rewards pool, not the whole supply: emission draws
     // from the reserve, and the reserve split on in-game spends tops it back up.
-    osrReserveBalance: reserve,
+    bntyReserveBalance: reserve,
     treasury: counters.treasury,
     genesisMs: g,
     halving,
@@ -1160,7 +1160,7 @@ export function protocolOverview() {
       halving.currentRatePerSec > 0
         ? reserve / (halving.currentRatePerSec * 86_400)
         : Number.POSITIVE_INFINITY,
-    /** GPU locked in open capacity contracts, and the interest promised on it. */
+    /** BNTY locked in open capacity contracts, and the interest promised on it. */
     contracts: {
       open: stakeStats.c,
       lockedPrincipal: stakeStats.principal,

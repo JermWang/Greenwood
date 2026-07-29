@@ -13,7 +13,7 @@ export const SLOT_GLYPHS: Record<string, string> = {
   pump_jack: '◫',
   pipeline: '⌬',
   flare_stack: 'ϟ',
-  drill_bit: '◉',
+  instrument: '◉',
   ore_cart: '◇',
   rail_track: '⊞',
   elevator: '≈',

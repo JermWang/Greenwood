@@ -8,14 +8,14 @@
 
 import { useCallback, useState } from 'react';
 import { Copy, Check } from '@phosphor-icons/react';
-import { CHAIN, OSR_TOKEN_ADDRESS, isConfiguredAddress } from '@/lib/config';
+import { CHAIN, BNTY_TOKEN_ADDRESS, isConfiguredAddress } from '@/lib/config';
 
 export default function CopyContract() {
   const [copied, setCopied] = useState(false);
 
   const copy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(OSR_TOKEN_ADDRESS);
+      await navigator.clipboard.writeText(BNTY_TOKEN_ADDRESS);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -25,22 +25,22 @@ export default function CopyContract() {
     }
   }, []);
 
-  if (!isConfiguredAddress(OSR_TOKEN_ADDRESS)) return null;
+  if (!isConfiguredAddress(BNTY_TOKEN_ADDRESS)) return null;
   // The token can be live for settlement while the address is deliberately kept
   // off the site — a soft launch where the CA is announced separately. Setting
   // NEXT_PUBLIC_OSR_TOKEN turns settlement on; this button stays hidden until
   // NEXT_PUBLIC_SHOW_CA is also set, so the two can be flipped independently.
   if (process.env.NEXT_PUBLIC_SHOW_CA !== '1') return null;
 
-  const short = `${OSR_TOKEN_ADDRESS.slice(0, 6)}…${OSR_TOKEN_ADDRESS.slice(-4)}`;
+  const short = `${BNTY_TOKEN_ADDRESS.slice(0, 6)}…${BNTY_TOKEN_ADDRESS.slice(-4)}`;
 
   return (
     <button
       type="button"
       onClick={copy}
       title={`Copy the BNTY contract address on ${CHAIN.name}`}
-      aria-label={`Copy BNTY contract address ${OSR_TOKEN_ADDRESS}`}
-      className="gpu-topbar-ca glass-control pointer-events-auto flex items-center gap-2 rounded-full border-amber-400/30 px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em] text-amber-100/80 transition hover:border-amber-400/60 hover:text-amber-200"
+      aria-label={`Copy BNTY contract address ${BNTY_TOKEN_ADDRESS}`}
+      className="gw-topbar-ca glass-control pointer-events-auto flex items-center gap-2 rounded-full border-amber-400/30 px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em] text-amber-100/80 transition hover:border-amber-400/60 hover:text-amber-200"
     >
       <span className="text-amber-100/55">CA</span>
       {/* The truncated address is shown so it can be eyeballed against a

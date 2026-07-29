@@ -8,7 +8,7 @@ import { splitSale, transferSoldItem } from '@/lib/market';
 import {
   SETTLEMENT_CONFIGURED,
   encodeDetail,
-  payoutOsr,
+  payoutBnty,
   quoteSpend,
   recordPayout,
   settleSpend,
@@ -83,9 +83,9 @@ export async function POST(request: Request) {
 
       let payoutHash: string | null = null;
       try {
-        const payout = await payoutOsr(listing.seller, toSeller);
+        const payout = await payoutBnty(listing.seller, toSeller);
         payoutHash = payout.hash;
-        recordPayout(listing.seller, payout.sentOsr, payout.hash, { listingId: listing.id });
+        recordPayout(listing.seller, payout.sentBnty, payout.hash, { listingId: listing.id });
       } catch (payoutError) {
         // Null, not a placeholder string: the unique index on tx_hash is
         // partial, so a literal would insert once then collide on every later
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
       // Charge before handing over the item, and make the charge itself enforce
       // the balance. The check above reads a row fetched earlier, so two
       // purchases in flight at once can both pass it and both spend the same
-      // GPU; the condition on the UPDATE is what actually prevents that, since
+      // BNTY; the condition on the UPDATE is what actually prevents that, since
       // the schema has no CHECK keeping the balance non-negative.
       const charged = db
         .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
@@ -175,7 +175,7 @@ export async function POST(request: Request) {
     const payment = await quoteSpend(wallet, {
       action: 'MarketBuy',
       detail: encodeDetail(String(listingId)),
-      osrAmount: listing.price_osr,
+      bntyAmount: listing.price_osr,
     });
     return NextResponse.json({ settled: false, payment, fee, toSeller });
   } catch (e) {

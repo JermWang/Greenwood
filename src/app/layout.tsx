@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   applicationName: 'Greenwood',
   keywords: ['Greenwood', 'BNTY', 'Robinhood Chain', 'idle game', 'yield', 'RWA', 'DeFi'],
-  icons: { icon: '/gpu-mark.svg', apple: '/gpu-mark.svg' },
+  icons: { icon: '/gw-mark.svg', apple: '/gw-mark.svg' },
   openGraph: {
     type: 'website',
     url: SITE_URL,

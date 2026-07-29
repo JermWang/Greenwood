@@ -31,7 +31,7 @@ const KINDS: Array<{ key: MarketItemKind | 'all'; label: string }> = [
   { key: 'cosmetic', label: 'Wardrobe' },
 ];
 
-const fmtOsr = (n: number) => Math.round(n).toLocaleString();
+const fmtBnty = (n: number) => Math.round(n).toLocaleString();
 
 export default function MarketPage() {
   const { wallet, op, refresh } = useOperation();
@@ -118,7 +118,7 @@ export default function MarketPage() {
     >
       <div className="exchange-layout">
         <section className="exchange-hero">
-          <div><span className="fab-scene-kicker">FUND-TO-FUND / LIVE BOOK</span><h2>Route assets.<br /><em>Reprice yield.</em></h2><p>Every order is backed by a real portfolio asset: an instrument, a sealed allocation, or a complete desk.</p></div>
+          <div><span className="gw-scene-kicker">FUND-TO-FUND / LIVE BOOK</span><h2>Route assets.<br /><em>Reprice yield.</em></h2><p>Every order is backed by a real portfolio asset: an instrument, a sealed allocation, or a complete desk.</p></div>
           <div className="exchange-hero-stats"><span><small>OPEN LOTS</small><strong>{listings?.length ?? '—'}</strong></span><span><small>SETTLED</small><strong>{sales.length}</strong></span><span><small>FEE</small><strong>{(feeBps / 100).toFixed(2)}%</strong></span></div>
         </section>
         <div className="exchange-modebar">
@@ -234,7 +234,7 @@ export default function MarketPage() {
                             {s.item_kind}
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-white">
-                            {fmtOsr(s.sold_price_osr)} BNTY
+                            {fmtBnty(s.sold_price_osr)} BNTY
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-[11px] text-steel-500">
                             {new Date(s.sold_at).toLocaleDateString()}
@@ -277,12 +277,12 @@ export default function MarketPage() {
               <StatCard label="Total Nodes" value={String(overview.totalNodes)} />
               <StatCard label="Equity Desks" value={String(overview.totalOilRigs)} />
               <StatCard label="Treasury Desks" value={String(overview.totalMiningShafts)} />
-              <StatCard label="Total BNTY Burned" value={fmtOsr(overview.totalOsrBurned)} />
+              <StatCard label="Total BNTY Burned" value={fmtBnty(overview.totalOsrBurned)} />
               <StatCard
                 label="Protocol ETH Revenue"
                 value={`${overview.totalCreatorRewardsProcessed.toFixed(4)} ETH`}
               />
-              <StatCard label="BNTY Reserve" value={fmtOsr(overview.osrReserveBalance)} />
+              <StatCard label="BNTY Reserve" value={fmtBnty(overview.bntyReserveBalance)} />
             </div>
           </section>
         )}
@@ -312,7 +312,7 @@ function ListingCard({
       : rarity
         ? rarityHex(rarity)
         : '#f5a623';
-  const net = listing.priceOsr - Math.floor((listing.priceOsr * feeBps) / 10_000);
+  const net = listing.priceBnty - Math.floor((listing.priceBnty * feeBps) / 10_000);
 
   return (
     <article className="exchange-lot" style={{ '--lot-accent': accent } as CSSProperties}>
@@ -340,9 +340,9 @@ function ListingCard({
 
       <div className="mt-auto flex items-baseline justify-between">
         <span className="font-mono text-sm font-bold text-amber-400">
-          {fmtOsr(listing.priceOsr)} <small>BNTY</small>
+          {fmtBnty(listing.priceBnty)} <small>BNTY</small>
         </span>
-        <span className="font-mono text-[10px] text-steel-500">seller nets {fmtOsr(net)}</span>
+        <span className="font-mono text-[10px] text-steel-500">seller nets {fmtBnty(net)}</span>
       </div>
       <button
         className={action === 'buy' ? 'btn-primary text-xs' : 'btn-secondary text-xs'}
@@ -361,7 +361,7 @@ function ListingCard({
 function title(l: MarketListing): string {
   const item = (l.item ?? {}) as Record<string, string | number>;
   if (l.itemKind === 'crate') {
-    return item.crate_type === 'shaft_crate' ? 'Treasury Desk Allocation' : 'Equity Desk Allocation';
+    return item.crate_type === 'treasury_allocation' ? 'Treasury Desk Allocation' : 'Equity Desk Allocation';
   }
   if (l.itemKind === 'component') return SLOT_LABELS[String(item.slot)] ?? String(item.slot);
   if (l.itemKind === 'cosmetic') return String(item.name ?? item.cosmetic_key ?? 'Cosmetic');
@@ -392,7 +392,7 @@ function SellPanel({
   onList,
 }: {
   wallet: string | null;
-  crates: Array<{ id: number; crateType: 'rig_crate' | 'shaft_crate'; foundAt: number }>;
+  crates: Array<{ id: number; crateType: 'equity_allocation' | 'treasury_allocation'; foundAt: number }>;
   busy: boolean;
   feeBps: number;
   onList: (kind: MarketItemKind, itemId: number, price: number) => Promise<void>;
@@ -453,7 +453,7 @@ function SellPanel({
               >
                 <CrateThumb size={36} rarity="legendary" animate={false} />
                 <span className="text-[11px] text-steel-300">
-                  {c.crateType === 'rig_crate' ? 'Equity Desk Allocation' : 'Treasury Desk Allocation'}
+                  {c.crateType === 'equity_allocation' ? 'Equity Desk Allocation' : 'Treasury Desk Allocation'}
                 </span>
               </button>
             ))}
@@ -549,7 +549,7 @@ function SellPanel({
           {valid && (
             <>
               {' '}
-              You would receive <span className="font-mono text-amber-400">{fmtOsr(net)} BNTY</span>.
+              You would receive <span className="font-mono text-amber-400">{fmtBnty(net)} BNTY</span>.
             </>
           )}
         </p>

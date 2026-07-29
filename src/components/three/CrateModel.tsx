@@ -60,7 +60,7 @@ export default function CrateModel({
   const colour = useMemo(() => new THREE.Color(rarityHex(rarity)), [rarity]);
 
   // Materials are memoised per rarity: the accent-carrying ones hold the
-  // emissive colour, and rebuilding them every frame would leak GPU resources.
+  // emissive colour, and rebuilding them every frame would leak BNTY resources.
   const mats = useMemo(() => {
     const shell = new THREE.MeshPhysicalMaterial({ color: 0xeff3f7, roughness: 0.44, clearcoat: 0.22, clearcoatRoughness: 0.5 });
     const plinth = new THREE.MeshStandardMaterial({ color: 0x202936, metalness: 0.52, roughness: 0.36 });

@@ -1,5 +1,5 @@
 // Capacity contract coverage: the interest math, the reserve solvency rule that
-// stops the vault promising GPU it does not hold, and the two ways a contract
+// stops the vault promising BNTY it does not hold, and the two ways a contract
 // can end.
 //
 // Each run gets its own SQLite file via OSR_DATA_DIR so tests never touch the
@@ -9,7 +9,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'gpu-stake-test-'));
+const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-stake-test-'));
 process.env.OSR_DATA_DIR = DATA_DIR;
 delete process.env.VERCEL;
 

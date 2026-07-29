@@ -29,7 +29,7 @@ const WALLET = `0x${'ab'.repeat(20)}`;
 const TX = `0x${'cd'.repeat(32)}`;
 
 /** Insert a priced-but-unpaid settlement row, the state after a quote. */
-function issueRow(nonce: string, action: string, osrAmount = '250') {
+function issueRow(nonce: string, action: string, bntyAmount = '250') {
   getDb()
     .prepare(
       `INSERT INTO settlements
@@ -42,7 +42,7 @@ function issueRow(nonce: string, action: string, osrAmount = '250') {
       WALLET,
       action,
       '0x00',
-      osrAmount,
+      bntyAmount,
       Math.floor(Date.now() / 1000) + 900,
       Date.now()
     );
@@ -114,19 +114,19 @@ describe('non-payable settlements', () => {
   // RPC calls and these tests need no chain.
   test('quoteSpend refuses a zero amount', async () => {
     await expect(
-      quoteSpend(WALLET, { action: 'ExpediteCompound', detail: '0x00', osrAmount: 0 })
+      quoteSpend(WALLET, { action: 'ExpediteCompound', detail: '0x00', bntyAmount: 0 })
     ).rejects.toMatchObject({ status: 400 });
   });
 
   test('quoteSpend refuses a negative amount', async () => {
     await expect(
-      quoteSpend(WALLET, { action: 'MintNode', detail: '0x00', osrAmount: -5 })
+      quoteSpend(WALLET, { action: 'MintNode', detail: '0x00', bntyAmount: -5 })
     ).rejects.toMatchObject({ status: 400 });
   });
 
   test('quoteSpend refuses a non-finite amount', async () => {
     await expect(
-      quoteSpend(WALLET, { action: 'MintNode', detail: '0x00', osrAmount: Number.NaN })
+      quoteSpend(WALLET, { action: 'MintNode', detail: '0x00', bntyAmount: Number.NaN })
     ).rejects.toMatchObject({ status: 400 });
   });
 

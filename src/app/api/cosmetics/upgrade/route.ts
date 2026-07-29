@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       if (level !== p.fromLevel) {
         throw new GameError('That cosmetic changed level — request a fresh quote', 409);
       }
-      return { osrAmount: cosmeticUpgradeCost(cosmeticDef(p.key).bnty, level) };
+      return { bntyAmount: cosmeticUpgradeCost(cosmeticDef(p.key).bnty, level) };
     },
     apply: (wallet, p, opts) => ({
       ...upgradeCosmetic(wallet, p.key, opts, p.fromLevel),
