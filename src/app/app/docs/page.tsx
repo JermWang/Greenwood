@@ -413,66 +413,56 @@ export default function DocsPage() {
             displaced instrument falls back to your locker.
           </p>
 
-          {/* Gallery */}
+          {/*
+            This was a 7 x 4 table per family — fifty-six glowing tiles, the same
+            four glyphs repeated in seven colours, inside the previous project's
+            spec-sheet grid. All of that said two things: rarity is a multiplier
+            ramp, and each family has four sockets. Neither needs fifty-six
+            tiles, and the repetition buried the ramp it was supposed to show.
+
+            The ramp is now the same chip the desk grades use, so a reader who
+            has already met that pattern one section up reads this one without
+            being taught anything. The glyph appears once per socket instead of
+            seven times.
+          */}
           <div>
-            <p className="stat-label mb-3">Every slot, every rarity</p>
-            <div className="space-y-6">
-              {(
-                [
-                  { family: 'oil' as const, title: 'Equity Desk slots', accent: '#ffb347' },
-                  { family: 'mine' as const, title: 'Treasury Desk slots', accent: '#c8e0f0' },
-                ] as const
-              ).map(({ family, title, accent }) => (
-                <div key={family} className="panel overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-ink-600">
-                        <th
-                          className="whitespace-nowrap px-3 py-3 font-mono text-[11px] font-bold uppercase tracking-widest"
-                          style={{ color: accent }}
-                        >
-                          {title}
-                        </th>
-                        {RARITIES.map((r) => (
-                          <th key={r} className="px-2 py-3 text-center">
-                            <span
-                              className="block font-mono text-[10px] font-bold uppercase tracking-wider"
-                              style={{ color: rarityHex(r) }}
-                            >
-                              {rarityLabel(r)}
-                            </span>
-                            <span className="block font-mono text-[9px] text-steel-500">
-                              {RARITY_MULT[r].toFixed(2)}×
-                            </span>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-ink-600/60">
-                      {NODE_SLOTS[family].map((slot) => (
-                        <tr key={slot}>
-                          <td className="whitespace-nowrap px-3 py-2 text-xs text-steel-300">
-                            {SLOT_LABELS[slot]}
-                          </td>
-                          {RARITIES.map((r) => (
-                            <td key={r} className="px-2 py-2">
-                              <div className="mx-auto flex h-16 w-16 items-center justify-center">
-                                <ComponentTile slot={slot} rarity={r} size={56} />
-                              </div>
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            <p className="stat-label mb-3">Rarity multipliers</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+              {RARITIES.map((r) => (
+                <div key={r} className="gw-grade" style={{ ['--grade' as string]: rarityHex(r) }}>
+                  <b>{RARITY_MULT[r].toFixed(2)}×</b>
+                  <small>{rarityLabel(r)}</small>
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-xs text-steel-500">
-              Each tile shows that slot at that rarity. The live desk preview above shows the model
-              these install into.
-            </p>
           </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {(
+              [
+                { family: 'oil' as const, title: 'Equity Desk sockets' },
+                { family: 'mine' as const, title: 'Treasury Desk sockets' },
+              ] as const
+            ).map(({ family, title }) => (
+              <div key={family} className="gw-doc-card">
+                <p className="gw-doc-heading mb-3">{title}</p>
+                <ul className="gw-slot-list">
+                  {NODE_SLOTS[family].map((slot) => (
+                    <li key={slot}>
+                      {/* One representative rarity. The glyph identifies the
+                          socket; the colour is what the ramp above is for. */}
+                      <ComponentTile slot={slot} rarity="rare" size={34} />
+                      <span>{SLOT_LABELS[slot]}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-steel-500">
+            An instrument only fits its own socket, and only on its own family of desk. The live
+            preview above shows the desk they install into.
+          </p>
         </Section>
 
         {/* 6. Earning & Claiming */}

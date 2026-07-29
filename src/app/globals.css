@@ -1977,3 +1977,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .gw-region h4 {
   font: 700 13px var(--font-mono), monospace; letter-spacing: .04em; color: #eceae6;
 }
+
+/* Socket list — the glyph, then the name. Replaces the 7-wide tile matrix. */
+.gw-slot-list { display: flex; flex-direction: column; gap: 6px; }
+.gw-slot-list li {
+  display: flex; align-items: center; gap: 11px;
+  padding: 7px 9px;
+  border: 1px solid rgba(206, 204, 200, .09);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .015);
+}
+.gw-slot-list li > span {
+  font: 600 12.5px var(--font-sans), sans-serif;
+  color: rgba(226, 224, 220, .86);
+}
