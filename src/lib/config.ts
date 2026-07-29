@@ -4,14 +4,80 @@ export const APP_NAME = 'Greenwood — Real-World Yield';
 // Placeholder social handle — swap for the project's real X account.
 export const X_URL = 'https://x.com/greenwood_rwa';
 
+/**
+ * Which network this build talks to. Mainnet unless told otherwise.
+ *
+ * The id used to be a hardcoded 4663 while only the RPC came from the
+ * environment, which meant the app could not be pointed at anything but
+ * mainnet — and therefore that the entire settlement stack had no way of being
+ * exercised short of real money. That is a bad property for the one subsystem
+ * that moves tokens.
+ *
+ * The id and the RPC must move TOGETHER. Every wallet prompt goes through
+ * switchChain(CHAIN.id), so an id that disagrees with the RPC has an operator
+ * signing a transfer for one network while the server verifies it on another.
+ * Hence one variable, not two: NEXT_PUBLIC_RH_NETWORK picks a whole entry from
+ * the table below, and a network nobody named is mainnet.
+ *
+ * Robinhood Chain testnet is chain 46630 (0xb626).
+ */
+const NETWORKS = {
+  mainnet: {
+    id: 4663,
+    hexId: '0x1237',
+    name: 'Robinhood Chain',
+    defaultRpc: 'https://rpc.mainnet.chain.robinhood.com',
+    explorer: 'https://robinhoodchain.blockscout.com',
+  },
+  testnet: {
+    id: 46630,
+    hexId: '0xb626',
+    name: 'Robinhood Chain Testnet',
+    defaultRpc: 'https://rpc.testnet.chain.robinhood.com',
+    explorer: 'https://robinhoodchain.blockscout.com',
+  },
+} as const;
+
+export type NetworkName = keyof typeof NETWORKS;
+
+/**
+ * Unrecognised names fall back to mainnet rather than throwing.
+ *
+ * The failure this avoids is a typo in a production environment variable
+ * taking the whole app down on boot. Mainnet is also the only value that is
+ * never a surprise: a build that quietly ran on testnet would settle real
+ * spends against valueless tokens, which is far worse than one that ignored a
+ * misspelled override.
+ */
+const SELECTED: NetworkName =
+  (process.env.NEXT_PUBLIC_RH_NETWORK ?? '').trim().toLowerCase() === 'testnet' ? 'testnet' : 'mainnet';
+
+const NETWORK = NETWORKS[SELECTED];
+
 export const CHAIN = {
-  id: 4663,
-  hexId: '0x1237',
-  name: 'Robinhood Chain',
-  rpcUrl: process.env.NEXT_PUBLIC_RH_RPC ?? 'https://rpc.mainnet.chain.robinhood.com',
-  explorer: 'https://robinhoodchain.blockscout.com',
+  id: NETWORK.id,
+  hexId: NETWORK.hexId,
+  name: NETWORK.name,
+  /** An explicit RPC still wins, so a private or local node can be pointed at. */
+  rpcUrl: process.env.NEXT_PUBLIC_RH_RPC ?? NETWORK.defaultRpc,
+  explorer: NETWORK.explorer,
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
 } as const;
+
+/** True on anything that is not Robinhood Chain mainnet. */
+export const IS_MAINNET = SELECTED === 'mainnet';
+
+/**
+ * A network's raw entry, so the table can be checked rather than trusted.
+ *
+ * CHAIN only ever exposes the SELECTED network, which means a wrong id on the
+ * entry that is not selected would sit there undetected until the day someone
+ * switched to it — and the first symptom would be operators signing for the
+ * wrong chain. This is what lets a test read both.
+ */
+export function networkEntry(name: NetworkName) {
+  return NETWORKS[name];
+}
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
