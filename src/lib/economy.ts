@@ -115,7 +115,7 @@ export function getShaftBonusSlots(level: number): number {
 }
 
 /** Flat BNTY cost to open a mined crate. */
-export const CRATE_OPEN_OSR = Number(process.env.NEXT_PUBLIC_OSR_CRATE_OSR ?? 10_000);
+export const CRATE_OPEN_BNTY = Number(process.env.NEXT_PUBLIC_OSR_CRATE_OSR ?? 10_000);
 
 /**
  * Optional dollar peg for crate opening. Zero (the default) means the flat BNTY
@@ -139,7 +139,7 @@ export function crateCostBnty(bntyUsdPrice: number | null): number {
   if (CRATE_OPEN_USD > 0 && bntyUsdPrice && bntyUsdPrice > 0) {
     return Math.max(1, Math.round(CRATE_OPEN_USD / bntyUsdPrice));
   }
-  return CRATE_OPEN_OSR;
+  return CRATE_OPEN_BNTY;
 }
 
 /**
@@ -309,7 +309,7 @@ export const STAKE_TERMS: readonly StakeTerm[] = [
 ] as const;
 
 /** Below this a contract's interest is dust and the row costs more than it earns. */
-export const STAKE_MIN_OSR = 100;
+export const STAKE_MIN_BNTY = 100;
 
 /** Cap on simultaneously open contracts per operator, so positions stay legible. */
 export const STAKE_MAX_OPEN = 8;

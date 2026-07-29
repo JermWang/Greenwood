@@ -20,7 +20,7 @@ import {
   TOTAL_SUPPLY,
   STAKE_EARLY_EXIT_PENALTY_BPS,
   STAKE_MAX_OPEN,
-  STAKE_MIN_OSR,
+  STAKE_MIN_BNTY,
   STAKE_TERMS,
   stakeTermInterest,
   type StakeTerm,
@@ -186,7 +186,7 @@ export function stakeTerms() {
         Math.floor(available / ((term.aprBps / 10_000) * (term.days / 365)))
       ),
     })),
-    minPrincipal: STAKE_MIN_OSR,
+    minPrincipal: STAKE_MIN_BNTY,
     maxOpen: STAKE_MAX_OPEN,
     earlyExitPenaltyBps: STAKE_EARLY_EXIT_PENALTY_BPS,
     reserveBalance: reserveBalance(),
@@ -210,8 +210,8 @@ export function openStake(
 ) {
   const term = findTerm(termDays);
   const principal = Math.floor(amountBnty);
-  if (!Number.isFinite(principal) || principal < STAKE_MIN_OSR) {
-    throw new GameError(`minimum Note is ${STAKE_MIN_OSR.toLocaleString()} BNTY`, 400);
+  if (!Number.isFinite(principal) || principal < STAKE_MIN_BNTY) {
+    throw new GameError(`minimum Note is ${STAKE_MIN_BNTY.toLocaleString()} BNTY`, 400);
   }
 
   const db = getDb();

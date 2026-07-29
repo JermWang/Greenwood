@@ -7,7 +7,7 @@ process.env.OSR_DATA_DIR = mkdtempSync(join(tmpdir(), 'osr-market-'));
 
 const { getDb } = await import('./db');
 const { setOsrUsdPrice } = await import('./price');
-const { crateCostBnty, CRATE_OPEN_OSR, CRATES_FOUND_PER_DAY, CRATE_WALLET_DAILY_CAP } =
+const { crateCostBnty, CRATE_OPEN_BNTY, CRATES_FOUND_PER_DAY, CRATE_WALLET_DAILY_CAP } =
   await import('./economy');
 const { rollCrateDrops, unopenedCrates, unseenCrates, markCratesSeen, networkCratesRemaining } =
   await import('./crates');
@@ -42,13 +42,13 @@ afterAll(() => vi.restoreAllMocks());
 
 describe('crate pricing', () => {
   it('charges the flat BNTY price', () => {
-    expect(crateCostBnty(0.001)).toBe(CRATE_OPEN_OSR);
+    expect(crateCostBnty(0.001)).toBe(CRATE_OPEN_BNTY);
   });
 
   it('still prices a crate when no token price is known', () => {
     // The flat price must never leave crates unopenable because a feed lapsed.
-    expect(crateCostBnty(null)).toBe(CRATE_OPEN_OSR);
-    expect(crateCostBnty(0)).toBe(CRATE_OPEN_OSR);
+    expect(crateCostBnty(null)).toBe(CRATE_OPEN_BNTY);
+    expect(crateCostBnty(0)).toBe(CRATE_OPEN_BNTY);
   });
 });
 

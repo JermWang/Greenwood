@@ -1,7 +1,8 @@
-// BNTY rarity system — 7 component tiers + 10 node aura levels.
-// Multipliers/colors match the original game spec (ORS MODELS/rarity_system.js).
-
-import { AURA_TIERS, auraLabel } from './aura';
+// BNTY instrument rarity — seven tiers, and the multiplier each one is worth.
+//
+// Desk GRADES are a separate idea and live in lib/aura: rarity is what an
+// instrument rolled, grade is how far a desk has been levelled. They were
+// tangled here because the previous game drew both as glows.
 
 export type Rarity =
   | 'common'
@@ -51,29 +52,20 @@ export const COMPONENT_RARITIES: Record<Rarity, RarityDef> = {
   divine:    { multiplier: 5.0,  tint: 0xffffff, emissive: 0xeeeeff, emitStrength: 2.5,  bloom: 1.2,  aura: 0xffffff, label: 'Divine' },
 };
 
-/** Renderer-only glow strength per aura level. Declared before AURA_LEVELS,
- *  which reads it at module init. */
-const AURA_BLOOM: Record<number, number> = {
-  1: 0.05, 2: 0.1, 3: 0.15, 4: 0.2, 5: 0.3, 6: 0.4, 7: 0.55, 8: 0.7, 9: 0.9, 10: 1.2,
-};
-
-/**
- * Level aura tiers, derived from the single table in ./aura so the ring under a
- * rig, the guide's aura legend, and the level chip cannot drift apart. Bloom is
- * this file's concern (it only means anything to the renderer); name and colour
- * are not restated here.
+/*
+ * AURA_LEVELS and its AURA_BLOOM table lived here and were dead.
+ *
+ * They existed for "the ring under a rig" — a glow the previous game drew in
+ * 3D under each machine, from a scene that has since been deleted. Nothing
+ * imported them. They survived the reskin because a per-level record of colours
+ * and bloom strengths looks like configuration somebody depends on, which is
+ * exactly how dead code outlives the thing it was written for.
+ *
+ * Grades now live entirely in lib/aura as five bands, and the only consumers
+ * are DOM chips. If a renderer ever wants a glow again it should read the band
+ * colour rather than a parallel table, since two tables are how the ring and
+ * the chip drift apart.
  */
-export const AURA_LEVELS: Record<number, { name: string; color: number; bloom: number }> =
-  Object.fromEntries(
-    Object.entries(AURA_TIERS).map(([level, tier]) => [
-      Number(level),
-      {
-        name: auraLabel(Number(level)),
-        color: Number.parseInt(tier.color.slice(1), 16),
-        bloom: AURA_BLOOM[Number(level)] ?? 0.05,
-      },
-    ])
-  );
 
 export type NodeFamily = 'oil' | 'mine';
 

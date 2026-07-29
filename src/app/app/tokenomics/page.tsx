@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import PageShell from '@/components/ui/PageShell';
 import { api, type ProtocolOverview } from '@/lib/api-client';
-import { AURA_TIERS } from '@/lib/aura';
+import { AURA_BANDS, auraRange } from '@/lib/aura';
 import {
   CLAIM_FEE_BPS,
   COMPOUND_FEE_ETH,
@@ -371,20 +371,20 @@ export default function TokenomicsPage() {
             visible at a glance in the 3D scene.
           </p>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {Object.entries(AURA_TIERS).map(([lvl, tier]) => (
-              <div key={lvl} className="panel flex flex-col items-center gap-1 p-3">
+            {AURA_BANDS.map((band) => (
+              <div key={band.label} className="panel flex flex-col items-center gap-1 p-3">
                 <span
                   className="font-mono text-lg font-bold"
-                  style={{ color: tier.color, textShadow: `0 0 12px ${tier.color}66` }}
+                  style={{ color: band.color, textShadow: `0 0 12px ${band.color}66` }}
                 >
-                  L{lvl}
+                  {auraRange(band)}
                 </span>
                 <span
                   className="h-2 w-full rounded-full"
-                  style={{ background: tier.color, boxShadow: `0 0 8px ${tier.color}88` }}
+                  style={{ background: band.color, boxShadow: `0 0 8px ${band.color}88` }}
                 />
                 <span className="font-mono text-[10px] uppercase tracking-widest text-steel-400">
-                  {tier.label}
+                  {band.label}
                 </span>
               </div>
             ))}

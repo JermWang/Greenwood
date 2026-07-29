@@ -18,11 +18,11 @@ import {
   HALVING_PERIOD_DAYS,
   HALVING_PERIOD_LABEL,
 } from '@/lib/economy';
-import { AURA_TIERS } from '@/lib/aura';
+import { AURA_BANDS, auraRange } from '@/lib/aura';
 import {
   COMPOUND_FEE_ETH,
   CRATE_FEE_ETH,
-  CRATE_OPEN_OSR,
+  CRATE_OPEN_BNTY,
   EXPEDITE_FEE_ETH,
   MINT_FEE_ETH,
   RARITY_MULT,
@@ -40,7 +40,7 @@ const CONTENTS: Array<{ href: string; label: string }> = [
   { href: '#overview', label: '1. What is Greenwood?' },
   { href: '#quickstart', label: '2. Quick start' },
   { href: '#nodes', label: '3. Desks: Equity vs Treasury' },
-  { href: '#levels', label: '4. Levels & Auras' },
+  { href: '#levels', label: '4. Desk Grades' },
   { href: '#components', label: '5. Instruments & Allocations' },
   { href: '#earning', label: '6. Earning & Claiming' },
   { href: '#compounding', label: '7. Portfolio Levels' },
@@ -283,13 +283,16 @@ export default function DocsPage() {
         </Section>
 
         {/* 4. Levels & Auras */}
-        <Section id="levels" title="4. Levels & Auras">
+        <Section id="levels" title="4. Desk Grades">
           <p>
-            Your desks&rsquo; visual level mirrors your wallet&rsquo;s{' '}
-            <strong className="text-white">Portfolio Level (L1 → L10)</strong>. Each level upgrades
-            the desk&rsquo;s <strong className="text-white">material era</strong> — rough steel
-            through reinforced and high-tech to a black-and-gold prestige finish — and grows its
-            size, making progress visible at a glance across the portfolio.
+            Every desk carries a <strong className="text-white">grade</strong> — a colour and a name
+            for how far you have taken it. There are five, they band together ranges of desk levels
+            rather than naming each one, and the top band is open-ended: a desk levelled past ten is
+            still Benchmark, however far past.
+          </p>
+          <p>
+            Grade is cosmetic. It is a fast read on a portfolio at a glance and nothing more — it
+            does not change what a desk earns.
           </p>
           <p>
             Yield itself comes from your instruments, not the visual level:{' '}
@@ -299,33 +302,29 @@ export default function DocsPage() {
             — where GP (yield power) is the Formula D multiplier of your installed instruments.
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {Object.entries(AURA_TIERS).map(([lvl, tier]) => (
-              <div key={lvl} className="panel flex flex-col items-center gap-1 p-3">
+            {AURA_BANDS.map((band) => (
+              <div key={band.label} className="panel flex flex-col items-center gap-1 p-3">
                 <span
                   className="font-mono text-lg font-bold"
-                  style={{ color: tier.color, textShadow: `0 0 12px ${tier.color}66` }}
+                  style={{ color: band.color, textShadow: `0 0 12px ${band.color}66` }}
                 >
-                  L{lvl}
+                  {auraRange(band)}
                 </span>
                 <span
                   className="h-2 w-full rounded-full"
-                  style={{ background: tier.color, boxShadow: `0 0 8px ${tier.color}88` }}
+                  style={{ background: band.color, boxShadow: `0 0 8px ${band.color}88` }}
                 />
                 <span className="font-mono text-[10px] uppercase tracking-widest text-steel-400">
-                  {tier.label}
+                  {band.label}
                 </span>
               </div>
             ))}
           </div>
-          <p>
-            Higher levels also pump up the scene&rsquo;s bloom intensity — a max-level portfolio
-            looks visibly brighter than a fresh one.
-          </p>
           <InteractiveModelExplorer />
           <p className="text-xs text-steel-500">
-            Higher levels upgrade the desk&rsquo;s material era (rough steel → reinforced → high-tech
-            → black-and-gold prestige), grow its size, and light a powered deck ring at the
-            milestone levels. The per-instrument rarity glow layers on top.
+            Grade sits alongside instrument rarity, which is a separate scale: rarity is what an
+            instrument rolled when you opened it, grade is how far the desk holding it has been
+            levelled.
           </p>
         </Section>
 
@@ -334,7 +333,7 @@ export default function DocsPage() {
           <p>
             Each desk has <strong className="text-white">4 instrument slots</strong>. Instruments are
             earned by opening <strong className="text-white">Allocations</strong> —{' '}
-            <strong className="text-white">{CRATE_OPEN_OSR.toLocaleString()} $BNTY</strong> each (split
+            <strong className="text-white">{CRATE_OPEN_BNTY.toLocaleString()} $BNTY</strong> each (split
             burn / reserve / treasury), plus a flat{' '}
             {CRATE_FEE_ETH} ETH protocol fee. Your daily allocation limit scales with Portfolio Level — from 3/day
             at L1 up to 20/day at L10, per desk type. Every drop has a rarity tier that multiplies
@@ -554,7 +553,7 @@ export default function DocsPage() {
             />
             <FeeCard
               label="Allocation cost"
-              value={`${CRATE_OPEN_OSR.toLocaleString()} BNTY`}
+              value={`${CRATE_OPEN_BNTY.toLocaleString()} BNTY`}
               caption={`flat, per allocation · +${CRATE_FEE_ETH} ETH fee`}
             />
             <FeeCard

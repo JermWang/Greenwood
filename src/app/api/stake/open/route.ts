@@ -1,6 +1,6 @@
 import { handleSettlementRoute } from '@/lib/settle-route';
 import { GameError } from '@/lib/game';
-import { STAKE_MIN_OSR } from '@/lib/economy';
+import { STAKE_MIN_BNTY } from '@/lib/economy';
 import { findTerm, openStake } from '@/lib/stake';
 
 export const dynamic = 'force-dynamic';
@@ -27,8 +27,8 @@ export async function POST(request: Request) {
       const termDays = Number(body.termDays);
       // Throws for an unknown term, so a crafted body cannot invent its own rate.
       findTerm(termDays);
-      if (!Number.isFinite(amount) || amount < STAKE_MIN_OSR) {
-        throw new GameError(`minimum Note is ${STAKE_MIN_OSR.toLocaleString()} BNTY`, 400);
+      if (!Number.isFinite(amount) || amount < STAKE_MIN_BNTY) {
+        throw new GameError(`minimum Note is ${STAKE_MIN_BNTY.toLocaleString()} BNTY`, 400);
       }
       return { amount, termDays };
     },

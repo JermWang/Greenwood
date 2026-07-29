@@ -16,7 +16,7 @@ delete process.env.VERCEL;
 const { openStake, closeStake, stakePositions, stakeTerms, committedInterest } = await import('./stake');
 const { getOrCreateUser } = await import('./game');
 const { getDb, setProtocolValue } = await import('./db');
-const { STAKE_MIN_OSR, STAKE_MAX_OPEN, STAKE_TERMS, TOTAL_SUPPLY, stakeTermInterest } =
+const { STAKE_MIN_BNTY, STAKE_MAX_OPEN, STAKE_TERMS, TOTAL_SUPPLY, stakeTermInterest } =
   await import('./economy');
 
 const wallet = (n: number) => `0x${String(n).padStart(40, '0')}`;
@@ -76,7 +76,7 @@ describe('opening a contract', () => {
   test('refuses anything under the minimum', () => {
     const w = wallet(4);
     fund(w, 10_000);
-    expect(() => openStake(w, STAKE_MIN_OSR - 1, TERM.days)).toThrow(/minimum Note/);
+    expect(() => openStake(w, STAKE_MIN_BNTY - 1, TERM.days)).toThrow(/minimum Note/);
   });
 
   test('caps how many contracts one operator may hold open', () => {
