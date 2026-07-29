@@ -13,6 +13,7 @@
 import { NextResponse } from 'next/server';
 import { GameError, type SpendOpts } from './game';
 import { requireAuthenticatedWallet } from './api-util';
+import { maybeSnapshot } from './backup';
 import { requireNoActiveDeploy } from './deploy-guard';
 import {
   SETTLEMENT_CONFIGURED,
@@ -83,6 +84,10 @@ export async function handleSettlementRoute<P>(
       const result = await settleSpend(wallet, spec.action, nonce, txHash, (row) =>
         spec.apply(wallet, spec.decode(decodeDetail(row.detail)), { settledOnChain: true })
       );
+      // A paid-for spend just changed the ledger. Snapshots hang off real
+      // activity because there is no cron here and a timer in a lib is a
+      // different timer per route bundle. Never throws — see maybeSnapshot.
+      maybeSnapshot();
       return NextResponse.json({ settled: true, result });
     }
     if (nonce || txHash) {

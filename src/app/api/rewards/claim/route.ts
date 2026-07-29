@@ -9,6 +9,7 @@ import {
 } from '@/lib/settlement';
 import { CLAIM_FEE_BPS, COMPOUND_REINVEST_FEE_BPS } from '@/lib/economy';
 import { requireNoActiveDeploy } from '@/lib/deploy-guard';
+import { maybeSnapshot } from '@/lib/backup';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,6 +104,11 @@ export async function POST(request: Request) {
 
     // Record what actually left the treasury, not what was owed before gas.
     recordPayout(wallet, payout.sentBnty, payout.hash, result);
+    // Real tokens just left the treasury and the accrual that backed them is
+    // gone from the ledger. Snapshots hang off activity like this because there
+    // is no cron here and a timer in a lib is a different timer per route
+    // bundle. Never throws — a failed backup must not fail a paid-out claim.
+    maybeSnapshot();
     return NextResponse.json({
       settled: true,
       result,
