@@ -1,11 +1,12 @@
 'use client';
 
+// Client for the same-origin API. Auth is a wallet-session cookie (see lib/siwe)
+// attached automatically by the browser on same-origin requests, replacing the
+// former Privy bearer tokens. Historical comment below kept for context only.
 // Client for the same-origin API. Privy tokens are attached automatically when
 // managed wallet mode is configured, allowing the server to bind every write
 // to the authenticated wallet owner.
 
-import { getAccessToken, getIdentityToken } from '@privy-io/react-auth';
-import { PRIVY_CONFIGURED } from './config';
 import {
   submitPayment,
   type PaymentRequest,
@@ -474,51 +475,20 @@ export interface ActivityItem {
   createdAt: string;
 }
 
-/**
- * Read both Privy tokens, optionally waiting for them to appear.
- *
- * Privy issues the access and identity tokens asynchronously after sign-in, and
- * every authenticated route requires BOTH. A page mounting in that gap sends an
- * unauthenticated request and gets "Privy authentication required" — a hard
- * error for a session that is perfectly valid and a moment from being ready.
- *
- * `waitMs` is only spent on the retry path. Waiting on every call would make
- * each public read — landing stats, leaderboard, the market board — sit for
- * seconds waiting on tokens a signed-out visitor is never going to have.
- */
-async function privyTokens(waitMs = 0): Promise<[string | null, string | null]> {
-  const deadline = Date.now() + waitMs;
-  let access: string | null = null;
-  let identity: string | null = null;
-  for (;;) {
-    try {
-      [access, identity] = await Promise.all([getAccessToken(), getIdentityToken()]);
-    } catch {
-      // Privy not initialised yet; treat as "no tokens" and retry below.
-    }
-    if ((access && identity) || Date.now() >= deadline) return [access, identity];
-    await new Promise((r) => setTimeout(r, 150));
-  }
-}
-
-async function request<T>(path: string, opts?: RequestInit, isRetry = false): Promise<T> {
+async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   const controller = opts?.signal ? null : new AbortController();
   const timeout = controller ? window.setTimeout(() => controller.abort(), 15_000) : null;
   let res: Response;
   try {
-    let accessToken: string | null = null;
-    let identityToken: string | null = null;
-    if (PRIVY_CONFIGURED) {
-      // Fast path reads whatever is there; only the post-401 retry waits.
-      [accessToken, identityToken] = await privyTokens(isRetry ? 2_500 : 0);
-    }
+    // Auth is a session cookie now, not a bearer token. `credentials: same-origin`
+    // is the browser default for same-origin fetches, so the cookie rides along
+    // with no header plumbing — which is the whole reason SIWE is simpler than
+    // the Privy token dance this replaced.
     res = await fetch(`/api${path}`, {
       ...opts,
       signal: opts?.signal ?? controller?.signal,
       headers: {
         'Content-Type': 'application/json',
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        ...(identityToken ? { 'privy-id-token': identityToken } : {}),
         ...(opts?.headers ?? {}),
       },
       cache: 'no-store',
@@ -536,14 +506,6 @@ async function request<T>(path: string, opts?: RequestInit, isRetry = false): Pr
       if (body?.error) msg = body.error;
     } catch {
       /* keep default */
-    }
-    // Privy rotates its tokens, so an authenticated call can land in the gap
-    // while one is reissued. Retry once with freshly-read tokens before
-    // surfacing it: the alternative is telling a signed-in operator their
-    // sign-in failed, on a page that has no retry of its own.
-    if (res.status === 401 && !isRetry && PRIVY_CONFIGURED) {
-      await new Promise((r) => setTimeout(r, 400));
-      return request<T>(path, opts, true);
     }
     throw new Error(msg);
   }
@@ -692,11 +654,19 @@ export interface StakeCloseResult {
 }
 
 export const api = {
-  privySession: (wallet: string) =>
-    request<{ authenticated: boolean; userId: string; wallet: string; walletType: string }>(
-      '/auth/session',
-      { method: 'POST', body: JSON.stringify({ wallet }) }
-    ),
+  /** Who this browser is signed in as, from the session cookie. */
+  session: () => request<{ authenticated: boolean; wallet?: string }>('/auth/session'),
+  /** Step one of sign-in: a nonce for the wallet to sign. */
+  authNonce: (wallet: string) =>
+    request<{ nonce: string }>('/auth/nonce', { method: 'POST', body: JSON.stringify({ wallet }) }),
+  /** Step two: submit the signature and receive the session cookie. */
+  authVerify: (wallet: string, nonce: string, signature: string) =>
+    request<{ authenticated: boolean; wallet: string }>('/auth/verify', {
+      method: 'POST',
+      body: JSON.stringify({ wallet, nonce, signature }),
+    }),
+  /** End the session and clear the cookie. */
+  logout: () => request<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
   operation: (wallet: string) => request<UserOperation>(`/user/${wallet}/operation`),
   overview: () => request<ProtocolOverview>('/protocol/overview'),
   reserves: () =>
@@ -947,21 +917,10 @@ export const api = {
     const form = new FormData();
     form.set('wallet', wallet);
     form.set('file', file);
-    let accessToken: string | null = null;
-    let identityToken: string | null = null;
-    if (PRIVY_CONFIGURED) {
-      try {
-        [accessToken, identityToken] = await Promise.all([getAccessToken(), getIdentityToken()]);
-      } catch { /* server rejects if absent */ }
-    }
-    const res = await fetch('/api/profiles/avatar', {
-      method: 'POST',
-      body: form,
-      headers: {
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        ...(identityToken ? { 'privy-id-token': identityToken } : {}),
-      },
-    });
+    // Multipart, so it bypasses the JSON helper — but auth is the session cookie,
+    // which the browser attaches to a same-origin fetch automatically, so there
+    // are no headers to set beyond the multipart boundary the browser writes.
+    const res = await fetch('/api/profiles/avatar', { method: 'POST', body: form });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body?.error ?? `${res.status} ${res.statusText}`);
     return body.profile as GlobalProfile;

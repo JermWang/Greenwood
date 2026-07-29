@@ -26,3 +26,6 @@ Thumbs.db
 
 # compiled contract artifacts
 contracts/out/
+
+# Scratch image-gen workspace
+tmp/

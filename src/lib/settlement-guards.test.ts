@@ -9,6 +9,7 @@
 // the token, treasury and signer config once at load; requireSettlement() would
 // otherwise 503 and mask the guards under test.
 import { describe, test, expect, afterAll } from 'vitest';
+import { privateKeyToAccount } from 'viem/accounts';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -18,9 +19,16 @@ process.env.OSR_DATA_DIR = DATA_DIR;
 delete process.env.VERCEL;
 
 process.env.NEXT_PUBLIC_OSR_TOKEN = `0x${'11'.repeat(20)}`;
-process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET = `0x${'22'.repeat(20)}`;
-process.env.OSR_TREASURY_WALLET_ID = 'test-wallet-id';
-process.env.PRIVY_APP_SECRET = 'test-app-secret';
+// Settlement now signs with a local key, and SETTLEMENT_CONFIGURED requires the
+// key's address to equal the published treasury. The treasury address is
+// DERIVED from the key here rather than pasted alongside it — a hand-copied
+// pair is one typo away from a mismatch that disables settlement and masks
+// every guard under a 503, which is exactly what happened when this was first
+// written. A published test key with no value on any real network.
+process.env.OSR_TREASURY_PK = '0xac0974bec39a17e36ba4a6b4d238ff944bababceac72cf4bff02d1e46e6c9a51';
+process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET = privateKeyToAccount(
+  process.env.OSR_TREASURY_PK as `0x${string}`
+).address;
 
 const { settleSpend, quoteSpend } = await import('./settlement');
 const { getDb } = await import('./db');

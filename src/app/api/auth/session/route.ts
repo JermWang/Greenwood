@@ -1,21 +1,18 @@
-import type { NextRequest } from 'next/server';
-import { handle, requireWallet } from '@/lib/api-util';
-import { verifyPrivyWalletOwner } from '@/lib/privy-server';
-import { linkPrivyIdentity, touchGlobalProfile } from '@/lib/profiles';
+import { NextResponse } from 'next/server';
+import { sessionCookie, walletForSession } from '@/lib/siwe';
 
-export async function POST(request: NextRequest) {
-  return handle(async () => {
-    const body = await request.json();
-    const wallet = requireWallet(body.wallet);
-    const identity = await verifyPrivyWalletOwner(request, wallet);
-    await linkPrivyIdentity(identity);
-    const profile = await touchGlobalProfile(wallet);
-    return {
-      authenticated: true,
-      userId: identity.userId,
-      wallet: identity.wallet,
-      walletType: identity.walletClientType,
-      profile,
-    };
-  });
+export const dynamic = 'force-dynamic';
+
+/**
+ * Who, if anyone, this browser is signed in as.
+ *
+ * This used to be the Privy token-exchange endpoint; it is now a plain read of
+ * the wallet session, so a page loading with a live cookie can restore its
+ * signed-in state without prompting for another signature. Returns
+ * authenticated:false rather than a 401 — "not signed in" is a normal answer to
+ * this question, not an error.
+ */
+export async function GET(request: Request) {
+  const wallet = walletForSession(sessionCookie(request));
+  return NextResponse.json(wallet ? { authenticated: true, wallet } : { authenticated: false });
 }

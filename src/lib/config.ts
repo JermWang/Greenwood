@@ -107,6 +107,3 @@ export function isConfiguredAddress(value: string): value is `0x${string}` {
 export const TOKEN_LIVE =
   isConfiguredAddress(BNTY_TOKEN_ADDRESS) && isConfiguredAddress(BNTY_TREASURY_ADDRESS);
 
-export const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? '';
-export const PRIVY_CLIENT_ID = process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID ?? '';
-export const PRIVY_CONFIGURED = PRIVY_APP_ID.length > 0;

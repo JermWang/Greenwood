@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { GameError } from './game';
 import { DEV_WALLET } from './dev-mode';
 import { DEMO_COOKIE, isDemoWallet } from './demo';
-import { verifyPrivyWalletOwner } from './privy-server';
+import { requireSessionWallet } from './siwe';
 import { enforce, type LimitName } from './rate-limit';
 
 export function ok(data: unknown) {
@@ -34,11 +34,12 @@ export function requireWallet(w: unknown): string {
 /**
  * Resolve the caller's wallet and prove they own it.
  *
- * Verification is unconditional. Gating it on the Privy app id being present
- * would fail open: a deploy that lost that one variable would keep serving every
- * mutating route with no authentication at all, and the only symptom would be
- * that anyone could act as any wallet. verifyPrivyWalletOwner answers an
- * unconfigured server with a 503, which is the safe direction to fail.
+ * Ownership is proven by a wallet SESSION (see lib/siwe): the address signed a
+ * server-issued nonce, and the session cookie is the receipt. This replaced
+ * Privy — there is no third party to be configured, expire, or rate-limit us,
+ * so the whole class of "auth is down because a vendor variable is missing" is
+ * gone. requireSessionWallet throws 401 when there is no session, which is the
+ * safe direction to fail: no session, no write.
  */
 export async function requireAuthenticatedWallet(
   request: Request,
@@ -103,7 +104,7 @@ export async function requireAuthenticatedWallet(
     throw new GameError('This demo session has expired. Start a new one.', 401);
   }
 
-  await verifyPrivyWalletOwner(request, wallet);
+  requireSessionWallet(request, wallet);
   // After ownership is proven, so an unauthenticated flood cannot consume the
   // budget of the wallet it is pretending to be.
   enforce(wallet, limit);

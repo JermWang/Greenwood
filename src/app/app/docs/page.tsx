@@ -238,9 +238,9 @@ export default function DocsPage() {
               <Link href="/app" className="text-lime-300 hover:underline">
                 Trading Floor
               </Link>{' '}
-              and sign in with email or Google to create a Privy embedded EVM wallet. You can also
-              link MetaMask, Rabby, or Robinhood Wallet. Unauthenticated guest addresses are not
-              supported because they cannot securely authorize transactions.
+              connect MetaMask, Rabby, or Robinhood Wallet, and sign a free message to prove the
+              wallet is yours. The signature costs nothing and authorizes no transaction. Guest
+              addresses are not supported because they cannot securely authorize transactions.
             </Step>
             <Step n={2} title="Open your first desk">
               Tap <strong className="text-white">Deploy</strong>. Pick an Equity or Treasury Desk,

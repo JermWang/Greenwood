@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import './globals.css';
-import PrivyAppProvider from '@/components/providers/PrivyAppProvider';
 
 const displayFont = Space_Grotesk({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
 const monoFont = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
@@ -22,7 +21,7 @@ const monoFont = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', d
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
   (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null) ??
-  'https://greenwood.fun';
+  'https://playgreenwood.xyz';
 
 /**
  * The share copy, and the line it deliberately walks.
@@ -109,9 +108,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${displayFont.variable} ${monoFont.variable}`}>
-        <PrivyAppProvider>{children}</PrivyAppProvider>
-      </body>
+      <body className={`${displayFont.variable} ${monoFont.variable}`}>{children}</body>
     </html>
   );
 }

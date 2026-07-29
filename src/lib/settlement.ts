@@ -18,9 +18,11 @@
 // real token transfer proven by a mined Transfer event, and each tx hash can
 // back exactly one settlement.
 
-import { createPublicClient, http, decodeEventLog, parseAbi, encodeFunctionData, erc20Abi, type Hex } from 'viem';
+import { createPublicClient, createWalletClient, http, decodeEventLog, parseAbi, encodeFunctionData, erc20Abi, type Hex } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { getDb } from './db';
 import { GameError } from './game';
+import { requirePayoutsEnabled } from './solvency';
 import { CHAIN, BNTY_TOKEN_ADDRESS, isConfiguredAddress } from './config';
 
 export type SettlementAction =
@@ -40,9 +42,33 @@ const TRANSFER_ABI = parseAbi([
 ]);
 
 const TREASURY = (process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET ?? '').trim();
-const TREASURY_WALLET_ID = (process.env.OSR_TREASURY_WALLET_ID ?? '').trim();
-const PRIVY_APP_ID = (process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? '').trim();
-const PRIVY_APP_SECRET = (process.env.PRIVY_APP_SECRET ?? '').trim();
+
+/**
+ * The treasury signing key, replacing the Privy server wallet.
+ *
+ * This is the one genuine security downgrade in dropping Privy, and it is named
+ * plainly so nobody mistakes it for anything else: a private key that can move
+ * the whole treasury now lives in the server's environment. A leaked env dump,
+ * a bad log line, or a server compromise is a drained treasury.
+ *
+ * Three things stand in front of that, all below: the per-payout cap
+ * (MAX_PAYOUT_BNTY) bounds a single bad call, the payout brake
+ * (requirePayoutsEnabled) stops all of them on command, and the key's address
+ * MUST equal the published treasury or the module refuses to consider itself
+ * configured — a signer that is not the address spends were paid into would pay
+ * claims out of the wrong wallet.
+ */
+const TREASURY_PK = (process.env.OSR_TREASURY_PK ?? '').trim();
+
+/**
+ * Largest single payout the treasury will sign, in BNTY.
+ *
+ * A claim is bounded by what a wallet accrued, so a legitimate one is never
+ * huge; a request to send far more than that is a bug or an exploit, and the
+ * cap turns "drain the treasury" into "lose one capped payout". Zero disables
+ * it, which is the pre-token default where no payout can happen anyway.
+ */
+const MAX_PAYOUT_BNTY = Number(process.env.OSR_MAX_PAYOUT_BNTY ?? '0');
 
 /** Confirmations required before a spend is credited, or a payout is trusted. */
 export const MIN_CONFIRMATIONS = Number(process.env.OSR_MIN_CONFIRMATIONS ?? 2);
@@ -57,18 +83,39 @@ const PAYOUT_RECEIPT_TIMEOUT_MS = 60_000;
 /** How long a quote stays payable. Short, so a stale price cannot be settled. */
 const QUOTE_TTL_SECONDS = 15 * 60;
 
+/** A 32-byte hex private key, with or without the 0x prefix. */
+const PK_SHAPE = /^0x?[0-9a-fA-F]{64}$/;
+
+/**
+ * The signer's address, or null if the key is missing or malformed.
+ *
+ * Derived once so `settlementBlocker` can check it matches the published
+ * treasury without turning a bad key into a boot crash — a wrong key should
+ * disable settlement with a clear reason, not take the whole app down.
+ */
+function treasurySignerAddress(): string | null {
+  if (!PK_SHAPE.test(TREASURY_PK)) return null;
+  try {
+    const key = (TREASURY_PK.startsWith('0x') ? TREASURY_PK : `0x${TREASURY_PK}`) as Hex;
+    return privateKeyToAccount(key).address.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 export const SETTLEMENT_CONFIGURED =
   isConfiguredAddress(BNTY_TOKEN_ADDRESS) &&
   isConfiguredAddress(TREASURY) &&
-  TREASURY_WALLET_ID.length > 0 &&
-  PRIVY_APP_SECRET.length > 0;
+  treasurySignerAddress() === TREASURY.toLowerCase();
 
 /** Why writes are still off-chain. Surfaced verbatim so the reason is the true one. */
 export function settlementBlocker(): string | null {
   if (!isConfiguredAddress(BNTY_TOKEN_ADDRESS)) return 'BNTY token address is not set yet';
   if (!isConfiguredAddress(TREASURY)) return 'protocol treasury wallet is not set';
-  if (!TREASURY_WALLET_ID) return 'protocol wallet id is not configured';
-  if (!PRIVY_APP_SECRET) return 'Privy app secret is not configured';
+  if (!PK_SHAPE.test(TREASURY_PK)) return 'treasury signing key is not configured';
+  if (treasurySignerAddress() !== TREASURY.toLowerCase()) {
+    return 'treasury signing key does not match the published treasury address';
+  }
   return null;
 }
 
@@ -408,25 +455,28 @@ export async function settleSpend<T>(
 }
 
 // ---------------------------------------------------------------------------
-// Payouts — signed by the Privy server wallet, no local private key
+// Payouts — signed locally with the treasury key
 // ---------------------------------------------------------------------------
 
-async function privyWalletRpc(body: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const auth = Buffer.from(`${PRIVY_APP_ID}:${PRIVY_APP_SECRET}`).toString('base64');
-  const res = await fetch(`https://api.privy.io/v1/wallets/${TREASURY_WALLET_ID}/rpc`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'privy-app-id': PRIVY_APP_ID,
-      Authorization: `Basic ${auth}`,
-    },
-    body: JSON.stringify(body),
-  });
-  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!res.ok) {
-    throw new GameError(`payout wallet error: ${JSON.stringify(json).slice(0, 180)}`, 502);
+/**
+ * The wallet client that signs payouts, built lazily from the treasury key.
+ *
+ * Lazy for the same reason the public client is: the key is read at call time,
+ * so a build or a test that never pays out never touches it. The address was
+ * already proven to equal the published treasury in SETTLEMENT_CONFIGURED, so
+ * by the time this runs the key is known-good.
+ */
+let walletRef: ReturnType<typeof createWalletClient> | null = null;
+function treasuryWallet() {
+  if (!walletRef) {
+    const key = (TREASURY_PK.startsWith('0x') ? TREASURY_PK : `0x${TREASURY_PK}`) as Hex;
+    walletRef = createWalletClient({
+      account: privateKeyToAccount(key),
+      chain,
+      transport: http(CHAIN.rpcUrl),
+    });
   }
-  return json;
+  return walletRef;
 }
 
 /**
@@ -496,7 +546,21 @@ async function estimateGasBnty(to: Hex, data: Hex): Promise<number> {
 
 export async function payoutBnty(toWallet: string, bntyAmount: number): Promise<PayoutResult> {
   requireSettlement();
+  // The brake, checked at the signer itself rather than only at the callers.
+  // Every path that moves tokens out of the treasury — a claim, an admin debt
+  // retry, anything added later — passes through here, so this is the one place
+  // a pause is guaranteed to be honoured.
+  requirePayoutsEnabled();
   if (!(bntyAmount > 0)) throw new GameError('payout amount must be positive');
+
+  // The cap. A legitimate claim is bounded by what a wallet accrued, so a payout
+  // larger than the cap is a bug or an exploit — refuse it rather than sign it.
+  if (MAX_PAYOUT_BNTY > 0 && bntyAmount > MAX_PAYOUT_BNTY) {
+    throw new GameError(
+      `payout of ${Math.round(bntyAmount).toLocaleString()} BNTY exceeds the per-payout cap; paused for review`,
+      403
+    );
+  }
 
   const decimals = await tokenDecimals();
   const encode = (value: number) =>
@@ -515,14 +579,20 @@ export async function payoutBnty(toWallet: string, bntyAmount: number): Promise<
     );
   }
 
-  const json = await privyWalletRpc({
-    method: 'eth_sendTransaction',
-    caip2: `eip155:${CHAIN.id}`,
-    params: { transaction: { to: BNTY_TOKEN_ADDRESS, data: encode(sentBnty), value: '0x0' } },
-  });
-
-  const payload = (json.data ?? json) as Record<string, unknown>;
-  const hash = (payload.hash ?? payload.transaction_hash ?? payload.transactionHash) as string | undefined;
+  // Signed locally and submitted. sendTransaction returns once the node accepts
+  // the tx into the mempool; confirmation is awaited below, exactly as before.
+  let hash: string;
+  try {
+    hash = await treasuryWallet().sendTransaction({
+      account: treasuryWallet().account!,
+      chain,
+      to: BNTY_TOKEN_ADDRESS as Hex,
+      data: encode(sentBnty),
+      value: 0n,
+    });
+  } catch (error) {
+    throw new GameError(`payout could not be submitted: ${(error as Error).message}`.slice(0, 180), 502);
+  }
   if (!hash) throw new GameError('payout did not return a transaction hash', 502);
 
   // A submitted transaction is not a completed one. Returning here treated a

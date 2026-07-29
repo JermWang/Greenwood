@@ -120,7 +120,7 @@ export default function ProfilePage() {
     <PageShell title="Fund Profile" subtitle="Your persistent fund identity, portfolio record, and network history." maxWidth="max-w-[1360px]">
       {!wallet ? (
         <div className="panel p-6 text-sm text-steel-300">
-          Sign in with Privy or link an external wallet to load your persistent online profile.
+          Connect your wallet and sign in to load your persistent online profile.
         </div>
       ) : !configured ? (
         <div className="panel border-amber-500/40 p-6 text-sm text-amber-300">
