@@ -1,97 +1,138 @@
-# GPU — Graphics Processing Utility
+# Greenwood
 
-A DeFi farming and fab-management game on Robinhood Chain — an EVM L2 settling
-on Ethereum (mainnet, chain ID 4663, gas token ETH). Start with a wafer fab,
-expand into cleanrooms, equip rarity-tiered silicon machinery, open supply pods,
-route GPU yield, upgrade the campus, and compete in the Silicon Race.
+An idle DeFi yield game on Robinhood Chain — an EVM L2 settling on Ethereum
+(chain ID 4663, gas token ETH). Token: **BNTY**.
 
-GPU presents the protocol as a complete semiconductor-fab operating system. The
-public experience is built around cleanroom production, silicon throughput,
-equipment routing, reserve telemetry, and a playful industrial campus. Existing
-settlement and economic compatibility stays behind that product boundary:
+The front is a Real-World-Asset fund. You open desks, they produce yield, you
+route it, upgrade them, arrange your floor for the layout bonus, and compete on
+a leaderboard. Then you go outside, and the game turns out to be about
+something else.
 
-- **Procedural Three.js fab equipment** — Lithography Machine, Wafer Stack,
-  Dicing Saw, Packaging Line, EUV Utility Core, and AI Accelerator Test Rack
-  models are reconstructed in code from a unified
-  Wii-like 3D reference set. Named pivots, sockets, colliders, and destruction
-  groups keep the equipment animation-ready and diffable.
-- **GPU-native fab OS** — a left operations rail, route-specific command
-  surfaces, mobile module dock, live digital twin, component staging bay, chip
-  exchange, treasury reactor, network model, and race circuit replace the old
-  product hierarchy. Historical database keys stay private to the compatibility
-  layer so existing state and integrations continue to work.
-- **Privy embedded wallets** — email, Google, or wallet login provisions a
-  persistent embedded EVM hot wallet for every player. MetaMask, Rabby, and
-  Robinhood Wallet can still be linked. Every server-side write verifies both
-  the Privy access token and the wallet contained in the signed identity token.
-- **No pretend settlement** — generated guest wallets, starter credits,
-  simulated network participation, fabricated reserve addresses, and local
-  transaction signatures are removed. Financial mutation
-  routes remain locked until audited GPU token, game, vault, and treasury
-  deployments are configured.
-- **Mainnet safety lock** — the legacy local mutation escape path is removed.
-  Financial routes remain unavailable until audited mainnet contracts and
-  server-side transaction receipt verification are deployed.
-- **Global player network** — Supabase stores persistent wallet-keyed profiles,
-  session and game activity history, online presence, and the shared leaderboard.
-  Public clients have read-only access; all writes use server-only credentials,
-  row-level security, and idempotency keys. The session heartbeat only opens a
-  new session row after 30 idle minutes, so polling cannot flood history.
-  Server-side request rate limiting is still outstanding and should be in place
-  before the game is opened to the public.
+The design of that turn is in [`docs/greenwood-turn.md`](docs/greenwood-turn.md).
+Read it before touching regions, packs, loot, or anything outdoors — it is the
+spine the world hangs off, and it is easy to break by accident.
 
-The default Privy integration is an embedded user-wallet flow, not regulated
-third-party custody. Privy custodial wallets currently require its Enterprise
-plan, a supported custody partner such as Bridge, and beneficiary KYC. Do not
-describe embedded wallets as licensed custody unless that separate program has
-been approved and configured.
+## What is built
+
+- **The idle game.** Equity and Treasury desks, instrument sockets with rarity
+  tiers, sealed allocations, Fixed Income Notes, a player-to-player market, and
+  a floor-layout bonus that makes desk placement a real decision rather than
+  storage.
+- **A walkable world.** Greenwood Grounds is the hub; the Machine Room, Trading
+  Floor and Greenwood HQ are buildings you walk into, and the Treeline and Deep
+  Forest are outdoors. There is no nav rail — navigation happens by walking,
+  and doors transition you when you stand in them.
+- **Woodcutting and crafting.** A species ladder gated by axe tier, a craft
+  bench that turns timber into axes, crossbows, bolts and desk frames, and
+  material costs on desks that scale with level.
+- **Survival.** The Deep Forest has hostiles, PvP, and extraction gates. Dying
+  spills your pack where you fell. Movement and loot proximity are resolved
+  server-side against recorded state, never against a coordinate in a request.
+- **Nineteen residents** across every region, whose dialogue is level-gated so
+  the world gets quietly stranger as you get further in.
+
+## On-chain settlement
+
+There are **no custom contracts**. Every spend is an ordinary ERC-20 transfer
+between the player and the treasury, which keeps the audit surface at roughly
+zero and puts the entire burden on the server verifying correctly.
+
+A spend runs quote → pay → settle: the server prices the action and records a
+nonce, the player sends that many BNTY themselves, and the server reads the
+receipt and verifies the token's own `Transfer` event before applying anything.
+A nonce is only redeemable at the action it was priced for, a transaction hash
+can back exactly one settlement, and quotes expire.
+
+Payouts run the other way — the protocol signs from a Privy server wallet, so
+no private key is ever held by this app. Claims consume the accrual *before*
+sending, because the alternative lets the same rewards be claimed twice; a
+transfer that fails afterwards is recorded as a debt rather than lost.
+
+## Operations
+
+| Route | What it is for |
+|---|---|
+| `GET/POST /api/admin/backup` | List or force a database snapshot |
+| `GET /api/admin/solvency` | What the ledger promises vs. what the treasury holds |
+| `POST /api/admin/solvency` | Pause or resume payouts — the emergency brake |
+| `GET/POST /api/admin/owed` | List debts from failed payouts, and retry one |
+| `POST /api/admin/reset` | Wipe game state. Refuses once the token is live |
+
+All of these take `Authorization: Bearer $OSR_ADMIN_TOKEN`.
+
+**The database is the money.** `users.osr_balance` is the number that becomes
+real tokens, there is no replica, and snapshots survive the process but not the
+volume — shipping them off-box is still outstanding. Take one before any
+migration.
+
+**Launch order matters.** Desks created before settlement is switched on keep
+accruing, and those accruals become real payouts afterwards. Wipe *before*
+configuring the token address, not after.
 
 ## Run
 
 ```bash
 npm install
-npm run dev   # http://localhost:3000
 ```
-
-Copy `.env.example` to `.env.local` and configure a production Robinhood Chain
-RPC plus the deployed contract addresses. Never put private keys in a `NEXT_PUBLIC_*`
-variable or commit them to the repository.
-
-Create a Supabase project, link it with the Supabase CLI, and apply the checked-in
-schema before starting the app:
 
 ```bash
-npx supabase login
-npx supabase link
-npx supabase db push
+npm run dev
 ```
 
-Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and the
-server-only `SUPABASE_SECRET_KEY`. The migration in `supabase/migrations` enables
-RLS plus Realtime for profiles and activity history.
+Copy `.env.example` to `.env.local`. Never put a private key in a
+`NEXT_PUBLIC_*` variable or commit one.
+
+Two naming traps that will cost you an afternoon: the environment variables are
+still `OSR_*` and the stored column names are still `osr_*`, deliberately, while
+the TypeScript that reads them is not. `OSR_DATA_DIR` throws on boot if it is
+wrong, which is the safe direction — see the Names section of `CLAUDE.md`.
+
+Supabase backs profiles, presence and the leaderboard only; no money touches it.
+
+```bash
+npx supabase link && npx supabase db push
+```
 
 ## Verification
 
 ```bash
-npm test             # wallet discovery, switching, balance, and API guards
-npm run test:rpc     # live mainnet chain ID/block verification
-npm run typecheck
-npm run build
+npm run typecheck && npm test
 ```
+
+```bash
+npm run test:rpc
+```
+
+`npm test` is the full Vitest suite. `test:rpc` checks the live chain ID and
+block height against a real RPC.
+
+To exercise settlement against a real chain without real money, point
+`NEXT_PUBLIC_RH_NETWORK` at `testnet` (chain 46630), or run any local EVM on
+chain 4663 and set `NEXT_PUBLIC_RH_RPC` — the quote/pay/settle path and every
+guard on it can then be driven end to end.
 
 ## Layout
 
-- `src/app` — Next.js App Router pages + API route handlers (the game backend)
-- `src/lib` — game rules: rarity system, economy constants, DB
-- `src/components/iso` — the isometric game board (desks, floor, camera rig)
-- `src/components/ui` — HUD, panels, tabs
-- `src/components/three` — the remaining free-camera pieces (crate reveal, desk preview)
-- `public/` — the Greenwood mark only
-- `ORS MODELS/` — source art and delivery packages (kept locally)
+- `src/app` — App Router pages and the API routes that are the game backend
+- `src/lib` — the rules: economy, rarity, capital, crafting, settlement, maps
+- `src/components/iso` — the isometric world (scenes, characters, camera rig)
+- `src/components/ui` — HUD and panels
+- `src/components/three` — the free-camera pieces (allocation reveal, previews)
+- `docs/` — the design of the turn, and the rendering conventions
+- `public/` — the Greenwood mark, and nothing else
 
 ## Art
 
-Every visual currently in the game is built from primitives in code — there are
-no image, model, or environment-map assets in `public/`. The artwork inherited
-from the previous theme has been removed wholesale; commissioned Greenwood art
-will be added here when it lands.
+Everything visible is built from primitives in code. There are no image, model
+or environment-map assets — the artwork from the previous themes was removed
+wholesale, and commissioned Greenwood art will land here when it exists.
+
+`/dev/assets` renders every model in the game on a turntable. Look at anything
+you add there before wiring it into a scene.
+
+## Before you write rendering code
+
+[`docs/iso-conventions.md`](docs/iso-conventions.md), which is not optional. The
+line that matters most: **there is already a camera — use `IsoRig`.** A second
+rig has been built at least once, next to a working one, and cost three
+sessions.

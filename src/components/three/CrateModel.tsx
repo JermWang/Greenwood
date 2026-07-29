@@ -3,7 +3,7 @@
 // Procedural supply pod.
 //
 // Shared crate used by inventory thumbnails and the reveal cinematic, built in
-// the fab equipment's visual language so a crate reads as part of the same
+// the desk models' visual language so a crate reads as part of the same
 // facility: a dark metal plinth, a white clearcoat shell, a cobalt viewing
 // window, an orange safety latch and a lime status strip. A four-petal lid
 // bursts outward along the corner diagonals when it opens.
@@ -108,7 +108,7 @@ export default function CrateModel({
 
   return (
     <group ref={group} scale={1.05 * scale}>
-      {/* Dark metal plinth — the same base the fab machines sit on. */}
+      {/* Dark metal plinth — the same base the desks sit on. */}
       <RoundedBox args={[BODY + 0.24, 0.34, BODY + 0.24]} radius={0.1} smoothness={3} position={[0, -HH - 0.02, 0]} castShadow receiveShadow>
         <primitive object={mats.plinth} attach="material" />
       </RoundedBox>
@@ -140,7 +140,7 @@ export default function CrateModel({
         <primitive object={mats.lime} attach="material" />
       </mesh>
 
-      {/* Dark corner posts, echoing the fab equipment frame. */}
+      {/* Dark corner posts, echoing the desk models frame. */}
       {CORNERS.map(([x, z], i) => (
         <mesh key={`post-${i}`} position={[x * (HB - 0.06), -0.08, z * (HB - 0.06)]} castShadow>
           <cylinderGeometry args={[0.09, 0.09, HEIGHT * 0.82, 12]} />

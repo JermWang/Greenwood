@@ -422,7 +422,7 @@ function SellPanel({
     );
   }
 
-  // Equipped gear is excluded: it has to come off the fab before it can be sold,
+  // Equipped gear is excluded: it has to come off the floor before it can be sold,
   // and offering it here would only produce a server rejection.
   const sellableComponents = (inventory ?? []).filter((i) => i.equippedNodeId == null);
   // Same rule for the wardrobe — owned, not worn, not already on the board.

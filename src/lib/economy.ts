@@ -281,7 +281,7 @@ export function cosmeticUpgradeLadder(basePriceBnty: number): number[] {
 }
 
 // ---------------------------------------------------------------------------
-// Fab Capacity Contracts — the staking vault
+// Fixed Income Notes — the staking vault
 // ---------------------------------------------------------------------------
 
 /**
@@ -512,7 +512,7 @@ export function welcomeBoostFactor(joinedAtMs: number | null, nowMs: number): nu
 
 /**
  * One-time BNTY credited to a wallet on first sight so a new operator can afford
- * their first node (a Desk Fab burns 1,000 BNTY). Without this a fresh wallet has
+ * their first node (a Equity Desk burns 1,000 BNTY). Without this a fresh wallet has
  * no route to its first node: no nodes means no production means nothing to
  * claim, and crates also cost BNTY. Tracked via users.dripped so it grants once.
  */

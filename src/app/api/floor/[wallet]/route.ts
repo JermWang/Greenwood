@@ -4,7 +4,7 @@ import { getLayout, layoutBonus, ownedMachines } from '@/lib/floor';
 export const dynamic = 'force-dynamic';
 
 /**
- * Read a wallet's fab floor.
+ * Read a wallet's floor.
  *
  * Public, like the leaderboard and inventory: a floor is a thing other
  * operators are meant to be able to look at. Nothing here is private — it is

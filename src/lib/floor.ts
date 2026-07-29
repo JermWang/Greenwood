@@ -1,4 +1,4 @@
-// Fab floor layouts: where a wallet has physically placed its equipment, and
+// Floor layouts: where a wallet has physically placed its equipment, and
 // what that arrangement is worth.
 //
 // The layout used to live in localStorage, which made it decoration — it could
@@ -183,7 +183,7 @@ function distance(a: PlacedMachine, b: PlacedMachine) {
  * Score an arrangement.
  *
  * Bonuses are earned per production line and then averaged, so the multiplier
- * answers "how well is my fab laid out" rather than "how many machines do I
+ * answers "how well is my floor laid out" rather than "how many machines do I
  * own" — owning more equipment already raises grow power on its own, and having
  * it count twice here would make placement a second, hidden power curve.
  */

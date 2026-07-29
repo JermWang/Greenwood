@@ -204,7 +204,7 @@ function migrate(db: DatabaseSync) {
       sold_price_osr REAL,
       fee_osr REAL
     );
-    -- Fab capacity contracts: BNTY locked for a fixed term against a rate fixed
+    -- Fixed income notes: BNTY locked for a fixed term against a rate fixed
     -- at open. apr_bps and term_interest are stored per row rather than looked
     -- up from the current schedule, so changing the published terms can never
     -- retroactively alter what an already-open contract is owed.
@@ -226,7 +226,7 @@ function migrate(db: DatabaseSync) {
     );
     CREATE INDEX IF NOT EXISTS idx_stakes_wallet ON stakes(wallet, status, opened_at);
 
-    -- Where a wallet has physically placed its equipment on the fab floor.
+    -- Where a wallet has physically placed its equipment on the floor.
     -- Stored as one JSON document per wallet rather than a row per machine: it
     -- is always read and written whole, and the arrangement only means anything
     -- as a set. The server normalises it on write, so what is in here is

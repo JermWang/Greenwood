@@ -2,7 +2,7 @@
 
 // Shared post-processing stack.
 //
-// Currently unreferenced: its only consumers were the old free-camera fab
+// Currently unreferenced: its only consumers were the old free-camera floor
 // scene, which has been deleted. Kept because it is entirely procedural and
 // drops straight into IsoScene if the isometric board ever wants AO and bloom.
 //

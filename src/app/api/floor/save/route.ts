@@ -6,10 +6,10 @@ import { layoutBonus, saveLayout } from '@/lib/floor';
 export const dynamic = 'force-dynamic';
 
 /**
- * Persist a wallet's fab floor arrangement.
+ * Persist a wallet's floor arrangement.
  *
  * Authenticated, because the layout now scales grow power: an unauthenticated
- * write would let anyone rearrange a stranger's fab, or their own without
+ * write would let anyone rearrange a stranger's floor, or their own without
  * owning the equipment. saveLayout re-derives every machine's kind from the
  * database and drops anything the wallet does not hold, so the worst a crafted
  * payload achieves is saving a smaller floor than it asked for.

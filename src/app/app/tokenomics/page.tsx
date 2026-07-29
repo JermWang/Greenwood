@@ -438,7 +438,7 @@ export default function TokenomicsPage() {
           <p className="text-sm leading-relaxed text-steel-300">
             All constants on this page are imported from{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">
-              @gw-fab/protocol
+              @greenwood/protocol
             </code>{' '}
             and{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-amber-500">

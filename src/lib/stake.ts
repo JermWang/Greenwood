@@ -1,4 +1,4 @@
-// Fab capacity contracts — the BNTY staking vault.
+// Fixed income notes — the BNTY staking vault.
 //
 // An operator locks BNTY for a fixed term and is paid a rate published at the
 // moment they commit. The interest comes out of the emission reserve, the same

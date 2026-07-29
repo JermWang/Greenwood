@@ -1,6 +1,6 @@
 'use client';
 
-// Fab Floor — the BNTY campus cockpit, digital twin, and production controls.
+// The Machine Room — the BNTY floor cockpit, digital twin, and production controls.
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
