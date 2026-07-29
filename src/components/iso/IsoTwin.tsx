@@ -9,6 +9,7 @@
 
 import { useMemo } from 'react';
 import IsoScene from './IsoScene';
+import ShowroomActor from './ShowroomActor';
 import { type BoardBounds } from './IsoBoard';
 import { ISO, type IsoMachine, type MachineKind, type PlacedIsoMachine } from './palette';
 
@@ -33,10 +34,17 @@ export default function IsoTwin({
   nodes,
   selectedNodeId,
   onSelect,
+  ambient = false,
 }: {
   nodes: TwinNode[];
   selectedNodeId?: string | null;
   onSelect?: (id: string) => void;
+  /**
+   * Render a player idly working the floor in the background. On for the title
+   * screen, off for the dashboard twin — a wandering figure over a panel you are
+   * trying to read is a distraction, but over a title lockup it is the point.
+   */
+  ambient?: boolean;
 }) {
   const machines = useMemo<IsoMachine[]>(
     () =>
@@ -78,6 +86,8 @@ export default function IsoTwin({
       onTileClick={() => { /* the twin is a view, not an editor — arrange on the Floor Plan */ }}
       onDeskClick={(id) => onSelect?.(id)}
       onBackgroundClick={() => onSelect?.('')}
-    />
+    >
+      {ambient ? <ShowroomActor /> : null}
+    </IsoScene>
   );
 }

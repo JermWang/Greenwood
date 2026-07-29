@@ -105,7 +105,7 @@ export default function Landing() {
   return (
     <main className="gw-title-screen">
       <div className="gw-title-world">
-        <IsoTwin nodes={SHOWROOM_NODES} selectedNodeId={null} />
+        <IsoTwin nodes={SHOWROOM_NODES} selectedNodeId={null} ambient />
       </div>
       <div className="gw-title-vignette" />
       <div className="gw-title-scanlines" aria-hidden />
