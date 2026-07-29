@@ -18,6 +18,12 @@ import { Html } from '@react-three/drei';
 import { ISO, OUTFITS, TILE_TOP } from './palette';
 import { TileRing } from './TileMarker';
 import type { Cell } from './pathing';
+import {
+  approach,
+  chopArm,
+  chopLift,
+  chopPitch,
+} from './chop-curve';
 import { AVATAR_SKINS, HAND, BOOT, SKIN_TONES, type HatStyle } from './avatar-skins';
 export { OUTFITS } from './palette';
 
@@ -45,26 +51,7 @@ export type CharacterAction = 'idle' | 'interact' | 'chop';
  */
 const CHOP_HZ = 1.15;
 
-/**
- * The swing curve: a long wind-up and a short strike.
- *
- * Returns the arm angle for a phase 0..1 through one swing.
- *
- * A sine would be the obvious thing and it is exactly wrong — it spends equal
- * time going up and coming down, which reads as waving rather than chopping.
- * The force in an axe swing is all in the last third: the arms travel back
- * slowly, then the head comes down fast and stops dead. So the wind-up takes
- * 62% of the cycle at a constant rate, and the strike covers more angle in the
- * remaining 38% with a square-root ease so it is quickest at the start.
- */
-function chopArm(phase: number): number {
-  const WIND = 0.62;
-  const BACK = -2.5;
-  const THROUGH = 0.55;
-  if (phase < WIND) return BACK * (phase / WIND);
-  const t = (phase - WIND) / (1 - WIND);
-  return BACK + (THROUGH - BACK) * Math.sqrt(t);
-}
+
 
 export interface CharacterLook {
   /** Glove colour, when a cosmetic overrides bare hands. */
@@ -540,15 +527,25 @@ export default function Character({
         const t = state.clock.elapsedTime;
         const p = (t * CHOP_HZ) % 1;
         const arm = chopArm(p);
-        if (armR.current) armR.current.rotation.x = arm;
+
+        // Pitch is DERIVED from the arm, and lift is its own seamless hump —
+        // both live in chop-curve so their continuity is asserted by a test
+        // rather than trusted. The old version branched on phase at p = 0.62 for
+        // each independently and jumped both at that seam.
+        const bodyPitch = chopPitch(arm);
+        const lift = chopLift(p);
+
+        // Eased toward the targets rather than assigned, so arriving at a desk
+        // blends into the swing over a few frames instead of snapping into it.
+        const k = 22; // fast enough to keep the strike crisp, soft on entry
+        if (armR.current) armR.current.rotation.x = approach(armR.current.rotation.x, arm, k, delta);
         // A hair out of phase, so the two arms are gripping one haft rather
         // than moving as a mirrored pair.
-        if (armL.current) armL.current.rotation.x = arm + 0.08;
-        // Follows the arms into the strike and unwinds on the wind-up.
-        body.current.rotation.x = p < 0.62 ? -0.06 : 0.34 * Math.sqrt((p - 0.62) / 0.38);
-        body.current.position.y = p < 0.62 ? 0.05 * (p / 0.62) : 0;
-        if (legL.current) legL.current.rotation.x = 0.12;
-        if (legR.current) legR.current.rotation.x = -0.1;
+        if (armL.current) armL.current.rotation.x = approach(armL.current.rotation.x, arm + 0.08, k, delta);
+        body.current.rotation.x = approach(body.current.rotation.x, bodyPitch, k, delta);
+        body.current.position.y = approach(body.current.position.y, lift, k, delta);
+        if (legL.current) legL.current.rotation.x = approach(legL.current.rotation.x, 0.12, k, delta);
+        if (legR.current) legR.current.rotation.x = approach(legR.current.rotation.x, -0.1, k, delta);
       } else if (action === 'interact' && !moving) {
         // Lean in over the counter and keep the reach alive with a slow bob,
         // so a character working a stall is not a statue with one arm up.
