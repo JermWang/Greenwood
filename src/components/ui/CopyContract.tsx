@@ -1,10 +1,17 @@
 'use client';
 
-// Click-to-copy contract address for the landing hero.
+// Click-to-copy contract address for the landing hero, or a placeholder.
 //
-// Renders nothing until the token address is actually configured. A copy button
-// that hands someone the zero address is worse than no button — they would
-// paste it into a wallet or a scanner and get nowhere, with no clue why.
+// Until the token exists this shows "Coming soon" rather than disappearing. The
+// slot is a thing people look for on a token site, and an empty header reads as
+// "there is no token" instead of "not yet" — the announcement is the point, so
+// the space is held deliberately.
+//
+// What it must NEVER do is hand over an address that is not real. A copy button
+// serving the zero address is worse than no button at all: someone pastes it
+// into a wallet or a scanner and gets nowhere, with no clue why. So the
+// placeholder is not a button, carries no address, and cannot be copied — the
+// only path to a clipboard write is a configured address.
 
 import { useCallback, useState } from 'react';
 import { Copy, Check } from '@phosphor-icons/react';
@@ -25,12 +32,30 @@ export default function CopyContract() {
     }
   }, []);
 
-  if (!isConfiguredAddress(BNTY_TOKEN_ADDRESS)) return null;
-  // The token can be live for settlement while the address is deliberately kept
-  // off the site — a soft launch where the CA is announced separately. Setting
-  // NEXT_PUBLIC_OSR_TOKEN turns settlement on; this button stays hidden until
-  // NEXT_PUBLIC_SHOW_CA is also set, so the two can be flipped independently.
-  if (process.env.NEXT_PUBLIC_SHOW_CA !== '1') return null;
+  /*
+   * Two separate reasons to withhold an address, one placeholder.
+   *
+   * Either the token does not exist yet, or it exists and is deliberately kept
+   * off the site — a soft launch where the CA is announced separately. Setting
+   * NEXT_PUBLIC_OSR_TOKEN turns settlement on; NEXT_PUBLIC_SHOW_CA is what
+   * publishes it here, so the two stay independently flippable.
+   *
+   * A visitor cannot tell those apart and should not have to: both mean "not
+   * yet", so both say so.
+   */
+  const published = isConfiguredAddress(BNTY_TOKEN_ADDRESS) && process.env.NEXT_PUBLIC_SHOW_CA === '1';
+
+  if (!published) {
+    return (
+      <span
+        className="gw-topbar-ca gw-topbar-ca-soon glass-control pointer-events-auto flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em]"
+        title={`The BNTY contract address will be published here at launch on ${CHAIN.name}`}
+      >
+        <span className="gw-topbar-ca-label">CA</span>
+        <span>Coming soon</span>
+      </span>
+    );
+  }
 
   const short = `${BNTY_TOKEN_ADDRESS.slice(0, 6)}…${BNTY_TOKEN_ADDRESS.slice(-4)}`;
 
