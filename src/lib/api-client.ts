@@ -84,10 +84,10 @@ export interface ProtocolOverview {
   networkProductionRate: number;
   emissionFactors: { shareCap: number };
   totalNodes: number;
-  totalOilRigs: number;
-  totalMiningShafts: number;
+  totalEquityDesks: number;
+  totalTreasuryDesks: number;
   totalSupply: number;
-  totalOsrBurned: number;
+  totalBntyBurned: number;
   totalCreatorRewardsProcessed: number;
   bntyReserveBalance: number;
   treasury: number;

@@ -399,13 +399,13 @@ export default function TokenomicsPage() {
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               <LiveCard
                 label="BNTY Burned"
-                value={overview.totalOsrBurned.toLocaleString()}
+                value={overview.totalBntyBurned.toLocaleString()}
                 suffix="BNTY"
               />
               <LiveCard
                 label="Desks Opened"
                 value={String(overview.totalNodes)}
-                suffix={`${overview.totalOilRigs} equity desks · ${overview.totalMiningShafts} treasury desks`}
+                suffix={`${overview.totalEquityDesks} equity desks · ${overview.totalTreasuryDesks} treasury desks`}
               />
               <LiveCard
                 label="Protocol ETH Revenue"

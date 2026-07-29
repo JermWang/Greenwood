@@ -275,9 +275,9 @@ export default function MarketPage() {
             <h2 className="stat-label">Network depth</h2>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               <StatCard label="Total Nodes" value={String(overview.totalNodes)} />
-              <StatCard label="Equity Desks" value={String(overview.totalOilRigs)} />
-              <StatCard label="Treasury Desks" value={String(overview.totalMiningShafts)} />
-              <StatCard label="Total BNTY Burned" value={fmtBnty(overview.totalOsrBurned)} />
+              <StatCard label="Equity Desks" value={String(overview.totalEquityDesks)} />
+              <StatCard label="Treasury Desks" value={String(overview.totalTreasuryDesks)} />
+              <StatCard label="Total BNTY Burned" value={fmtBnty(overview.totalBntyBurned)} />
               <StatCard
                 label="Protocol ETH Revenue"
                 value={`${overview.totalCreatorRewardsProcessed.toFixed(4)} ETH`}

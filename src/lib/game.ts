@@ -1143,8 +1143,8 @@ export function protocolOverview() {
   const counters = protocolCounters();
   const db = getDb();
   const totalNodes = (db.prepare('SELECT COUNT(*) AS c FROM nodes').get() as { c: number }).c;
-  const totalOilRigs = (db.prepare("SELECT COUNT(*) AS c FROM nodes WHERE family = 'oil'").get() as { c: number }).c;
-  const totalMiningShafts = (db.prepare("SELECT COUNT(*) AS c FROM nodes WHERE family = 'mine'").get() as { c: number }).c;
+  const totalEquityDesks = (db.prepare("SELECT COUNT(*) AS c FROM nodes WHERE family = 'oil'").get() as { c: number }).c;
+  const totalTreasuryDesks = (db.prepare("SELECT COUNT(*) AS c FROM nodes WHERE family = 'mine'").get() as { c: number }).c;
   const halving = halvingInfo(g, now);
   const reserve = Math.max(0, EMISSION_RESERVE - counters.emitted + counters.reserve);
 
@@ -1164,10 +1164,10 @@ export function protocolOverview() {
     networkProductionRate: halving.currentRatePerSec,
     emissionFactors: { shareCap: SHARE_CAP },
     totalNodes,
-    totalOilRigs,
-    totalMiningShafts,
+    totalEquityDesks,
+    totalTreasuryDesks,
     totalSupply: TOTAL_SUPPLY,
-    totalOsrBurned: counters.burned,
+    totalBntyBurned: counters.burned,
     totalCreatorRewardsProcessed: counters.solRevenue,
     // What is left in the rewards pool, not the whole supply: emission draws
     // from the reserve, and the reserve split on in-game spends tops it back up.

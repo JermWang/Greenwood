@@ -72,7 +72,7 @@ export default function VaultPage() {
   const reserveFill = useMemo(() => {
     if (!overview) return 0;
     const reserve = Math.max(0, overview.bntyReserveBalance ?? 0);
-    const retired = Math.max(0, overview.totalOsrBurned ?? 0);
+    const retired = Math.max(0, overview.totalBntyBurned ?? 0);
     return reserve + retired > 0 ? reserve / (reserve + retired) : 0;
   }, [overview]);
 
@@ -105,7 +105,7 @@ export default function VaultPage() {
           </section>
 
           <section className="treasury-signal-grid">
-            <Signal code="BURN" label="BNTY permanently retired" value={compact(overview?.totalOsrBurned)} unit="BNTY" tone="lime" />
+            <Signal code="BURN" label="BNTY permanently retired" value={compact(overview?.totalBntyBurned)} unit="BNTY" tone="lime" />
             <Signal code="DESKS" label="Active desks" value={String(overview?.totalNodes ?? 0)} unit="UNITS" tone="cobalt" />
             <Signal code="FLOW" label="Network yield output" value={overview?.networkProductionRate?.toFixed(3) ?? '—'} unit="BNTY/S" tone="cyan" />
           </section>
