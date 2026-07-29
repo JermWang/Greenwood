@@ -10,6 +10,7 @@ import {
 import { CLAIM_FEE_BPS, COMPOUND_REINVEST_FEE_BPS } from '@/lib/economy';
 import { requireNoActiveDeploy } from '@/lib/deploy-guard';
 import { maybeSnapshot } from '@/lib/backup';
+import { requirePayoutsEnabled } from '@/lib/solvency';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,11 @@ export async function POST(request: Request) {
     // A claim consumes accrual and pays out in one call, so a cutover mid-claim
     // is exactly the loss the deploy window exists to prevent.
     requireNoActiveDeploy();
+    // The emergency brake. Checked BEFORE the accrual is touched, so a paused
+    // protocol costs a player nothing — their rewards keep accruing and the
+    // claim can be made later, rather than being consumed into a payout that
+    // was never going to send.
+    requirePayoutsEnabled();
 
     const mode = body.mode === 'compound' ? 'compound' : 'claim';
     const nodeId = body.nodeId == null ? undefined : Number(body.nodeId);

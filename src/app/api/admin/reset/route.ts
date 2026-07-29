@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { TOKEN_LIVE } from '@/lib/config';
 import { getDb, setProtocolValue } from '@/lib/db';
+import { writeSnapshot, backupsSupported } from '@/lib/backup';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +40,33 @@ const TABLES = [
 const COUNTERS = ['burned', 'reserve', 'treasury', 'emitted', 'solRevenue'] as const;
 
 export async function POST(request: Request) {
+  /*
+   * Unreachable once real money is involved.
+   *
+   * This wipes every balance, and it was guarded by a shared bearer token and a
+   * confirmation phrase -- fine for clearing test data, not remotely enough for
+   * a route that can zero every operator's holdings on a live game. A leaked
+   * token, a copied curl command out of a chat log, or a staging script pointed
+   * at the wrong host all end the same way, and there is no undo.
+   *
+   * So it is gated on the TOKEN being unconfigured rather than on an
+   * environment name: the intent is 'this game has no real money in it yet',
+   * and NEXT_PUBLIC_OSR_TOKEN being set is exactly that condition. Explicitly
+   * overridable, because there is one legitimate use -- clearing test data off
+   * a configured testnet -- and a rule with no escape hatch gets worked around
+   * in a worse way.
+   */
+  if (TOKEN_LIVE && process.env.OSR_ALLOW_RESET !== 'yes-wipe-a-live-game') {
+    return NextResponse.json(
+      {
+        error:
+          'refused: the token is live, so this would wipe a game holding real value. ' +
+          'Set OSR_ALLOW_RESET=yes-wipe-a-live-game if that is genuinely the intent.',
+      },
+      { status: 403 }
+    );
+  }
+
   const secret = (process.env.OSR_ADMIN_TOKEN ?? '').trim();
   if (!secret) {
     return NextResponse.json({ error: 'OSR_ADMIN_TOKEN is not configured' }, { status: 503 });
@@ -66,6 +95,28 @@ export async function POST(request: Request) {
   };
 
   for (const t of TABLES) before[t] = count(t);
+
+  /*
+   * Snapshot first. This is the single most predictable moment in the app's
+   * life at which somebody will wish they had a backup, and it costs one
+   * VACUUM INTO against a database that is about to be emptied anyway.
+   *
+   * A failure here ABORTS the wipe rather than being swallowed the way
+   * maybeSnapshot swallows its own errors. The tradeoff runs the other way for
+   * an irreversible destructive action: refusing to wipe is recoverable,
+   * wiping without a backup is not.
+   */
+  let backup: string | null = null;
+  if (backupsSupported()) {
+    try {
+      backup = writeSnapshot().file;
+    } catch (error) {
+      return NextResponse.json(
+        { error: `refused: could not take a pre-wipe snapshot (${String(error)})` },
+        { status: 500 }
+      );
+    }
+  }
 
   db.exec('BEGIN IMMEDIATE');
   try {
@@ -109,5 +160,13 @@ export async function POST(request: Request) {
     after,
     genesisMs,
     genesisIso: new Date(genesisMs).toISOString(),
+    /**
+     * The snapshot taken immediately before the wipe.
+     *
+     * Returned rather than merely logged, because the moment somebody needs
+     * this filename is the moment they have just realised they should not have
+     * run this, and hunting for it through logs is time spent badly.
+     */
+    backup,
   });
 }
