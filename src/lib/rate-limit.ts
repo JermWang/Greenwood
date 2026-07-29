@@ -66,6 +66,15 @@ export const LIMITS = {
   market: { max: 30, windowMs: 60_000 },
   /** Expedition movement, which is the highest-frequency legitimate action. */
   expedition: { max: 90, windowMs: 10_000 },
+  /**
+   * Sign-in nonce requests, keyed by IP rather than wallet.
+   *
+   * The only unauthenticated write in the app, so it is the only bucket a
+   * caller can spend without proving anything first. Generous enough for a
+   * shared office or a phone on CGNAT retrying a flaky signature, tight enough
+   * that nobody is filling the nonce table from a laptop.
+   */
+  signIn: { max: 20, windowMs: 60_000 },
 } as const satisfies Record<string, Limit>;
 
 export type LimitName = keyof typeof LIMITS;
