@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { solvency, setPayoutsPaused } from '@/lib/solvency';
 import { onchainReserves } from '@/lib/onchain';
 import { BNTY_TOKEN_ADDRESS, isConfiguredAddress } from '@/lib/config';
-import { SETTLEMENT_CONFIGURED } from '@/lib/settlement';
+import { SETTLEMENT_CONFIGURED, settlementBlocker } from '@/lib/settlement';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +42,23 @@ async function readTreasury(): Promise<number | null> {
 export async function GET(request: Request) {
   const denied = authorised(request);
   if (denied) return denied;
-  return NextResponse.json(await solvency(readTreasury, SETTLEMENT_CONFIGURED));
+  return NextResponse.json({
+    ...(await solvency(readTreasury, SETTLEMENT_CONFIGURED)),
+    /**
+     * Why settlement is still off, or null when it is on.
+     *
+     * The one question this endpoint existed to answer and could not: it
+     * reported settlementLive as a bare boolean, so a false told you nothing
+     * about WHICH of the four requirements was missing — token address,
+     * treasury address, signing key, or a key whose address does not match the
+     * published treasury. Reading it meant grepping env vars by hand and
+     * guessing, which is how a placeholder address sat in production unnoticed.
+     *
+     * Safe behind the admin token, and the messages name the missing thing
+     * rather than quoting any of it, so no key material can appear here.
+     */
+    settlementBlocker: settlementBlocker(),
+  });
 }
 
 /**
