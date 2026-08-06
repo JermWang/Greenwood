@@ -32,6 +32,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<GlobalProfile | null>(null);
   const [history, setHistory] = useState<ActivityItem[]>([]);
   const [configured, setConfigured] = useState(true);
+  /** Configured but not answering, which reads differently to never set up. */
+  const [degraded, setDegraded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -75,6 +77,7 @@ export default function ProfilePage() {
     try {
       const result = await api.profile(wallet);
       setConfigured(result.configured);
+      setDegraded(result.degraded);
       setProfile(result.profile);
       setHistory(result.history);
     } catch (reason) {
@@ -124,7 +127,9 @@ export default function ProfilePage() {
         </div>
       ) : !configured ? (
         <div className="panel border-amber-500/40 p-6 text-sm text-amber-300">
-          The global profile database has not been configured for this environment yet.
+          {degraded
+            ? 'The global profile registry is not responding. Your fund keeps running — rankings and history will reappear when it comes back.'
+            : 'The global profile database has not been configured for this environment yet.'}
         </div>
       ) : error ? (
         <div className="panel border-red-500/40 p-6 text-sm text-red-400">{error}</div>

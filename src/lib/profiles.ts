@@ -8,6 +8,74 @@ import {
 
 export type LeaderboardMetric = 'compound_level' | 'total_produced' | 'total_burned';
 
+/**
+ * A read against the profile registry, with a failed read treated as an ABSENT
+ * registry rather than an error.
+ *
+ * Every reader below has a local fallback, because Supabase holds a PROJECTION
+ * of state that SQLite already owns — the leaderboard route falls back to
+ * `leaderboard()` off the game database, and the profile screens fall back to a
+ * locally-stored fund name. None of that fired, because the fallbacks were
+ * written to trigger on `null` (registry not configured) and a registry that IS
+ * configured but unreachable throws instead.
+ *
+ * The consequence was out of all proportion to the fault. `/api/leaderboard` is
+ * Railway's healthcheck path, so an unreachable Supabase project would not
+ * merely degrade the leaderboard — it would fail the healthcheck, restart the
+ * container, and take a fully working game offline over a cosmetic ranking. A
+ * paused Supabase project does exactly this, and pausing is something Supabase
+ * does on its own for inactivity.
+ *
+ * Degrades on ANY read error, not only on a transport failure. Sorting the two
+ * apart means matching on driver error strings, which is a guess that gets
+ * stale; and the safe direction is the same either way, because a broken query
+ * should not be able to take the site down either. It is logged rather than
+ * swallowed so a real query bug still has somewhere to show up.
+ *
+ * Reads only. Writes (`updateProfileIdentity`, `saveAvatar`) still throw: a
+ * player who renames their fund must be told it did not save, not shown a
+ * success that never landed.
+ */
+async function readRegistry<T>(what: string, run: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await withDeadline(run(), fallback, what);
+  } catch (error) {
+    console.error(`[profiles] ${what} unavailable, serving without it`, error);
+    return fallback;
+  }
+}
+
+/**
+ * How long a registry read may take before it is abandoned.
+ *
+ * Not catching the error is only half the job — supabase-js retries internally
+ * before it reports a transport failure, measured at about seven seconds
+ * against a dead project. Seven seconds is a long time to hold a request open
+ * in a single-threaded process where every other player is queued behind it,
+ * and it is charged on EVERY read for the whole duration of an outage.
+ *
+ * So the deadline is on top of the catch, not instead of it. Generous compared
+ * to a healthy round trip (tens of milliseconds), short enough that an outage
+ * costs a noticeable pause rather than a stall.
+ */
+const REGISTRY_DEADLINE_MS = 2_500;
+
+function withDeadline<T>(work: Promise<T>, fallback: T, what: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      console.error(`[profiles] ${what} exceeded ${REGISTRY_DEADLINE_MS}ms, serving without it`);
+      resolve(fallback);
+    }, REGISTRY_DEADLINE_MS);
+    // The abandoned request is left to settle on its own. It holds no lock and
+    // its result is discarded; the alternative is threading an AbortSignal
+    // through every call site to cancel a request that is already failing.
+    work.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); }
+    );
+  });
+}
+
 export interface GlobalProfile {
   wallet: string;
   displayName: string | null;
@@ -104,27 +172,54 @@ export async function touchGlobalProfile(wallet: string, operation?: UserOperati
   return profileFromRow(data as ProfileRow);
 }
 
+/**
+ * Whether the registry answered at all, distinct from whether it holds a row.
+ *
+ * `null` from getGlobalProfile is ambiguous — it is both "this wallet has no
+ * profile yet" and "there is no registry" — and the caller needs to tell those
+ * apart, because the first is a normal new player and the second is an outage.
+ * Tracked here rather than returned, so the read signatures stay as they were.
+ */
+const UNREACHABLE = Symbol('registry unreachable');
+
+async function readProfileRow(wallet: string): Promise<GlobalProfile | null | typeof UNREACHABLE> {
+  return readRegistry<GlobalProfile | null | typeof UNREACHABLE>(
+    'profile read',
+    async () => {
+      const { data, error } = await getPublicServerSupabase()
+        .from('profiles')
+        .select('*')
+        .eq('wallet', wallet.toLowerCase())
+        .maybeSingle();
+      if (error) throw new Error(`Supabase profile read failed: ${error.message}`);
+      return data ? profileFromRow(data as ProfileRow) : null;
+    },
+    UNREACHABLE
+  );
+}
+
 export async function getGlobalProfile(wallet: string): Promise<GlobalProfile | null> {
   if (!publicSupabaseConfigured()) return null;
-  const { data, error } = await getPublicServerSupabase()
-    .from('profiles')
-    .select('*')
-    .eq('wallet', wallet.toLowerCase())
-    .maybeSingle();
-  if (error) throw new Error(`Supabase profile read failed: ${error.message}`);
-  return data ? profileFromRow(data as ProfileRow) : null;
+  const row = await readProfileRow(wallet);
+  return row === UNREACHABLE ? null : row;
 }
 
 export async function getActivityHistory(wallet: string, limit = 50): Promise<ActivityItem[]> {
   if (!publicSupabaseConfigured()) return [];
-  const { data, error } = await getPublicServerSupabase()
-    .from('activity_history')
-    .select('id,wallet,event_type,source,amount,asset_symbol,tx_hash,metadata,created_at')
-    .eq('wallet', wallet.toLowerCase())
-    .order('created_at', { ascending: false })
-    .limit(Math.max(1, Math.min(100, limit)));
-  if (error) throw new Error(`Supabase activity read failed: ${error.message}`);
-  return (data ?? []).map((row) => activityFromRow(row));
+  return readRegistry<ActivityItem[]>(
+    'activity read',
+    async () => {
+      const { data, error } = await getPublicServerSupabase()
+        .from('activity_history')
+        .select('id,wallet,event_type,source,amount,asset_symbol,tx_hash,metadata,created_at')
+        .eq('wallet', wallet.toLowerCase())
+        .order('created_at', { ascending: false })
+        .limit(Math.max(1, Math.min(100, limit)));
+      if (error) throw new Error(`Supabase activity read failed: ${error.message}`);
+      return (data ?? []).map((row) => activityFromRow(row));
+    },
+    []
+  );
 }
 
 export async function recordActivity(
@@ -164,38 +259,72 @@ export async function globalLeaderboard(metric: LeaderboardMetric) {
       : metric === 'total_burned'
         ? 'total_burned'
         : 'compound_level';
-  const { data, error } = await getPublicServerSupabase()
-    .from('profiles')
-    .select('*')
-    .order(column, { ascending: false })
-    .order('last_seen_at', { ascending: false })
-    .limit(100);
-  if (error) throw new Error(`Supabase leaderboard read failed: ${error.message}`);
-  return (data ?? []).map((raw, index) => {
-    const row = profileFromRow(raw as ProfileRow);
-    return {
-      rank: index + 1,
-      wallet: row.wallet,
-      displayName: row.displayName,
-      avatarUrl: row.avatarUrl,
-      online: row.online,
-      compoundLevel: row.compoundLevel,
-      maxLevel: row.maxNodeLevel,
-      sumLevel: row.sumNodeLevels,
-      nodes: row.nodeCount,
-      productionRate: row.productionRate,
-      totalProduced: row.totalProduced,
-      totalBurned: row.totalBurned,
-    };
-  });
+  // Null on failure, which is the same signal as "not configured" — and the
+  // signal the leaderboard route already falls back on, to the local game
+  // database. See readRegistry: this route is the Railway healthcheck.
+  return readRegistry(
+    'leaderboard read',
+    async () => {
+      const { data, error } = await getPublicServerSupabase()
+        .from('profiles')
+        .select('*')
+        .order(column, { ascending: false })
+        .order('last_seen_at', { ascending: false })
+        .limit(100);
+      if (error) throw new Error(`Supabase leaderboard read failed: ${error.message}`);
+      return (data ?? []).map((raw, index) => {
+        const row = profileFromRow(raw as ProfileRow);
+        return {
+          rank: index + 1,
+          wallet: row.wallet,
+          displayName: row.displayName,
+          avatarUrl: row.avatarUrl,
+          online: row.online,
+          compoundLevel: row.compoundLevel,
+          maxLevel: row.maxNodeLevel,
+          sumLevel: row.sumNodeLevels,
+          nodes: row.nodeCount,
+          productionRate: row.productionRate,
+          totalProduced: row.totalProduced,
+          totalBurned: row.totalBurned,
+        };
+      });
+    },
+    null
+  );
 }
 
+/**
+ * The profile screen's whole payload, including whether the registry is usable.
+ *
+ * `configured` means USABLE RIGHT NOW, not "the variables are set". Both callers
+ * — /start and /app/profile — treat it as the question "can I save a fund name
+ * to the server, or should I keep it in this browser", and a registry that is
+ * configured but unreachable answers that question exactly the same way an
+ * unconfigured one does.
+ *
+ * That distinction is load-bearing for a brand-new player. /start blocks on this
+ * call before it will let anyone name a fund, so a registry that errored instead
+ * of degrading left the very first screen of the game showing "Could not check
+ * fund profile" with no way past it — a paused database, and nobody can start.
+ *
+ * `degraded` carries the difference the UI needs for its wording: never
+ * configured is a setup state, configured-but-down is an outage, and telling a
+ * player the second is the first sends them looking for a settings page.
+ */
 export async function profileBundle(wallet: string) {
-  const profile = await getGlobalProfile(wallet);
+  const configured = publicSupabaseConfigured();
+  if (!configured) return { configured: false, degraded: false, profile: null, history: [] };
+
+  const row = await readProfileRow(wallet);
+  if (row === UNREACHABLE) {
+    return { configured: false, degraded: true, profile: null, history: [] };
+  }
   return {
-    configured: publicSupabaseConfigured(),
-    profile,
-    history: profile ? await getActivityHistory(wallet) : [],
+    configured: true,
+    degraded: false,
+    profile: row,
+    history: row ? await getActivityHistory(wallet) : [],
   };
 }
 

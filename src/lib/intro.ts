@@ -88,7 +88,10 @@ export const INTRO_STEPS: IntroStep[] = [
     track: 'scouting',
     xp: 250,
     scrip: 500,
-    href: '/app/inventory',
+    // The dashboard, not the Portfolio. Allocations are OPENED here; the
+    // Portfolio is where the instrument lands afterwards, and sending a player
+    // there gives them a panel whose own empty state tells them to go back.
+    href: '/app',
   },
   {
     key: 'intro_equip',

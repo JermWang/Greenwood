@@ -720,10 +720,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ wallet, layout }),
     }),
+  /**
+   * `configured` means the profile registry is usable right now. `degraded`
+   * separates the two ways it can be unusable: false is "never set up for this
+   * environment", true is "set up but not answering". See lib/profiles.
+   */
   profile: (wallet: string) =>
-    request<{ configured: boolean; profile: GlobalProfile | null; history: ActivityItem[] }>(
-      `/profiles/${wallet}`
-    ),
+    request<{
+      configured: boolean;
+      degraded: boolean;
+      profile: GlobalProfile | null;
+      history: ActivityItem[];
+    }>(`/profiles/${wallet}`),
   leaderboard: (metric = 'compound_level') =>
     request<Array<{ rank: number; wallet: string; compoundLevel: number; maxLevel: number; sumLevel: number; nodes: number; productionRate: number; totalProduced: number; totalBurned: number }>>(
       `/leaderboard?metric=${metric}`
