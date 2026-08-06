@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import { X_HANDLE } from '@/lib/config';
 import './globals.css';
 
 const displayFont = Space_Grotesk({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
@@ -89,8 +90,10 @@ export const metadata: Metadata = {
     // roughly twice the click-through of a summary and this game is entirely
     // carried by how it looks.
     card: 'summary_large_image',
-    site: '@greenwood_rwa',
-    creator: '@greenwood_rwa',
+    // From X_URL, so the link in the footer and the account the share card
+    // credits cannot name two different places.
+    site: X_HANDLE,
+    creator: X_HANDLE,
     title: `Greenwood — ${TAGLINE}`,
     description: DESCRIPTION,
     // Also omitted: the generated opengraph-image is picked up for both.

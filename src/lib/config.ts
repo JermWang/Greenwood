@@ -1,8 +1,16 @@
 // Central app config — Robinhood Chain (EVM, Arbitrum Orbit L2).
 
 export const APP_NAME = 'Greenwood — Real-World Yield';
-// Placeholder social handle — swap for the project's real X account.
-export const X_URL = 'https://x.com/greenwood_rwa';
+export const X_URL = 'https://x.com/greenwoodrh_';
+/**
+ * The same account as an @handle, for the Twitter card tags in app/layout.
+ *
+ * Derived here rather than written out twice. The two were separate literals
+ * and were already inconsistent — the link went one place and the share card
+ * credited another — which is invisible until somebody posts the game and the
+ * card attributes it to an account that does not exist.
+ */
+export const X_HANDLE = `@${X_URL.split('/').pop()}`;
 
 /**
  * Which network this build talks to. Mainnet unless told otherwise.
