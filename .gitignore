@@ -29,3 +29,12 @@ contracts/out/
 
 # Scratch image-gen workspace
 tmp/
+
+# Launch/brand kit: 51MB of source artwork and two video files.
+#
+# Deliberately not committed. Git keeps every version of a binary forever, so a
+# 16MB trailer costs 16MB in every clone from now on even after it is deleted —
+# and these are exports, regenerated from the design source rather than edited
+# here. The ONE asset the site actually serves (the share card) is copied to
+# public/og-card.png and committed on its own.
+public/GREENWOOD/

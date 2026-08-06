@@ -54,14 +54,35 @@ const DESCRIPTION =
 /** Shorter, for cards that truncate. Carries the same double meaning. */
 const TAGLINE = 'One of the last lit settlements. Yield never sleeps.';
 
+/**
+ * The share card: a real render of the settlement, from the brand kit.
+ *
+ * This replaced a card drawn at request time by satori (the old
+ * app/opengraph-image.tsx). That existed because there was no artwork, and it
+ * was a reasonable stand-in — but satori is not a browser, it paints rectangles
+ * and text, and the game's own look does not survive being approximated in
+ * flexbox. An actual screenshot of the world does the selling.
+ *
+ * Declared explicitly rather than through the app/opengraph-image file
+ * convention, so the one copy that ships lives in the brand kit alongside the
+ * other launch assets rather than being duplicated into src/.
+ *
+ * Width and height are stated because X and Facebook both use them to reserve
+ * layout space before the image has downloaded — omit them and the card can be
+ * rendered as a small summary while the fetch is still in flight.
+ */
+const SHARE_CARD = {
+  url: '/og-card.png',
+  width: 1200,
+  height: 630,
+  alt: 'Greenwood — one of the last lit settlements. Yield never sleeps.',
+} as const;
+
 export const metadata: Metadata = {
   // metadataBase resolves relative asset paths to absolute URLs, which Open
   // Graph and Twitter both require. Set to the live domain so previews point at
   // production, not the Railway subdomain.
   //
-  // No `images` yet: the share card art is being commissioned. A card with no
-  // image still renders as a title/description summary, which beats shipping
-  // artwork from the previous theme.
   metadataBase: new URL(SITE_URL),
   title: {
     default: 'Greenwood — Real-World Yield',
@@ -121,10 +142,7 @@ export const metadata: Metadata = {
     title: `Greenwood — ${TAGLINE}`,
     description: DESCRIPTION,
     locale: 'en_GB',
-    // No `images` here on purpose: src/app/opengraph-image.tsx supplies it, and
-    // listing one as well would override the generated PNG with whatever is
-    // named here. X, Facebook and LinkedIn all reject SVG, so the generated
-    // raster is the only version that actually renders where it matters.
+    images: [SHARE_CARD],
   },
   twitter: {
     // summary_large_image now that there is art to put in it. A large card is
@@ -137,7 +155,7 @@ export const metadata: Metadata = {
     creator: X_HANDLE,
     title: `Greenwood — ${TAGLINE}`,
     description: DESCRIPTION,
-    // Also omitted: the generated opengraph-image is picked up for both.
+    images: [SHARE_CARD],
   },
   robots: { index: true, follow: true },
 };
