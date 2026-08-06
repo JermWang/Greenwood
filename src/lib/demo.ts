@@ -85,6 +85,58 @@ export function newDemoWallet(random: () => number = Math.random): string {
 export const DEMO_SCRIP = 12_000;
 
 /**
+ * The starting BNTY. Fake, and enough to actually see the game.
+ *
+ * A demo used to get the ordinary starter grant of 1,000 — sized so a REAL new
+ * wallet can afford its first desk and then earn everything after it. For
+ * somebody who has connected nothing and will be gone in ten minutes, that is
+ * one desk and then a wait, and the introduction runs straight into a wall on
+ * step three:
+ *
+ *   first desk           1,000   (750 for a Treasury Desk)
+ *   open an allocation  10,000   ← CRATE_OPEN_BNTY, ten times the whole grant
+ *   take a desk to L2      250
+ *   open a Note            100   (STAKE_MIN_BNTY, and it comes back)
+ *   buy on the Exchange      ?   whatever is listed
+ *
+ * So 50,000: four desks, three allocations, a desk taken to L5, a couple of
+ * portfolio upgrades, a Note and something off the Exchange, with headroom.
+ * Every mechanic reachable, none of them twice over.
+ *
+ * Deliberately not more. It is still two orders of magnitude below what a real
+ * fund accumulates, because a player who leaves the demo thinking currency is
+ * free has learned the wrong thing about the game they are being invited into —
+ * the same reason DEMO_SCRIP is 12,000 and not a million.
+ *
+ * This balance is NEVER a liability. A demo address holds no key, so it cannot
+ * sign, cannot settle and cannot withdraw; the tokens do not have to exist. See
+ * DEMO_WALLET_LIKE for the half of that which is enforced rather than promised.
+ */
+export const DEMO_BNTY = 50_000;
+
+/**
+ * LIKE pattern matching every demo wallet, for queries that must exclude them.
+ *
+ * The SQL half of `isDemoWallet`, and it exists because the aggregates that
+ * measure what the protocol OWES read the users table directly:
+ *
+ *   solvency()          liability = SUM(osr_balance) + SUM(nodes.accrued)
+ *   protocolOverview()  balances  = SUM(osr_balance)
+ *
+ * Demo balances are not owed to anybody — nobody can sign for them — so
+ * counting them overstates the liability against the real treasury. That was
+ * already slightly wrong at a 1,000 grant. At 50,000 it would be a live hazard:
+ * the demo cookie is not a credential anybody has to earn, so a person willing
+ * to mint sessions in a loop could inflate the reported liability at will, and
+ * there is a payout brake watching that number.
+ *
+ * Bound as a parameter rather than pasted into the SQL. The value is a constant
+ * and could not inject anything, but a query built by string concatenation is a
+ * pattern the next person copies somewhere it matters.
+ */
+export const DEMO_WALLET_LIKE = `${DEMO_PREFIX}%`;
+
+/**
  * The cookie that remembers which demo account this browser is.
  *
  * A cookie rather than localStorage because the SERVER has to read it: the

@@ -3,7 +3,7 @@
 // read "settles" a node's accrued BNTY up to now, so no background ticker is
 // needed.
 
-import { isDemoWallet } from './demo';
+import { DEMO_BNTY, DEMO_WALLET_LIKE, isDemoWallet } from './demo';
 import { TOKEN_LIVE } from './config';
 import { getDb, getProtocolValue, setProtocolValue } from './db';
 import { rollCrateDrops, unopenedCrates, unseenCrates, type FoundCrate } from './crates';
@@ -184,10 +184,18 @@ export function readUser(wallet: string): UserRow {
  * started with 1,000 BNTY it could never spend.
  */
 function starterGrantFor(wallet: string): number {
-  if (STARTER_BNTY_GRANT <= 0) return 0;
   // Demo accounts never settle on-chain, so the mirrored balance is the only
-  // money they will ever have.
-  if (isDemoWallet(wallet)) return STARTER_BNTY_GRANT;
+  // money they will ever have — and they get a different, larger figure than a
+  // real wallet does, because the two grants answer different questions. A real
+  // wallet is being given enough to START (one desk, then earn the rest); a
+  // demo is being given enough to SEE, because it has ten minutes and no way to
+  // earn anything. See DEMO_BNTY.
+  //
+  // Checked before the STARTER_BNTY_GRANT guard below on purpose: turning the
+  // real grant off once the token is live must not also empty the demo, which
+  // is the one account that can never buy anything with real tokens.
+  if (isDemoWallet(wallet)) return DEMO_BNTY;
+  if (STARTER_BNTY_GRANT <= 0) return 0;
   // Pre-token, everyone is playing the mirrored game.
   return TOKEN_LIVE ? 0 : STARTER_BNTY_GRANT;
 }
@@ -1156,8 +1164,14 @@ export function protocolOverview() {
          FROM stakes WHERE status = 'active'`
     )
     .get() as { c: number; principal: number };
+  // Demo accounts excluded. They hold fake BNTY nobody can sign for, so
+  // counting it here would report tokens as circulating that were never minted
+  // and can never move — and anyone can open as many demo sessions as they
+  // like. See DEMO_WALLET_LIKE.
   const balances = (
-    db.prepare('SELECT COALESCE(SUM(osr_balance), 0) AS t FROM users').get() as { t: number }
+    db
+      .prepare('SELECT COALESCE(SUM(osr_balance), 0) AS t FROM users WHERE wallet NOT LIKE ?')
+      .get(DEMO_WALLET_LIKE) as { t: number }
   ).t;
   const operators = (db.prepare('SELECT COUNT(*) AS c FROM users').get() as { c: number }).c;
   return {

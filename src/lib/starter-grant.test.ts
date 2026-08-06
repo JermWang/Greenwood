@@ -16,6 +16,9 @@ import { describe, test, expect, afterAll, beforeEach, vi } from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+// Safe to import statically: lib/demo reads no environment, so it is the same
+// module whether the engine around it was loaded with the token live or not.
+import { DEMO_BNTY } from './demo';
 
 const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'osr-grant-test-'));
 process.env.OSR_DATA_DIR = DATA_DIR;
@@ -113,9 +116,77 @@ describe('once the token is live', () => {
    * unplayable — which is the whole shop window.
    */
   test('a demo wallet is still granted, because it can never settle on-chain', async () => {
-    const { game, economy } = await engineWith(true);
+    const { game } = await engineWith(true);
     const user = game.getOrCreateUser(fresh(DEMO));
-    expect(user.osr_balance).toBe(economy.STARTER_BNTY_GRANT);
+    expect(user.osr_balance).toBe(DEMO_BNTY);
+  });
+});
+
+/**
+ * The demo gets a DIFFERENT figure, not a bigger accident.
+ *
+ * A real wallet is granted enough to START — one desk, then earn the rest. A
+ * demo has ten minutes and no way to earn anything, so it is granted enough to
+ * SEE. These assert the second one actually reaches the mechanics the
+ * introduction walks a player through, because the previous grant did not: at
+ * 1,000 BNTY the chain died on step three, where opening an allocation costs
+ * ten times the entire grant.
+ */
+describe('the demo grant', () => {
+  test('covers the whole introduction, not just the first desk', async () => {
+    const { economy } = await engineWith(false);
+    // Levelling is priced in lib/capital, not lib/economy — the cost curve
+    // belongs with the shared-capital rule it exists to express.
+    const capital = await import('./capital');
+    const firstDesk = Math.min(...economy.NODE_FAMILIES.map((f) => f.burnCostBnty));
+    const walkthrough =
+      firstDesk +
+      economy.CRATE_OPEN_BNTY + // open an allocation
+      capital.nodeUpgradeCost(1) + // take a desk to L2
+      economy.STAKE_MIN_BNTY; // open a Fixed Income Note
+    expect(DEMO_BNTY).toBeGreaterThan(walkthrough);
+  });
+
+  test('leaves room to do it more than once, which is what makes it a demo', async () => {
+    const { economy } = await engineWith(false);
+    // Three allocations is the floor for understanding where instruments come
+    // from: one is an event, three is a mechanic.
+    expect(DEMO_BNTY).toBeGreaterThanOrEqual(economy.CRATE_OPEN_BNTY * 3);
+  });
+
+  /**
+   * The arithmetic above is a claim about constants. This drives the engine.
+   *
+   * Run against a LIVE token deliberately, because that is the shape of the
+   * deployment where a demo is the only account whose spends still come out of
+   * the mirrored balance — everybody else's are real transfers. If demo spending
+   * is going to break anywhere, it breaks here.
+   */
+  test('a demo can actually build and level a desk out of it', async () => {
+    const { game } = await engineWith(true);
+    const w = fresh(DEMO);
+    game.getOrCreateUser(w);
+
+    const node = game.mintNode(w, 'equity_desk');
+    expect(game.readUser(w).osr_balance).toBeGreaterThan(0);
+
+    game.upgradeNode(w, node.node.id);
+    const after = game.readUser(w);
+    expect(after.osr_balance).toBeGreaterThan(0);
+    // And still enough left for the step that used to be the wall.
+    const { CRATE_OPEN_BNTY } = await import('./economy');
+    expect(after.osr_balance).toBeGreaterThan(CRATE_OPEN_BNTY);
+  });
+
+  test('is still small enough that currency does not read as free', async () => {
+    const { economy } = await engineWith(false);
+    // Well under the cost of maxing the portfolio, so the demo shows the game
+    // rather than skipping it.
+    const maxedPortfolio = Object.values(economy.COMPOUND_LEVELS).reduce(
+      (sum, level) => sum + level.bntyUpgradeCost,
+      0
+    );
+    expect(DEMO_BNTY).toBeLessThan(maxedPortfolio);
   });
 });
 

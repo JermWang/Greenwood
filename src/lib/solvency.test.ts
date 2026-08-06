@@ -13,6 +13,7 @@ delete process.env.VERCEL;
 const { solvency, payoutsPaused, setPayoutsPaused, requirePayoutsEnabled } = await import('./solvency');
 const { getDb } = await import('./db');
 const { GameError } = await import('./game');
+const { DEMO_PREFIX } = await import('./demo');
 
 const wallet = (n: number) => `0x${String(n).padStart(40, '0')}`;
 
@@ -34,6 +35,28 @@ function operator(n: number, balance: number, accrued = 0) {
       `INSERT INTO nodes (wallet, family, level, created_at, last_claim_at, accrued, accrued_updated_at)
        VALUES (?,'oil',1,?,?,?,?)`
     ).run(wallet(n), Date.now(), Date.now(), accrued, Date.now());
+  }
+}
+
+/**
+ * The same, on a demo address.
+ *
+ * Built from DEMO_PREFIX rather than a hand-typed literal, so a change to the
+ * marker cannot leave this test quietly asserting nothing — it would start
+ * inserting ordinary wallets and the exclusions would appear to have stopped
+ * working, which is the correct direction for it to fail in.
+ */
+function demoOperator(n: number, balance: number, accrued = 0) {
+  const db = getDb();
+  const w = `${DEMO_PREFIX}${String(n).padStart(42 - DEMO_PREFIX.length, '0')}`;
+  db.prepare('INSERT OR REPLACE INTO users (wallet, osr_balance, created_at, last_seen) VALUES (?,?,?,?)').run(
+    w, balance, Date.now(), Date.now()
+  );
+  if (accrued > 0) {
+    db.prepare(
+      `INSERT INTO nodes (wallet, family, level, created_at, last_claim_at, accrued, accrued_updated_at)
+       VALUES (?,'oil',1,?,?,?,?)`
+    ).run(w, Date.now(), Date.now(), accrued, Date.now());
   }
 }
 
@@ -65,6 +88,38 @@ describe('what the protocol owes', () => {
     expect(s.balances).toBe(600);
     expect(s.pending).toBe(250);
     expect(s.liability).toBe(850);
+  });
+
+  /**
+   * DEMO ACCOUNTS ARE NOT A LIABILITY.
+   *
+   * A demo address holds no key, so it can never claim and the treasury will
+   * never be asked for a token of it. Counting demo rows would overstate what is
+   * owed, and `liability` is what the payout brake watches — so the failure mode
+   * is not a wrong number on a dashboard, it is real operators stopping being
+   * paid.
+   *
+   * The amounts here are the real ones: a demo starts on DEMO_BNTY (50,000), the
+   * cookie that mints one is not a credential anybody has to earn, and nothing
+   * stops a person opening sessions in a loop. Two of them alone would swamp the
+   * operator beside them.
+   */
+  test('ignores demo accounts, which can never claim', async () => {
+    operator(1, 500, 250);
+    demoOperator(1, 50_000, 4_000);
+    demoOperator(2, 50_000);
+    const s = await solvency(async () => 10_000);
+    expect(s.balances).toBe(500);
+    expect(s.pending).toBe(250);
+    expect(s.liability).toBe(750);
+  });
+
+  test('and does not let them trip the brake', async () => {
+    operator(1, 1_000);
+    for (let i = 0; i < 20; i += 1) demoOperator(i, 50_000, 5_000);
+    const s = await solvency(async () => 1_500);
+    expect(s.insolvent).toBe(false);
+    expect(s.surplus).toBe(500);
   });
 
   /**

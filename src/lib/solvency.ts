@@ -20,6 +20,7 @@
 // thing to remember.
 
 import { getDb, getProtocolValue, setProtocolValue } from './db';
+import { DEMO_WALLET_LIKE } from './demo';
 import { GameError } from './game';
 
 const PAUSE_KEY = 'payouts_paused';
@@ -108,10 +109,37 @@ export async function solvency(
 ): Promise<Solvency> {
   const db = getDb();
 
+  /*
+   * DEMO ACCOUNTS ARE NOT A LIABILITY, and this is the query where that has
+   * teeth.
+   *
+   * A demo address holds no key. It cannot sign, so it can never claim, so the
+   * treasury will never be asked for one token of what these rows say. Counting
+   * them would overstate what is owed — and `liability` below is what the payout
+   * brake watches, so overstating it does not produce a wrong number on a
+   * dashboard, it stops real operators being paid.
+   *
+   * That matters more than it used to. The demo cookie is not a credential
+   * anybody has to earn, and a demo now starts with 50,000 fake BNTY (DEMO_BNTY)
+   * rather than 1,000 — so without this, opening demo sessions in a loop is a
+   * way for anyone to trip the brake from a browser.
+   *
+   * Both halves are excluded, because a demo builds desks and those desks
+   * accrue: the balance they hold and the yield sitting in their desks are the
+   * same fiction.
+   */
   const balances =
-    (db.prepare('SELECT COALESCE(SUM(osr_balance), 0) v FROM users').get() as { v: number }).v ?? 0;
+    (
+      db
+        .prepare('SELECT COALESCE(SUM(osr_balance), 0) v FROM users WHERE wallet NOT LIKE ?')
+        .get(DEMO_WALLET_LIKE) as { v: number }
+    ).v ?? 0;
   const pending =
-    (db.prepare('SELECT COALESCE(SUM(accrued), 0) v FROM nodes').get() as { v: number }).v ?? 0;
+    (
+      db
+        .prepare('SELECT COALESCE(SUM(accrued), 0) v FROM nodes WHERE wallet NOT LIKE ?')
+        .get(DEMO_WALLET_LIKE) as { v: number }
+    ).v ?? 0;
 
   const paidOut =
     (
