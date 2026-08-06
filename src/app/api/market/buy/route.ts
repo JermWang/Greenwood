@@ -6,7 +6,7 @@ import { getDb } from '@/lib/db';
 import { decodeDetail } from '@/lib/settle-route';
 import { splitSale, transferSoldItem } from '@/lib/market';
 import {
-  SETTLEMENT_CONFIGURED,
+  settlesOnChain,
   encodeDetail,
   payoutBnty,
   quoteSpend,
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     // check only proves the *quoted* amount arrived: a buyer who quoted a cheap
     // listing, paid for it, then settled with an expensive listing's id would get
     // the expensive item and have the treasury pay its seller the difference.
-    if (SETTLEMENT_CONFIGURED && nonce && txHash) {
+    if (settlesOnChain(wallet) && nonce && txHash) {
       let paid: { listing: ListingRow; fee: number; toSeller: number } | null = null;
       const sold = await settleSpend(wallet, 'MarketBuy', nonce, txHash, (row) => {
         const quotedId = Number(decodeDetail(row.detail));
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     const { fee, toSeller } = splitSale(listing.price_osr);
 
     // Pre-token: no chain to settle against, so the mirrored balances move.
-    if (!SETTLEMENT_CONFIGURED) {
+    if (!settlesOnChain(wallet)) {
       const db = getDb();
       const buyer = getOrCreateUser(wallet);
       if (buyer.osr_balance < listing.price_osr) {

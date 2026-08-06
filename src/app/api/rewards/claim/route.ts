@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { GameError, claimRewards, settleUser } from '@/lib/game';
 import {
-  SETTLEMENT_CONFIGURED,
+  settlesOnChain,
   estimatePayoutGasBnty,
   payoutBnty,
   recordPayout,
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     // Pre-token: rewards credit the mirrored balance, nothing moves on-chain.
-    if (!SETTLEMENT_CONFIGURED) {
+    if (!settlesOnChain(wallet)) {
       return NextResponse.json({ settled: true, result: claimRewards(wallet, nodeId, mode) });
     }
 

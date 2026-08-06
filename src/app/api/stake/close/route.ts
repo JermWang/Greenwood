@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { GameError } from '@/lib/game';
-import { SETTLEMENT_CONFIGURED, payoutBnty, recordPayout } from '@/lib/settlement';
+import { settlesOnChain, payoutBnty, recordPayout } from '@/lib/settlement';
 import { closeStake, stakePositions } from '@/lib/stake';
 import { requireNoActiveDeploy } from '@/lib/deploy-guard';
 
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     // Pre-token: the payout lands in the mirrored balance and nothing moves
     // on-chain, so closing is a single atomic step.
-    if (!SETTLEMENT_CONFIGURED) {
+    if (!settlesOnChain(wallet)) {
       const result = closeStake(wallet, stakeId);
       return NextResponse.json({ settled: true, result, ...stakePositions(wallet) });
     }

@@ -16,7 +16,7 @@ import { requireAuthenticatedWallet } from './api-util';
 import { maybeSnapshot } from './backup';
 import { requireNoActiveDeploy } from './deploy-guard';
 import {
-  SETTLEMENT_CONFIGURED,
+  settlesOnChain,
   encodeDetail,
   quoteSpend,
   settleSpend,
@@ -66,7 +66,7 @@ export async function handleSettlementRoute<P>(
     // and the mirrored balance is the ledger of record. Setting them flips the
     // same action to quote -> ERC-20 transfer -> receipt verification. No other
     // code has to change to make that switch.
-    if (!SETTLEMENT_CONFIGURED) {
+    if (!settlesOnChain(wallet)) {
       // Pre-token this both prices and applies in one call, so it is a "start"
       // and must wait out a deploy window like any other.
       requireNoActiveDeploy();

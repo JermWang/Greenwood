@@ -24,6 +24,8 @@ import { getDb } from './db';
 import { GameError } from './game';
 import { requirePayoutsEnabled } from './solvency';
 import { CHAIN, BNTY_TOKEN_ADDRESS, isConfiguredAddress } from './config';
+// demo.ts has no imports of its own, by design, so this cannot cycle.
+import { isDemoWallet } from './demo';
 
 export type SettlementAction =
   | 'MintNode'
@@ -107,6 +109,40 @@ export const SETTLEMENT_CONFIGURED =
   isConfiguredAddress(BNTY_TOKEN_ADDRESS) &&
   isConfiguredAddress(TREASURY) &&
   treasurySignerAddress() === TREASURY.toLowerCase();
+
+/**
+ * Whether THIS wallet settles on-chain. Ask this, not SETTLEMENT_CONFIGURED.
+ *
+ * A demo address holds no key. It cannot sign, so it can never send the ERC-20
+ * transfer a quote asks for, and it can never receive a payout that means
+ * anything. Both halves broke the moment the token address was set:
+ *
+ *   SPENDS   every priced action started returning payment instructions to an
+ *            account with no wallet behind it. A demo player walked to the
+ *            Machine Room and was asked to pay 1,000 BNTY to open their first
+ *            desk — the demo simply stopped working, and the "Play demo" button
+ *            on the landing page became a dead end.
+ *
+ *   PAYOUTS  worse, and quietly. `claim` consumed the accrual and then sent
+ *            real BNTY from the treasury to `0xfacade00…`, an address nobody
+ *            controls and nobody can ever spend from. With an empty treasury
+ *            that only fails; with a funded one it is a permanent loss, once
+ *            per claim, for as long as it goes unnoticed.
+ *
+ * `demo.ts` says financial actions are "gated behind NEXT_PUBLIC_ONCHAIN plus a
+ * signature it cannot produce". The signature half is true and insufficient —
+ * nothing asks for the signature until after the game state has already moved —
+ * and NEXT_PUBLIC_ONCHAIN is read NOWHERE in this codebase. That guard was
+ * assumed rather than written, which is why it protected nothing.
+ *
+ * So the mirrored balance stays the ledger of record for demo accounts after
+ * the token goes live, exactly as it was for everybody before it. That money is
+ * already fiction nobody can withdraw — see the demo exclusions in lib/solvency,
+ * which keep it out of both liability and circulating supply.
+ */
+export function settlesOnChain(wallet: string): boolean {
+  return SETTLEMENT_CONFIGURED && !isDemoWallet(wallet);
+}
 
 /** Why writes are still off-chain. Surfaced verbatim so the reason is the true one. */
 export function settlementBlocker(): string | null {

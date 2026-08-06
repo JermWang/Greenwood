@@ -3,7 +3,7 @@ import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { handleSettlementRoute } from '@/lib/settle-route';
 import { GameError } from '@/lib/game';
 import { buyCosmetic, cosmeticDef, cosmeticsCatalog } from '@/lib/cosmetics';
-import { SETTLEMENT_CONFIGURED } from '@/lib/settlement';
+import { settlesOnChain } from '@/lib/settlement';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     try {
       const wallet = await requireAuthenticatedWallet(request, body.wallet);
       if (typeof body.key !== 'string') throw new GameError('cosmetic key is required', 400);
-      if (currency === 'ETH' && SETTLEMENT_CONFIGURED) {
+      if (currency === 'ETH' && settlesOnChain(wallet)) {
         throw new GameError('ETH checkout is not live yet — this item can be bought with BNTY', 501);
       }
       // buyCosmetic resolves the price, and priceOf throws for a piece with no
