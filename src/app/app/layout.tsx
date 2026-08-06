@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Cpu, Lightning, Radio } from '@phosphor-icons/react';
 import WalletButton from '@/components/ui/WalletButton';
 import { DemoBanner, DemoButton } from '@/components/ui/DemoButton';
+import IntroGuide from '@/components/ui/IntroGuide';
 import MarketHud from '@/components/ui/MarketHud';
 import { useOperation } from '@/lib/useOperation';
 import DeployNotice from '@/components/ui/DeployNotice';
@@ -61,7 +62,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex items-center gap-2 lg:hidden" aria-label="Greenwood home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/gw-mark.svg" alt="" className="h-8 w-8 rounded-[10px]" />
-            <span className="font-mono text-sm font-bold tracking-[.24em] text-white">Greenwood</span>
+            {/* The wordmark goes below 640px and the mark stays. The bar has
+                room for exactly one more thing at that width, and the guide is
+                that thing — the mark alone already says where you are. */}
+            <span className="gw-topbar-wordmark font-mono text-sm font-bold tracking-[.24em] text-white">Greenwood</span>
           </Link>
           <div className="hidden min-w-0 items-center gap-3 lg:flex">
             <span className="gw-route-chip"><Cpu size={15} weight="duotone" /> {routeTitle(pathname)}</span>
@@ -70,6 +74,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Radio size={13} className="text-lime-300" /> {CHAIN.name} · {CHAIN.id}
             </span>
           </div>
+          {/* The introduction, wherever the player is. A fund now starts
+              outside on the Grounds rather than on this dashboard, so the guide
+              has to travel — see the header of IntroGuide. It renders nothing
+              at all once the introduction is finished. */}
+          <IntroGuide />
           <div className="ml-auto flex items-center gap-2">
             {/* Beside Connect, not on a landing page of its own. The thing
                 standing between a curious person and this game IS the connect

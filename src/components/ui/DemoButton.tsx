@@ -13,10 +13,11 @@
 // so, permanently, and offers the way out.
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Play } from '@phosphor-icons/react';
 import { AUTO_WALLET, demoWalletFromCookie, useOperation } from '@/lib/useOperation';
 import { useWalletStore } from '@/lib/store';
-import { isDemoWallet } from '@/lib/demo';
+import { DEMO_ENTRY, isDemoWallet } from '@/lib/demo';
 import { api } from '@/lib/api-client';
 
 /**
@@ -29,9 +30,11 @@ import { api } from '@/lib/api-client';
  * because the panel it renders reads the store that was never told.
  *
  * This exact trap has now caught the dev-wallet bypass and the demo. Anything
- * that signs a player in goes through here.
+ * that signs a player in goes through here — which is why it is exported: the
+ * demo entrance at /demo signs somebody in too, and a second copy of these two
+ * lines living over there is exactly how one of them gets forgotten again.
  */
-function useSignIn() {
+export function useSignIn() {
   const setStoreWallet = useWalletStore((s) => s.setWallet);
   const setOpWallet = useOperation((s) => s.setWallet);
   return useCallback(
@@ -46,6 +49,7 @@ function useSignIn() {
 export function DemoButton() {
   const wallet = useOperation((s) => s.wallet);
   const signIn = useSignIn();
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,12 +81,18 @@ export function DemoButton() {
     try {
       const { wallet: demo } = await api.startDemo();
       signIn(demo);
+      // Outside, not wherever this button happened to be clicked. Pressed from
+      // the dashboard — which is where somebody with no wallet lands — it
+      // otherwise signs you into an empty fund on the same wall of panels you
+      // were already looking at, which is the worst first minute this game has.
+      // See DEMO_ENTRY in lib/demo.
+      router.push(DEMO_ENTRY);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not start the demo.');
     } finally {
       setBusy(false);
     }
-  }, [busy, signIn]);
+  }, [busy, signIn, router]);
 
   // Nothing to offer once somebody is playing, demo or otherwise.
   if (wallet) return null;

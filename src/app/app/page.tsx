@@ -24,7 +24,6 @@ import type { TwinNode } from '@/components/iso/IsoTwin';
 import { CHAIN, TOKEN_LIVE } from '@/lib/config';
 import NextStep from '@/components/ui/NextStep';
 import QuestPanel from '@/components/ui/QuestPanel';
-import IntroPanel from '@/components/ui/IntroPanel';
 import {
   CollectionStrips,
   EventsPanel,
@@ -417,8 +416,11 @@ export default function CommandPage() {
 
       <CollectionStrips wallet={wallet} nodes={nodes} />
 
+      {/* The introduction used to sit here, as one card in this grid. It moved
+          into the top bar (IntroGuide) when funds started outside on the
+          Grounds — a tutorial pinned to the dashboard is a tutorial that is not
+          where the player is. */}
       <div className="fund-dash-grid">
-        <IntroPanel wallet={wallet} />
         <QuestPanel wallet={wallet} />
         <EventsPanel
           overview={overview}

@@ -819,6 +819,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
    Introduction panel
    One step at a time. Sized so the `why` gets room — it is the reason the
    panel exists, and squeezing it to fit a tighter card would defeat the point.
+
+   It is no longer a card in the dashboard grid: a fund starts OUTSIDE now, so
+   the guide hangs off a chip in the top bar and travels with the player. See
+   .gw-guide below and the header of components/ui/IntroGuide.
    -------------------------------------------------------------------------- */
 .intro-panel {
   border: 1px solid rgba(204, 255, 0, 0.35);
@@ -892,6 +896,99 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: var(--heather-2, #b1afac);
 }
 .intro-level i { font-style: normal; color: var(--heather-3, #82817d); }
+
+/* --------------------------------------------------------------------------
+   The guide, in the top bar.
+
+   Every corner was already spoken for and that decided this more than taste
+   did: top-left is the Trading Floor's quest dock, bottom-left is the Machine
+   Room's build prompt, bottom-right is the world map, bottom-centre is the
+   doorway prompt. The top bar is the one surface no region has claimed, and it
+   is also the only chrome that exists on every route — which is the actual
+   requirement, because the introduction's steps happen in four different rooms.
+
+   Collapsed to a chip carrying the current instruction. The panel opens under
+   it, and it opens ITSELF only on a new step or a collectable one.
+   -------------------------------------------------------------------------- */
+/* `flex: 0 0 auto` is load-bearing, not tidying. The top bar is a flex row with
+   no wrap, and left to shrink this collapsed to 8px on a phone while the chip
+   inside it kept its width and printed straight over the wallet button.
+
+   Deliberately NOT `position: relative`. The panel is centred on the screen
+   rather than hung off the chip, so its containing block has to be the top bar
+   — which is already `position: sticky` and therefore already positioned. A
+   `relative` here would make the chip the containing block again and pull the
+   panel back to wherever the chip happens to sit, which moves with the length
+   of the current step's label. */
+.gw-guide { z-index: 46; flex: 0 0 auto; }
+.gw-guide-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(340px, 42vw);
+  padding: 7px 11px;
+  border: 1px solid rgba(204, 255, 0, 0.32);
+  border-radius: 999px;
+  background: rgba(204, 255, 0, 0.07);
+  color: var(--robin-neon, #ccff00);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.gw-guide-chip:hover { border-color: rgba(204, 255, 0, 0.6); background: rgba(204, 255, 0, 0.12); }
+.gw-guide-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+.gw-guide-chip b {
+  flex-shrink: 0;
+  font: 750 8px var(--font-mono), monospace;
+  letter-spacing: 0.12em;
+  color: rgba(226, 235, 239, 0.45);
+}
+.gw-guide-chip svg { flex-shrink: 0; }
+.gw-guide-chip svg.is-open { transform: rotate(180deg); }
+/* A finished step is the only thing in here worth interrupting for: it is the
+   one state where the player is owed something they have to press to get. */
+.gw-guide-chip.is-ready { border-color: rgba(204, 255, 0, 0.75); background: rgba(204, 255, 0, 0.16); }
+
+/*
+ * CENTRED ON THE SCREEN, not hung off the chip.
+ *
+ * The chip's x position is a function of how long the current step's label is —
+ * "Open your first desk" and "Fit an instrument to a desk" put it in visibly
+ * different places — so a panel anchored to it walked sideways as the player
+ * progressed, and drifted toward the wallet button on the longest steps.
+ *
+ * Positioned against .gw-topbar (sticky, therefore a containing block) rather
+ * than the viewport, so `top: 100%` lands just under whatever height the bar
+ * actually is. That differs between desktop and mobile, and a hardcoded offset
+ * was already 9px wrong on one of them.
+ */
+.gw-guide-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  translate: -50% 0;
+  width: min(380px, calc(100vw - 24px));
+  margin-bottom: 0;
+  background: linear-gradient(150deg, rgba(31, 33, 22, 0.97), rgba(18, 18, 16, 0.97));
+  box-shadow: 0 34px 80px -34px #000;
+  backdrop-filter: blur(18px);
+}
+
+@media (max-width: 640px) {
+  /* Icon only. There is no width for a sentence in a bar that already carries a
+     logo, a balance, a sound toggle and a wallet — and the panel it opens says
+     everything the label would have. */
+  .gw-topbar-wordmark { display: none; }
+  .gw-guide-chip { padding: 7px 9px; }
+  .gw-guide-label, .gw-guide-chip b { display: none; }
+}
 .gw-command-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .gw-command-metrics { display: flex; gap: 22px; }
 .gw-command-metrics > div { display: flex; flex-direction: column; line-height: 1.15; }

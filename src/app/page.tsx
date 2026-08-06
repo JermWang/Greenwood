@@ -44,7 +44,7 @@ const PRIMARY = {
 } as const;
 
 const SECONDARY = [
-  { label: 'Play demo', detail: 'Walk a built floor, no wallet needed', href: '/demo', Icon: Flask },
+  { label: 'Play demo', detail: 'Start outside and build it, no wallet needed', href: '/demo', Icon: Flask },
   { label: 'Handbook', detail: 'Systems, economy and safety', href: '/app/docs', Icon: BookOpenText },
 ] as const;
 

@@ -107,7 +107,7 @@ export default function StartCompanyPage() {
 
       <aside className="gw-demo-invite">
         <Flask size={22} weight="duotone" />
-        <span><b>Not ready to connect?</b><small>Tour a fully built fund and try building first.</small></span>
+        <span><b>Not ready to connect?</b><small>Start outside Greenwood and build a fund from nothing.</small></span>
         <Link href="/demo">Play demo</Link>
       </aside>
     </main>

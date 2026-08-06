@@ -95,3 +95,21 @@ export const DEMO_COOKIE = 'greenwood_demo';
 
 /** A month. Long enough to come back to, short enough not to be permanent. */
 export const DEMO_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+
+/**
+ * Where a demo begins: OUTSIDE, at the arrival gate on the Grounds.
+ *
+ * "Play the demo" used to open a hand-placed Machine Room full of desks nobody
+ * built, rendered from a fake machine list with no account behind it. That is a
+ * screenshot you can walk around in, and it starts a new player at the end of
+ * the game's first hour — in the one room the game's own navigation says you
+ * are supposed to have WALKED to — with nothing to do, because none of it was
+ * real and none of it was theirs.
+ *
+ * So both entrances (this route and the button in the top bar) land here
+ * instead. The Grounds are ungated for everybody (lib/regions), so this is not
+ * a demo privilege: it is simply where the game starts once there is an account
+ * to start it with. The Machine Room is a door twelve tiles away, and walking
+ * to it is the first thing the introduction asks for.
+ */
+export const DEMO_ENTRY = '/app/grounds';

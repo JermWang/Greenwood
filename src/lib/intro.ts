@@ -55,6 +55,18 @@ export interface IntroStep {
  *
  * So the total is now tuned to leave a finisher having ALREADY walked out to the
  * Grounds and bought a Satchel, with change. The key and the lock, not the key.
+ *
+ * THE FIRST STEPS HAPPEN IN THE MACHINE ROOM, not on the dashboard.
+ *
+ * A fund now STARTS outside, at the arrival gate on the Grounds (lib/demo,
+ * DEMO_ENTRY), which makes `href` load-bearing in a way it was not when every
+ * player began on /app already looking at the buttons. Building, routing and
+ * levelling a desk are all things you can do standing next to one in the
+ * Machine Room — a door twelve tiles from where the player spawns — and sending
+ * them to a wall of panels instead would teach them, in the first thirty
+ * seconds, that the rooms are scenery and the dashboard is the game. The
+ * dashboard is still there and still does all of it; it is not where a player
+ * should be told to learn it.
  */
 export const INTRO_STEPS: IntroStep[] = [
   {
@@ -66,7 +78,11 @@ export const INTRO_STEPS: IntroStep[] = [
     track: 'operations',
     xp: 200,
     scrip: 600,
-    href: '/app',
+    // The Machine Room: walk to a bare tile and "Build a desk here" appears
+    // under your feet. The dashboard's Open Desk modal does the same thing from
+    // a list, which is the wrong first impression of a game you navigate by
+    // walking.
+    href: '/app/floor',
   },
   {
     key: 'intro_claim',
@@ -77,7 +93,9 @@ export const INTRO_STEPS: IntroStep[] = [
     track: 'operations',
     xp: 200,
     scrip: 600,
-    href: '/app',
+    // Routed at the desk that made it, where the storage bar is a thing you can
+    // see filling rather than a number in a list.
+    href: '/app/floor',
   },
   {
     key: 'intro_allocation',
@@ -124,7 +142,10 @@ export const INTRO_STEPS: IntroStep[] = [
     track: 'operations',
     xp: 300,
     scrip: 400,
-    href: '/app',
+    // Levelled at the desk it levels, quoted against the live balance — the
+    // price IS the decision, because the capital is shared with every other
+    // desk standing on that floor.
+    href: '/app/floor',
   },
   {
     key: 'intro_note',

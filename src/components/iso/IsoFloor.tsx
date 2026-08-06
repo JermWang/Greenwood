@@ -8,7 +8,6 @@
 // walk and no first-person camera, so placement is a single click rather than a
 // walk-to-the-spot-and-aim.
 
-import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowsClockwise, CaretDown, CaretUp, ChartLineUp, Drop, Stack, Trash, Vault } from '@phosphor-icons/react';
 import IsoScene from './IsoScene';
@@ -36,17 +35,6 @@ const KIND_ICON: Record<MachineKind, typeof ChartLineUp> = {
   settlement: Stack,
 };
 
-/** Opening arrangement for the wallet-free demo, so it never starts empty. */
-function demoLayout(machines: IsoMachine[]): PlacedIsoMachine[] {
-  const spots: Array<[number, number]> = [[-2, 0], [1, -1], [3, 2], [-4, 3], [0, 4], [4, -3]];
-  return machines.slice(0, spots.length).map((machine, i) => ({
-    id: machine.id,
-    x: spots[i][0],
-    z: spots[i][1],
-    rotation: 0,
-  }));
-}
-
 function readLocal(storageKey: string, machines: IsoMachine[]): PlacedIsoMachine[] {
   try {
     const raw = window.localStorage.getItem(storageKey);
@@ -60,15 +48,23 @@ function readLocal(storageKey: string, machines: IsoMachine[]): PlacedIsoMachine
   }
 }
 
+/*
+ * There is no `demo` prop any more, and its absence is the point.
+ *
+ * It existed for a page that dressed this room with six desks nobody owned and
+ * then had to switch off building, placing and every other verb, because none
+ * of them had an account to run against — a demo you could look at. Demo
+ * sessions are real accounts on the real database now (lib/demo), so they come
+ * in through /app/floor like everybody else and can build. Re-adding a mode
+ * flag here would re-add the room that cannot be played.
+ */
 export default function IsoFloor({
   machines,
   storageKey,
-  demo = false,
   wallet,
 }: {
   machines: IsoMachine[];
   storageKey: string;
-  demo?: boolean;
   wallet?: string;
 }) {
   const [layout, setLayout] = useState<PlacedIsoMachine[]>([]);
@@ -129,7 +125,6 @@ export default function IsoFloor({
     [worn]
   );
 
-  /** Demo visitors get a character too — walking the room is the demo. */
   const avatar = useMemo(
     () => ({
       look: lookFor({
@@ -153,7 +148,7 @@ export default function IsoFloor({
   useEffect(() => {
     if (!wallet) {
       const restored = readLocal(storageKey, machinesRef.current);
-      setLayout(restored.length > 0 || !demo ? restored : demoLayout(machinesRef.current));
+      setLayout(restored);
       setHydrated(true);
       return;
     }
@@ -172,7 +167,7 @@ export default function IsoFloor({
         if (!cancelled) setHydrated(true);
       });
     return () => { cancelled = true; };
-  }, [demo, machineKey, storageKey, wallet]);
+  }, [machineKey, storageKey, wallet]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -425,7 +420,6 @@ export default function IsoFloor({
   );
 
   const canBuildHere =
-    !demo &&
     !!wallet &&
     !holdingId &&
     !!standingAt &&
@@ -587,7 +581,7 @@ export default function IsoFloor({
 
       <header className="gw-sandbox-top">
         <div>
-          <b>{demo ? 'DEMO MACHINE ROOM' : 'MACHINE ROOM'}</b>
+          <b>MACHINE ROOM</b>
           <span>{holdingId ? 'CLICK A TILE TO PLACE' : `${layout.length}/${machines.length} DESKS RUNNING`}</span>
         </div>
       </header>
@@ -694,12 +688,6 @@ export default function IsoFloor({
         )}
       </div>
 
-      {demo && (
-        <div className="gw-demo-exit">
-          <span><b>DEMO MODE</b><small>No wallet. Layout saved only on this device.</small></span>
-          <Link href="/start">Create your fund</Link>
-        </div>
-      )}
     </main>
   );
 }

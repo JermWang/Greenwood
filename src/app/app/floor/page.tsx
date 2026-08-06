@@ -72,7 +72,7 @@ export default function CompanyFloorPage() {
   if (!wallet) {
     return (
       <div className="gw-page mx-auto max-w-[900px]">
-        <section className="gw-floor-gate"><Flask size={38} weight="duotone" /><h1>Walk the floor first.</h1><p>Connect a fund to organize your owned instruments, or enter the wallet-free demo immediately.</p><div><Link href="/demo" className="btn-primary">Play demo</Link><Link href="/start" className="btn-secondary">Link fund</Link></div></section>
+        <section className="gw-floor-gate"><Flask size={38} weight="duotone" /><h1>Walk the floor first.</h1><p>Connect a fund to build desks and arrange them, or start the wallet-free demo outside and walk in.</p><div><Link href="/demo" className="btn-primary">Play demo</Link><Link href="/start" className="btn-secondary">Link fund</Link></div></section>
       </div>
     );
   }
