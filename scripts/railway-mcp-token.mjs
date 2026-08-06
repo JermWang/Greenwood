@@ -28,6 +28,15 @@
 // Run it with:  node scripts/railway-mcp-token.mjs
 // or double-click  scripts/Fix Railway Login.cmd
 //
+// Non-interactive, for when you already have the token to hand:
+//
+//   node scripts/railway-mcp-token.mjs --token <TOKEN>
+//
+// The token is read from argv only in that form and is never echoed. Note that
+// an argument IS visible in shell history and to other processes on the machine
+// while the command runs, which the prompt above avoids — use the prompt if
+// that matters to you.
+//
 // NOTE ON THE TOKEN. You paste it; this script only moves it into place. It is
 // stored in plaintext in ~/.claude.json, which is how every MCP server
 // credential is stored — treat that file as a secret. Revoke a token any time
@@ -119,7 +128,13 @@ async function main() {
     say(`     (Could not open a browser — visit the link above manually.)`);
   }
 
-  const token = await askHidden('  2. Paste the token here and press Enter (input is hidden): ');
+  // --token skips the prompt. Everything after it is identical, including the
+  // validation — a token passed on the command line is not more trustworthy for
+  // having been typed with a flag in front of it.
+  const flagIndex = process.argv.indexOf('--token');
+  const fromArgv = flagIndex >= 0 ? (process.argv[flagIndex + 1] ?? '').trim() : '';
+
+  const token = fromArgv || (await askHidden('  2. Paste the token here and press Enter (input is hidden): '));
   if (!token) fail('No token entered. Nothing was changed.');
 
   say('\n  3. Checking the token against Railway…');
