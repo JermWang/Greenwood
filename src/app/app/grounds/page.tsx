@@ -20,7 +20,6 @@
 // prevent. The gate says what you need and hands it to you.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Lock, Backpack } from '@phosphor-icons/react';
 import { Canvas } from '@react-three/fiber';
@@ -526,16 +525,25 @@ export default function GroundsPage() {
           )}
 
           {/* Locked on something that cannot be bought at a gate — a level, or a
-              desk that has to be raised. Nothing to sell here, so point at where
-              the work happens rather than leaving a dead end. Both routes go to
-              the fund, but the label has to name the right one: "come back at
-              level 10" and "raise a desk to level 8" are different jobs and
-              telling a player the wrong one costs them a session. */}
-          {(verdict?.code === 'level' || verdict?.code === 'desk') && (
-            <Link className="gr-door-go is-quiet" href="/app">
-              <Lock size={13} weight="bold" />{' '}
-              {verdict.code === 'desk' ? 'Go and level a desk' : 'Back to the fund'}
-            </Link>
+              desk that has to be raised.
+
+              THIS DOES NOT OFFER A WAY OUT OF THE WORLD, and that is the whole
+              point of the change. It used to be a link to /app labelled "Back to
+              the fund", so the answer to "you are not high enough level yet" was
+              a button that closed the game and returned you to a dashboard. A
+              locked door is a reason to turn around and go somewhere else in
+              Greenwood, not a reason to leave it — and the Machine Room, where
+              the work actually happens, is a door on this very screen about
+              twenty tiles away.
+
+              So the gate says what is needed and where that is done, and the
+              player walks. No teleport, because navigation happens in the world
+              (CLAUDE.md) and a shortcut here is a nav rail with one entry. */}
+          {verdict?.code === 'desk' && (
+            <em className="gr-door-hint">
+              <Lock size={13} weight="bold" /> Desks are raised in the Machine Room, across the
+              Grounds.
+            </em>
           )}
         </div>
       )}

@@ -1171,6 +1171,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-style: normal;
   color: #ff8f7a;
 }
+/* Where the work is done, on a gate that cannot be opened from here.
+   Deliberately NOT a button: it replaced a link that took the player out of the
+   world to the dashboard, and the fix is that they turn around and walk to a
+   door on this same screen. Styled as the quiet aside it is, so it never reads
+   as something to press. */
+.gr-door-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.5;
+  color: rgba(224, 163, 74, 0.82);
+}
+.gr-door-hint svg { flex-shrink: 0; }
 .gr-door-go {
   display: inline-flex;
   align-items: center;

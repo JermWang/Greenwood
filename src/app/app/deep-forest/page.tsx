@@ -273,7 +273,15 @@ export default function DeepForestPage() {
       <div className="df-gate">
         <span className="df-gate-kicker">The Deep Forest</span>
         <p>{state.reason}</p>
-        <Link className="btn-secondary" href="/app">Back to the fund</Link>
+        {/* Back to the GROUNDS, not to /app.
+            This screen is what a player sees when they reach for a region they
+            cannot enter yet, and its only action used to be a link to the
+            dashboard — so being told "come back at level 10" ended with the
+            game closing. The Grounds are the hub every outdoor region hangs
+            off; sending them there leaves them standing in Greenwood with the
+            other doors in front of them, which is the correct answer to a door
+            that will not open. */}
+        <Link className="btn-secondary" href="/app/grounds">Back to the Grounds</Link>
       </div>
     );
   }
