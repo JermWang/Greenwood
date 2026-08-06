@@ -15,6 +15,7 @@ import IsoBoard, { BOARD_BOUNDS, type BoardBounds, type DragState } from './IsoB
 import { type CharacterLook } from './Character';
 import { type DeskLivery } from './DeskModels';
 import { ISO, ISO_OFFSET, ZOOM, type IsoMachine, type PlacedIsoMachine } from './palette';
+import { renderTier } from './render-tier';
 
 const OFFSET = new THREE.Vector3(...ISO_OFFSET);
 /** Ground-plane basis for this camera angle: screen-right and screen-away. */
@@ -150,60 +151,134 @@ export function IsoRig({
   /** Zoom-out limit: the region's own, or the global room minimum. */
   const floor = minZoom ?? ZOOM.min;
 
+  /**
+   * Pan and zoom, by mouse and by touch.
+   *
+   * TOUCH WAS NOT SUPPORTED AND IT WAS NOT OBVIOUS, because pointer events made
+   * it look like it was. A one-finger drag already panned — touch fires
+   * pointerdown/move/up like a mouse — so the camera felt fine and nothing
+   * announced that ZOOM was wheel-only. On a phone there is no wheel, which
+   * meant no player on a phone could zoom any scene in this game, in or out,
+   * ever. Every region uses this rig, so it was every region.
+   *
+   * Pointers are tracked in a Map rather than as one x/y pair. With a single
+   * pair, a second finger overwrites `lastX/lastY` and the next move computes a
+   * delta between two DIFFERENT fingers — the camera jumps the distance between
+   * them, which reads as the map teleporting whenever a second thumb lands.
+   *
+   * One pointer pans. Two pinch: the midpoint pans and the distance zooms, so a
+   * pinch that also drifts does both, which is what a hand actually does.
+   */
   useEffect(() => {
     if (!interactive) return;
     const el = gl.domElement;
-    let down = false;
-    let lastX = 0;
-    let lastY = 0;
 
-    const onDown = (e: PointerEvent) => {
-      down = true;
-      dragRef.current.dragging = true;
-      // Reset here rather than on pointerup: the board's click handler runs
-      // immediately after up and needs to still see how far this gesture moved.
-      dragRef.current.moved = 0;
-      lastX = e.clientX;
-      lastY = e.clientY;
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!down) return;
-      const dx = e.clientX - lastX;
-      const dy = e.clientY - lastY;
-      lastX = e.clientX;
-      lastY = e.clientY;
-      dragRef.current.moved += Math.abs(dx) + Math.abs(dy);
-      if (dragRef.current.moved <= DRAG_SLOP) return;
-      const zoom = (camera as THREE.OrthographicCamera).zoom;
-      const k = 2 / zoom;
+    /** Live pointers by id. Size decides the gesture. */
+    const points = new Map<number, { x: number; y: number }>();
+    /** Distance and midpoint of the last two-finger frame. */
+    let lastSpread = 0;
+    let lastMidX = 0;
+    let lastMidY = 0;
+
+    const cam = () => camera as THREE.OrthographicCamera;
+    const pan = (dx: number, dy: number) => {
+      const k = 2 / cam().zoom;
       // Grab-and-pull, on both axes: the ground follows the pointer, so the
       // camera moves opposite to the drag. Horizontally that was already the
       // case; vertically it was reversed, which is why dragging down walked the
       // view further down the floor instead of pulling the floor toward you.
       desired.current.addScaledVector(RIGHT, -dx * k);
       desired.current.addScaledVector(AWAY, dy * k);
+    };
+    const zoomBy = (factor: number) => {
+      const c = cam();
+      c.zoom = THREE.MathUtils.clamp(c.zoom * factor, floor, ZOOM.max);
+      c.updateProjectionMatrix();
+    };
+
+    /** Distance and midpoint of the two active touches. */
+    const spread = () => {
+      const [a, b] = [...points.values()];
+      return {
+        d: Math.hypot(a.x - b.x, a.y - b.y),
+        mx: (a.x + b.x) / 2,
+        my: (a.y + b.y) / 2,
+      };
+    };
+
+    const onDown = (e: PointerEvent) => {
+      points.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      dragRef.current.dragging = true;
+      // Reset here rather than on pointerup: the board's click handler runs
+      // immediately after up and needs to still see how far this gesture moved.
+      if (points.size === 1) dragRef.current.moved = 0;
+      if (points.size === 2) {
+        const s = spread();
+        lastSpread = s.d;
+        lastMidX = s.mx;
+        lastMidY = s.my;
+        // A pinch is never a tap. Push past the slop so releasing it cannot be
+        // read as a click on whatever tile happened to be under a finger.
+        dragRef.current.moved = DRAG_SLOP + 1;
+      }
+    };
+
+    const onMove = (e: PointerEvent) => {
+      const prev = points.get(e.pointerId);
+      if (!prev) return;
+      points.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (points.size >= 2) {
+        const s = spread();
+        if (lastSpread > 0) {
+          zoomBy(s.d / lastSpread);
+          // The midpoint carries the pan, so a pinch that slides also travels.
+          pan(s.mx - lastMidX, s.my - lastMidY);
+        }
+        lastSpread = s.d;
+        lastMidX = s.mx;
+        lastMidY = s.my;
+        return;
+      }
+
+      const dx = e.clientX - prev.x;
+      const dy = e.clientY - prev.y;
+      dragRef.current.moved += Math.abs(dx) + Math.abs(dy);
+      if (dragRef.current.moved <= DRAG_SLOP) return;
+      pan(dx, dy);
       el.style.cursor = 'grabbing';
     };
-    const onUp = () => {
-      down = false;
-      dragRef.current.dragging = false;
-      el.style.cursor = '';
+
+    const onUp = (e: PointerEvent) => {
+      points.delete(e.pointerId);
+      if (points.size < 2) lastSpread = 0;
+      // Lifting one finger of a pinch leaves the other one panning. Re-seat it
+      // so the survivor does not pan by the gap between the two.
+      if (points.size === 0) {
+        dragRef.current.dragging = false;
+        el.style.cursor = '';
+      }
     };
+
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const cam = camera as THREE.OrthographicCamera;
-      cam.zoom = THREE.MathUtils.clamp(cam.zoom * (1 - e.deltaY * 0.0012), floor, ZOOM.max);
-      cam.updateProjectionMatrix();
+      zoomBy(1 - e.deltaY * 0.0012);
     };
 
     el.addEventListener('pointerdown', onDown);
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
+    // A touch that leaves the surface without a clean up (dragged off the
+    // element, interrupted by a system gesture) fires cancel instead. Without
+    // this the pointer stays in the map forever and the next single touch is
+    // treated as the second half of a pinch that never ended.
+    window.addEventListener('pointercancel', onUp);
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => {
       el.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
       el.removeEventListener('wheel', onWheel);
     };
   }, [camera, gl, dragRef, interactive, floor]);
@@ -236,6 +311,10 @@ export function Lighting({ bounds }: { bounds: BoardBounds }) {
     const span = Math.max(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ);
     return span * 0.75 + 6;
   }, [bounds]);
+  // Half the map edge on a phone: the same shadow camera over a quarter of the
+  // texels, which softens edges rather than removing them. Kept ON — see
+  // render-tier for why the shadows are not the thing worth cutting.
+  const shadowMapSize = useMemo(() => renderTier().shadowMapSize, []);
 
   // Ordinary daylight: a warm key, a cool sky, a neutral fill. Nothing here is
   // tinted toward the brand colour — a green key light was what made every
@@ -249,7 +328,7 @@ export function Lighting({ bounds }: { bounds: BoardBounds }) {
         intensity={2.0}
         position={[16, 24, 10]}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[shadowMapSize, shadowMapSize]}
         shadow-camera-left={-shadowCamera}
         shadow-camera-right={shadowCamera}
         shadow-camera-top={shadowCamera}
@@ -310,15 +389,18 @@ export default function IsoScene({
   ...props
 }: IsoSceneProps) {
   const dragRef = useRef<DragState>({ dragging: false, moved: 0 });
+  // Read once per mount. See render-tier: a module-level constant would be
+  // computed during the server render, where there is no window to ask.
+  const tier = useMemo(() => renderTier(), []);
 
   return (
     <Canvas
       shadows
-      dpr={[1, 2]}
+      dpr={tier.dpr}
       orthographic
       camera={CAMERA}
       gl={{
-        antialias: true,
+        antialias: tier.antialias,
         powerPreference: 'high-performance',
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.06,

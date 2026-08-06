@@ -14,6 +14,7 @@ import { X } from '@phosphor-icons/react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { IsoRig } from '@/components/iso/IsoScene';
+import { renderTier } from '@/components/iso/render-tier';
 import { EXTENT } from '@/lib/deep-forest-map';
 import type { DragState } from '@/components/iso/IsoBoard';
 import DeepForestScene from '@/components/iso/DeepForestScene';
@@ -112,6 +113,8 @@ export default function DeepForestPage() {
   const [dismissed, setDismissed] = useState<string[]>([]);
   /** Shared with IsoRig so a pan that ends over a tile is not read as a click. */
   const dragRef = useRef<DragState>({ dragging: false, moved: 0 });
+  /** Device render budget, read once per mount. See render-tier. */
+  const tier = useMemo(() => renderTier(), []);
   /** Live character position for the camera. See IsoRig's `followRef`. */
   const livePos = useRef<{ x: number; z: number } | null>(null);
 
@@ -301,7 +304,7 @@ export default function DeepForestPage() {
         orthographic
         camera={CAMERA}
         shadows
-        dpr={[1, 1.75]}
+        dpr={tier.worldDpr}
         gl={{ powerPreference: 'high-performance', antialias: false, stencil: false, depth: true }}
       >
         {/*

@@ -82,8 +82,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   mask-image: linear-gradient(to bottom, #000, transparent 82%);
 }
 
-.gw-stage { min-height: 100vh; }
-.gw-stage-content { min-height: calc(100vh - 70px); padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+/*
+ * A flex column, so the content pane MEASURES the remaining height instead of
+ * assuming it.
+ *
+ * It used to subtract a hardcoded 70px for the topbar. The topbar is 70px on a
+ * desktop and 77px on a phone — it is a flex row of wrapped controls, so its
+ * height depends on what is in it — and every full-bleed place was therefore
+ * seven pixels too tall on mobile. Seven pixels is enough to make the document
+ * scrollable, and a scrollable document is exactly what the comment below says
+ * no screen in this game is supposed to be: the world drifts under the topbar
+ * on a stray thumb, and pull-to-refresh becomes reachable.
+ *
+ * svh rather than vh: on a phone `vh` is the height with the URL bar HIDDEN, so
+ * a vh-sized world is always taller than the visible viewport until the browser
+ * chrome collapses, which is the same overflow by a different route.
+ */
+.gw-stage { min-height: 100svh; display: flex; flex-direction: column; }
+.gw-stage-content { flex: 1 1 auto; min-height: 0; padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
 /*
  * A full-bleed PLACE gets the exact remaining height and no dock padding.
  *
@@ -95,7 +111,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
  */
 .gw-stage-content:has(> .df-page) {
   min-height: 0;
-  height: calc(100vh - 70px);
+  /* The flex line above already sized this to the exact remaining height.
+     Relative, so the place can be positioned against it — see .df-page. */
+  position: relative;
+  height: auto;
   padding-bottom: 0;
   overflow: hidden;
 }
@@ -472,7 +491,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* z-index matters: the root layout mounts a fixed, z-index:0 cinematic backdrop
    for the non-immersive screens. Without its own stacking position an immersive
    3D route renders UNDER that backdrop and reads as a blank canvas. */
-.iso-floor-wrap{position:relative;z-index:1;width:100%;height:calc(100svh - 70px);min-height:520px;overflow:hidden;background:#17160f}
+.iso-floor-wrap{position:relative;z-index:1;width:100%;height:100%;min-height:520px;overflow:hidden;background:#17160f}
 .iso-floor-wrap canvas{display:block}
 .iso-nameplate{padding:2px 5px;border-radius:4px;background:rgba(18,22,25,.78);font:700 7.5px var(--font-mono),monospace;letter-spacing:.04em;color:#e6ecef;white-space:nowrap;transform:translateY(-3px);pointer-events:none}
 .iso-nameplate.is-self{border:1px solid var(--accent);color:var(--accent)}
@@ -502,8 +521,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .gw-build-title,.gw-yield-head{width:100%;cursor:pointer;transition:color .15s ease}
 .gw-build-title:hover,.gw-yield-head:hover{color:var(--accent)}
 .gw-build-title b,.gw-yield-head b{display:inline-flex;align-items:center;gap:5px}
-.gw-build-items[hidden],.gw-build-actions[hidden],.gw-yield-panel ul[hidden],.gw-yield-panel footer[hidden]{display:none}.gw-stage-content>.gw-sandbox{height:calc(100svh - 70px)}.gw-sandbox canvas{display:block}.gw-sandbox-top{position:absolute;z-index:6;inset:18px 18px auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;pointer-events:none}.gw-sandbox-top>*{pointer-events:auto}.gw-sandbox-top>a,.gw-sandbox-top>button{display:flex;width:max-content;align-items:center;gap:8px;padding:10px 12px;border:1px solid rgba(191, 189, 184, .2);border-radius:7px;background:rgba(19, 18, 17, .78);font:750 7px var(--font-mono),monospace;letter-spacing:.13em;text-transform:uppercase;color:rgba(238, 238, 237, .68);backdrop-filter:blur(10px)}.gw-sandbox-top>button{justify-self:end;color:#dbff4a}.gw-sandbox-top kbd{padding:3px 5px;border:1px solid rgba(219, 255, 74, .25);border-radius:3px;font-size:6px}.gw-sandbox-top>div{text-align:center;text-shadow:0 2px 12px #161513}.gw-sandbox-top>div b,.gw-sandbox-top>div span{display:block}.gw-sandbox-top>div b{font:800 10px var(--font-mono),monospace;letter-spacing:.2em;color:#fff}.gw-sandbox-top>div span{margin-top:5px;font:750 7px var(--font-mono),monospace;letter-spacing:.15em;color:#dbff4a}.gw-build-catalog{position:absolute;z-index:6;left:18px;top:76px;width:255px;max-height:calc(100% - 150px);overflow:hidden;border:1px solid rgba(168, 165, 158, .2);border-radius:10px;background:rgba(19, 19, 18, .86);box-shadow:0 25px 70px -40px #000;color:#fff;backdrop-filter:blur(12px);opacity:0;translate:-18px 0;pointer-events:none;transition:.2s ease}.gw-build-catalog.is-open{opacity:1;translate:0;pointer-events:auto}.gw-build-title{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;border-bottom:1px solid rgba(167, 164, 157, .12);font:700 6px var(--font-mono),monospace;letter-spacing:.14em;color:rgba(216, 215, 211, .4)}.gw-build-title b{color:#dbff4a}.gw-build-items{max-height:calc(100svh - 275px);overflow:auto;padding:6px}.gw-build-items>button{display:grid;width:100%;grid-template-columns:31px 1fr;gap:8px;padding:8px;border:1px solid transparent;border-radius:7px;text-align:left;color:rgba(229, 229, 227, .55)}.gw-build-items>button:hover,.gw-build-items>button.is-active{border-color:rgba(179, 177, 171, .24);background:rgba(124, 121, 113, .13);color:#fff}.gw-build-items>button>span{grid-row:1/3;display:grid;width:31px;height:31px;place-items:center;border:1px solid color-mix(in srgb,var(--machine-accent) 45%,transparent);border-radius:6px;background:color-mix(in srgb,var(--machine-accent) 9%,transparent);color:var(--machine-accent)}.gw-build-items b,.gw-build-items small{display:block}.gw-build-items b{font-size:10px}.gw-build-items small{margin-top:3px;font-size:7px;color:rgba(211, 210, 206, .34)}.gw-build-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:7px;border-top:1px solid rgba(163, 160, 153, .11)}.gw-build-actions button{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border:1px solid rgba(167, 165, 158, .16);border-radius:6px;font:700 7px var(--font-mono),monospace;text-transform:uppercase;color:rgba(231, 230, 228, .56)}.gw-build-actions button:disabled{opacity:.25}.gw-build-actions kbd{font-size:6px;color:#dbff4a}.gw-sandbox-controls{position:absolute;z-index:5;bottom:18px;left:50%;display:flex;align-items:center;gap:7px;translate:-50% 0;padding:9px 12px;border:1px solid rgba(174, 172, 166, .18);border-radius:7px;background:rgba(18, 18, 17, .74);font:700 6px var(--font-mono),monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(229, 229, 227, .45);backdrop-filter:blur(9px)}.gw-sandbox-controls kbd{padding:4px 6px;border:1px solid rgba(180, 178, 173, .25);border-radius:3px;color:#fff}.gw-sandbox-controls span{margin-right:4px}.gw-demo-exit{position:absolute;z-index:6;right:18px;bottom:18px;display:flex;align-items:center;gap:13px;padding:9px 10px 9px 13px;border:1px solid rgba(219, 255, 74, .2);border-radius:8px;background:rgba(19, 18, 17, .8);backdrop-filter:blur(10px)}.gw-demo-exit span,.gw-demo-exit b,.gw-demo-exit small{display:block}.gw-demo-exit b{font:800 7px var(--font-mono),monospace;letter-spacing:.14em;color:#dbff4a}.gw-demo-exit small{margin-top:3px;font-size:7px;color:rgba(219, 218, 216, .38)}.gw-demo-exit a{padding:8px 10px;border-radius:5px;background:#dbff4a;font:800 6px var(--font-mono),monospace;letter-spacing:.1em;text-transform:uppercase;color:#171715}.gw-floor-gate{display:grid;min-height:520px;place-items:center;align-content:center;padding:40px;text-align:center;border:1px solid rgba(164, 161, 154, .18);border-radius:24px;background:linear-gradient(145deg,rgba(48, 47, 44, .75),rgba(23, 22, 20, .92));color:#b5b3ad}.gw-floor-gate h1{margin-top:18px;font-size:clamp(2.8rem,7vw,5rem);line-height:.88;letter-spacing:-.06em;color:#fff}.gw-floor-gate p{max-width:540px;margin-top:16px;font-size:12px;line-height:1.7;color:rgba(220, 219, 216, .48)}.gw-floor-gate>div{display:flex;gap:8px;margin-top:24px}.gw-floor-loading{display:grid;height:calc(100svh - 70px);place-items:center;font:700 9px var(--font-mono),monospace;letter-spacing:.16em;text-transform:uppercase;color:#dbff4a}.gw-yield-panel{position:absolute;z-index:6;right:18px;top:76px;width:238px;overflow:hidden;border:1px solid rgba(168, 165, 158, .2);border-radius:10px;background:rgba(19, 19, 18, .86);box-shadow:0 25px 70px -40px #000;color:#fff;backdrop-filter:blur(12px)}.gw-yield-head{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;border-bottom:1px solid rgba(167, 164, 157, .12);font:700 6px var(--font-mono),monospace;letter-spacing:.14em;text-transform:uppercase;color:rgba(216, 215, 211, .4)}.gw-yield-head b{font:800 13px var(--font-mono),monospace;letter-spacing:.02em}.gw-yield-head b.is-up{color:#dbff4a}.gw-yield-head b.is-down{color:#ff7a6b}.gw-yield-panel ul{padding:6px}.gw-yield-panel li{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:7px 8px;border-radius:6px}.gw-yield-panel li+li{margin-top:2px}.gw-yield-panel li span{font-size:9px;color:rgba(229, 229, 227, .62)}.gw-yield-panel li b{font:800 9px var(--font-mono),monospace;color:#dbff4a}.gw-yield-panel li.is-down b{color:#ff7a6b}.gw-yield-panel li small{grid-column:1/3;font:700 7px var(--font-mono),monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(211, 210, 206, .3)}.gw-yield-panel li.is-empty span{font-size:8px;line-height:1.65;color:rgba(211, 210, 206, .36)}.gw-yield-panel footer{padding:9px 13px;border-top:1px solid rgba(163, 160, 153, .11);font:700 6px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(211, 210, 206, .32)}.stake-layout{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:16px;align-items:start}.stake-layout>.stake-capacity{grid-column:1/-1}.stake-open{display:grid;gap:14px;padding:16px}.stake-terms{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stake-term{display:grid;gap:3px;padding:11px 9px;border:1px solid rgba(168, 165, 158, .18);border-radius:9px;background:rgba(25, 25, 23, .5);text-align:left;transition:.16s ease}.stake-term:hover{border-color:rgba(179, 177, 171, .34)}.stake-term.is-active{border-color:rgba(219, 255, 74, .5);background:rgba(219, 255, 74, .08)}.stake-term span{font:700 6px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(216, 215, 211, .42)}.stake-term b{font-size:19px;font-weight:700;letter-spacing:-.03em;color:#fff}.stake-term.is-active b{color:#dbff4a}.stake-term small{font:700 6px var(--font-mono),monospace;letter-spacing:.1em;color:rgba(211, 210, 206, .34)}.stake-amount{display:grid;grid-template-columns:1fr auto;gap:6px 8px;align-items:center}.stake-amount>span{grid-column:1/-1;font:700 6px var(--font-mono),monospace;letter-spacing:.14em;text-transform:uppercase;color:rgba(216, 215, 211, .42)}.stake-amount input{padding:11px 12px;border:1px solid rgba(168, 165, 158, .2);border-radius:8px;background:rgba(17, 17, 16, .7);font:600 15px var(--font-mono),monospace;color:#fff}.stake-amount input:focus{outline:none;border-color:rgba(219, 255, 74, .45)}.stake-amount button{padding:11px 13px;border:1px solid rgba(219, 255, 74, .25);border-radius:8px;font:800 7px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:#dbff4a}.stake-projection{display:grid;gap:5px;padding:11px 12px;border:1px solid rgba(163, 160, 153, .14);border-radius:9px;background:rgba(21, 20, 19, .55)}.stake-projection>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.stake-projection dt{font-size:10px;color:rgba(226, 225, 223, .55)}.stake-projection dd{font:700 11px var(--font-mono),monospace;color:#dbff4a}.stake-projection .is-warn dd{color:#ff9d6b}.stake-submit{display:flex;align-items:center;justify-content:center;gap:8px;width:100%}.stake-note{display:flex;gap:7px;font-size:9px;line-height:1.65;color:rgba(211, 210, 206, .4)}.stake-note svg{flex:none;margin-top:2px}.stake-positions{display:grid;gap:10px;align-content:start}.stake-empty{padding:26px 16px;border:1px dashed rgba(168, 165, 158, .2);border-radius:10px;text-align:center;font-size:11px;color:rgba(216, 215, 211, .4)}.stake-list{display:grid;gap:8px}.stake-row{display:grid;gap:8px;padding:13px;border:1px solid rgba(168, 165, 158, .18);border-radius:10px;background:rgba(21, 20, 19, .6)}.stake-row.is-matured{border-color:rgba(219, 255, 74, .42);background:rgba(219, 255, 74, .06)}.stake-row.is-closed{opacity:.5}.stake-row-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.stake-row-head b{font-size:19px;font-weight:700;letter-spacing:-.03em;color:#fff}.stake-row-head b small{font:700 8px var(--font-mono),monospace;color:rgba(211, 210, 206, .4)}.stake-row-head span{font:700 7px var(--font-mono),monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(216, 215, 211, .45)}.stake-row-meter{height:3px;overflow:hidden;border-radius:3px;background:rgba(168, 165, 158, .16)}.stake-row-meter i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#a5cb0b,#dbff4a)}.stake-row-stats{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font:700 7px var(--font-mono),monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(211, 210, 206, .38)}.stake-row-stats b{color:rgba(229, 229, 227, .7)}.stake-row>button{display:flex;align-items:center;justify-content:center;gap:7px;width:100%}.stake-capacity{display:grid;gap:11px;padding:16px}.stake-capacity-bar{height:5px;overflow:hidden;border-radius:4px;background:rgba(168, 165, 158, .16)}.stake-capacity-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#807d73,#b4b2ad)}.stake-capacity dl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stake-capacity dt{font:700 6px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(216, 215, 211, .4)}.stake-capacity dd{margin-top:4px;font:700 14px var(--font-mono),monospace;letter-spacing:-.02em;color:#fff}.treasury-network{display:grid;gap:13px;padding:16px;border:1px solid rgba(168, 165, 158, .18);border-radius:12px;background:rgba(21, 20, 19, .6)}.treasury-halving{display:grid;gap:9px}.treasury-halving-copy{display:grid;gap:3px}.treasury-halving-copy span{font:700 6px var(--font-mono),monospace;letter-spacing:.14em;text-transform:uppercase;color:rgba(216, 215, 211, .4)}.treasury-halving-copy b{font-size:clamp(1.7rem,3.4vw,2.5rem);font-weight:700;line-height:1;letter-spacing:-.04em;color:#fff}.treasury-halving-copy small{font:700 8px var(--font-mono),monospace;letter-spacing:.08em;color:#b4b2ad}.treasury-halving-bar{height:5px;overflow:hidden;border-radius:4px;background:rgba(168, 165, 158, .16)}.treasury-halving-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#807d73,#b4b2ad,#dbff4a)}.treasury-network-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;padding-top:12px;border-top:1px solid rgba(163, 160, 153, .12)}.treasury-network-stats dt{font:700 6px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(216, 215, 211, .4)}.treasury-network-stats dd{margin-top:5px;font:700 17px var(--font-mono),monospace;letter-spacing:-.03em;color:#fff}.treasury-network-stats dd em{font:700 8px var(--font-mono),monospace;font-style:normal;color:rgba(211, 210, 206, .4)}.treasury-network-stats small{display:block;margin-top:4px;font-size:8px;line-height:1.5;color:rgba(211, 210, 206, .32)}@media(max-width:900px){.stake-layout{grid-template-columns:1fr}.stake-capacity dl{grid-template-columns:1fr}.treasury-network-stats{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:760px){.gw-stage-content>.gw-sandbox{height:calc(100svh - 130px)}.gw-sandbox-top{inset:10px 10px auto;grid-template-columns:1fr 1fr}.gw-sandbox-top>div{display:none}.gw-build-catalog{left:10px;top:60px;width:calc(100% - 20px);max-height:42%;}.gw-build-items{max-height:200px}.gw-sandbox-controls{bottom:10px;max-width:calc(100% - 20px);white-space:nowrap}.gw-sandbox-controls span:nth-of-type(n+2),.gw-sandbox-controls kbd:nth-of-type(n+3){display:none}.gw-demo-exit{right:10px;bottom:52px}.gw-demo-exit span{display:none}.gw-floor-gate{min-height:420px;padding:28px 18px}.gw-yield-panel{display:none}}
+.gw-build-items[hidden],.gw-build-actions[hidden],.gw-yield-panel ul[hidden],.gw-yield-panel footer[hidden]{display:none}.gw-stage-content>.gw-sandbox{height:calc(100svh - 70px)}.gw-sandbox canvas{display:block}.gw-sandbox-top{position:absolute;z-index:6;inset:18px 18px auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;pointer-events:none}.gw-sandbox-top>*{pointer-events:auto}.gw-sandbox-top>a,.gw-sandbox-top>button{display:flex;width:max-content;align-items:center;gap:8px;padding:10px 12px;border:1px solid rgba(191, 189, 184, .2);border-radius:7px;background:rgba(19, 18, 17, .78);font:750 7px var(--font-mono),monospace;letter-spacing:.13em;text-transform:uppercase;color:rgba(238, 238, 237, .68);backdrop-filter:blur(10px)}.gw-sandbox-top>button{justify-self:end;color:#dbff4a}.gw-sandbox-top kbd{padding:3px 5px;border:1px solid rgba(219, 255, 74, .25);border-radius:3px;font-size:6px}.gw-sandbox-top>div{text-align:center;text-shadow:0 2px 12px #161513}.gw-sandbox-top>div b,.gw-sandbox-top>div span{display:block}.gw-sandbox-top>div b{font:800 10px var(--font-mono),monospace;letter-spacing:.2em;color:#fff}.gw-sandbox-top>div span{margin-top:5px;font:750 7px var(--font-mono),monospace;letter-spacing:.15em;color:#dbff4a}.gw-build-catalog{position:absolute;z-index:6;left:18px;top:76px;width:255px;max-height:calc(100% - 150px);overflow:hidden;border:1px solid rgba(168, 165, 158, .2);border-radius:10px;background:rgba(19, 19, 18, .86);box-shadow:0 25px 70px -40px #000;color:#fff;backdrop-filter:blur(12px);opacity:0;translate:-18px 0;pointer-events:none;transition:.2s ease}.gw-build-catalog.is-open{opacity:1;translate:0;pointer-events:auto}.gw-build-title{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;border-bottom:1px solid rgba(167, 164, 157, .12);font:700 6px var(--font-mono),monospace;letter-spacing:.14em;color:rgba(216, 215, 211, .4)}.gw-build-title b{color:#dbff4a}.gw-build-items{max-height:calc(100svh - 275px);overflow:auto;padding:6px}.gw-build-items>button{display:grid;width:100%;grid-template-columns:31px 1fr;gap:8px;padding:8px;border:1px solid transparent;border-radius:7px;text-align:left;color:rgba(229, 229, 227, .55)}.gw-build-items>button:hover,.gw-build-items>button.is-active{border-color:rgba(179, 177, 171, .24);background:rgba(124, 121, 113, .13);color:#fff}.gw-build-items>button>span{grid-row:1/3;display:grid;width:31px;height:31px;place-items:center;border:1px solid color-mix(in srgb,var(--machine-accent) 45%,transparent);border-radius:6px;background:color-mix(in srgb,var(--machine-accent) 9%,transparent);color:var(--machine-accent)}.gw-build-items b,.gw-build-items small{display:block}.gw-build-items b{font-size:10px}.gw-build-items small{margin-top:3px;font-size:7px;color:rgba(211, 210, 206, .34)}.gw-build-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:7px;border-top:1px solid rgba(163, 160, 153, .11)}.gw-build-actions button{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border:1px solid rgba(167, 165, 158, .16);border-radius:6px;font:700 7px var(--font-mono),monospace;text-transform:uppercase;color:rgba(231, 230, 228, .56)}.gw-build-actions button:disabled{opacity:.25}.gw-build-actions kbd{font-size:6px;color:#dbff4a}.gw-sandbox-controls{position:absolute;z-index:5;bottom:18px;left:50%;display:flex;align-items:center;gap:7px;translate:-50% 0;padding:9px 12px;border:1px solid rgba(174, 172, 166, .18);border-radius:7px;background:rgba(18, 18, 17, .74);font:700 6px var(--font-mono),monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(229, 229, 227, .45);backdrop-filter:blur(9px)}.gw-sandbox-controls kbd{padding:4px 6px;border:1px solid rgba(180, 178, 173, .25);border-radius:3px;color:#fff}.gw-sandbox-controls span{margin-right:4px}.gw-floor-gate{display:grid;min-height:520px;place-items:center;align-content:center;padding:40px;text-align:center;border:1px solid rgba(164, 161, 154, .18);border-radius:24px;background:linear-gradient(145deg,rgba(48, 47, 44, .75),rgba(23, 22, 20, .92));color:#b5b3ad}.gw-floor-gate h1{margin-top:18px;font-size:clamp(2.8rem,7vw,5rem);line-height:.88;letter-spacing:-.06em;color:#fff}.gw-floor-gate p{max-width:540px;margin-top:16px;font-size:12px;line-height:1.7;color:rgba(220, 219, 216, .48)}.gw-floor-gate>div{display:flex;gap:8px;margin-top:24px}.gw-floor-loading{display:grid;height:100%;place-items:center;font:700 9px var(--font-mono),monospace;letter-spacing:.16em;text-transform:uppercase;color:#dbff4a}.gw-yield-panel{position:absolute;z-index:6;right:18px;top:76px;width:238px;overflow:hidden;border:1px solid rgba(168, 165, 158, .2);border-radius:10px;background:rgba(19, 19, 18, .86);box-shadow:0 25px 70px -40px #000;color:#fff;backdrop-filter:blur(12px)}.gw-yield-head{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;border-bottom:1px solid rgba(167, 164, 157, .12);font:700 6px var(--font-mono),monospace;letter-spacing:.14em;text-transform:uppercase;color:rgba(216, 215, 211, .4)}.gw-yield-head b{font:800 13px var(--font-mono),monospace;letter-spacing:.02em}.gw-yield-head b.is-up{color:#dbff4a}.gw-yield-head b.is-down{color:#ff7a6b}.gw-yield-panel ul{padding:6px}.gw-yield-panel li{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:7px 8px;border-radius:6px}.gw-yield-panel li+li{margin-top:2px}.gw-yield-panel li span{font-size:9px;color:rgba(229, 229, 227, .62)}.gw-yield-panel li b{font:800 9px var(--font-mono),monospace;color:#dbff4a}.gw-yield-panel li.is-down b{color:#ff7a6b}.gw-yield-panel li small{grid-column:1/3;font:700 7px var(--font-mono),monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(211, 210, 206, .3)}.gw-yield-panel li.is-empty span{font-size:8px;line-height:1.65;color:rgba(211, 210, 206, .36)}.gw-yield-panel footer{padding:9px 13px;border-top:1px solid rgba(163, 160, 153, .11);font:700 6px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(211, 210, 206, .32)}.stake-layout{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:16px;align-items:start}.stake-layout>.stake-capacity{grid-column:1/-1}.stake-open{display:grid;gap:14px;padding:16px}.stake-terms{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stake-term{display:grid;gap:3px;padding:11px 9px;border:1px solid rgba(168, 165, 158, .18);border-radius:9px;background:rgba(25, 25, 23, .5);text-align:left;transition:.16s ease}.stake-term:hover{border-color:rgba(179, 177, 171, .34)}.stake-term.is-active{border-color:rgba(219, 255, 74, .5);background:rgba(219, 255, 74, .08)}.stake-term span{font:700 6px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(216, 215, 211, .42)}.stake-term b{font-size:19px;font-weight:700;letter-spacing:-.03em;color:#fff}.stake-term.is-active b{color:#dbff4a}.stake-term small{font:700 6px var(--font-mono),monospace;letter-spacing:.1em;color:rgba(211, 210, 206, .34)}.stake-amount{display:grid;grid-template-columns:1fr auto;gap:6px 8px;align-items:center}.stake-amount>span{grid-column:1/-1;font:700 6px var(--font-mono),monospace;letter-spacing:.14em;text-transform:uppercase;color:rgba(216, 215, 211, .42)}.stake-amount input{padding:11px 12px;border:1px solid rgba(168, 165, 158, .2);border-radius:8px;background:rgba(17, 17, 16, .7);font:600 15px var(--font-mono),monospace;color:#fff}.stake-amount input:focus{outline:none;border-color:rgba(219, 255, 74, .45)}.stake-amount button{padding:11px 13px;border:1px solid rgba(219, 255, 74, .25);border-radius:8px;font:800 7px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:#dbff4a}.stake-projection{display:grid;gap:5px;padding:11px 12px;border:1px solid rgba(163, 160, 153, .14);border-radius:9px;background:rgba(21, 20, 19, .55)}.stake-projection>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.stake-projection dt{font-size:10px;color:rgba(226, 225, 223, .55)}.stake-projection dd{font:700 11px var(--font-mono),monospace;color:#dbff4a}.stake-projection .is-warn dd{color:#ff9d6b}.stake-submit{display:flex;align-items:center;justify-content:center;gap:8px;width:100%}.stake-note{display:flex;gap:7px;font-size:9px;line-height:1.65;color:rgba(211, 210, 206, .4)}.stake-note svg{flex:none;margin-top:2px}.stake-positions{display:grid;gap:10px;align-content:start}.stake-empty{padding:26px 16px;border:1px dashed rgba(168, 165, 158, .2);border-radius:10px;text-align:center;font-size:11px;color:rgba(216, 215, 211, .4)}.stake-list{display:grid;gap:8px}.stake-row{display:grid;gap:8px;padding:13px;border:1px solid rgba(168, 165, 158, .18);border-radius:10px;background:rgba(21, 20, 19, .6)}.stake-row.is-matured{border-color:rgba(219, 255, 74, .42);background:rgba(219, 255, 74, .06)}.stake-row.is-closed{opacity:.5}.stake-row-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.stake-row-head b{font-size:19px;font-weight:700;letter-spacing:-.03em;color:#fff}.stake-row-head b small{font:700 8px var(--font-mono),monospace;color:rgba(211, 210, 206, .4)}.stake-row-head span{font:700 7px var(--font-mono),monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(216, 215, 211, .45)}.stake-row-meter{height:3px;overflow:hidden;border-radius:3px;background:rgba(168, 165, 158, .16)}.stake-row-meter i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#a5cb0b,#dbff4a)}.stake-row-stats{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font:700 7px var(--font-mono),monospace;letter-spacing:.1em;text-transform:uppercase;color:rgba(211, 210, 206, .38)}.stake-row-stats b{color:rgba(229, 229, 227, .7)}.stake-row>button{display:flex;align-items:center;justify-content:center;gap:7px;width:100%}.stake-capacity{display:grid;gap:11px;padding:16px}.stake-capacity-bar{height:5px;overflow:hidden;border-radius:4px;background:rgba(168, 165, 158, .16)}.stake-capacity-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#807d73,#b4b2ad)}.stake-capacity dl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stake-capacity dt{font:700 6px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(216, 215, 211, .4)}.stake-capacity dd{margin-top:4px;font:700 14px var(--font-mono),monospace;letter-spacing:-.02em;color:#fff}.treasury-network{display:grid;gap:13px;padding:16px;border:1px solid rgba(168, 165, 158, .18);border-radius:12px;background:rgba(21, 20, 19, .6)}.treasury-halving{display:grid;gap:9px}.treasury-halving-copy{display:grid;gap:3px}.treasury-halving-copy span{font:700 6px var(--font-mono),monospace;letter-spacing:.14em;text-transform:uppercase;color:rgba(216, 215, 211, .4)}.treasury-halving-copy b{font-size:clamp(1.7rem,3.4vw,2.5rem);font-weight:700;line-height:1;letter-spacing:-.04em;color:#fff}.treasury-halving-copy small{font:700 8px var(--font-mono),monospace;letter-spacing:.08em;color:#b4b2ad}.treasury-halving-bar{height:5px;overflow:hidden;border-radius:4px;background:rgba(168, 165, 158, .16)}.treasury-halving-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#807d73,#b4b2ad,#dbff4a)}.treasury-network-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;padding-top:12px;border-top:1px solid rgba(163, 160, 153, .12)}.treasury-network-stats dt{font:700 6px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(216, 215, 211, .4)}.treasury-network-stats dd{margin-top:5px;font:700 17px var(--font-mono),monospace;letter-spacing:-.03em;color:#fff}.treasury-network-stats dd em{font:700 8px var(--font-mono),monospace;font-style:normal;color:rgba(211, 210, 206, .4)}.treasury-network-stats small{display:block;margin-top:4px;font-size:8px;line-height:1.5;color:rgba(211, 210, 206, .32)}@media(max-width:900px){.stake-layout{grid-template-columns:1fr}.stake-capacity dl{grid-template-columns:1fr}.treasury-network-stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.gw-stage-content>.gw-sandbox{height:calc(100svh - 130px)}.gw-sandbox-top{inset:10px 10px auto;grid-template-columns:1fr 1fr}.gw-sandbox-top>div{display:none}.gw-build-catalog{left:10px;top:60px;width:calc(100% - 20px);max-height:42%;}.gw-build-items{max-height:200px}.gw-sandbox-controls{bottom:10px;max-width:calc(100% - 20px);white-space:nowrap}.gw-sandbox-controls span:nth-of-type(n+2),.gw-sandbox-controls kbd:nth-of-type(n+3){display:none}.gw-floor-gate{min-height:420px;padding:28px 18px}.gw-yield-panel{display:none}}
 
 .operator-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(330px,.8fr);gap:14px}.operator-pass{position:relative;overflow:hidden;border:1px solid rgba(161, 158, 151, .22);border-radius:24px;background:radial-gradient(circle at 100% 0,rgba(152, 150, 142, .22),transparent 35%),linear-gradient(145deg,rgba(46, 45, 41, .94),rgba(23, 22, 20, .98));box-shadow:inset 0 1px rgba(255,255,255,.05)}.operator-pass::after{content:'';position:absolute;right:-80px;top:-80px;width:250px;height:250px;border:1px solid rgba(162, 160, 153, .13);border-radius:50%;box-shadow:0 0 0 22px rgba(162, 160, 153, .04),0 0 0 44px rgba(162, 160, 153, .025);pointer-events:none}.operator-pass-head{position:relative;padding:52px 28px 28px;border-bottom:1px solid rgba(154, 151, 143, .14)}.operator-pass-code{position:absolute;left:28px;top:20px;font:700 8px var(--font-mono),monospace;letter-spacing:.2em;color:#dbff4a}.operator-pass>div:nth-of-type(2){background:rgba(33, 32, 30, .65)!important}.operator-pass>div:nth-of-type(3){border-color:rgba(154, 151, 143, .13)!important}.operator-trace{padding:22px;border:1px solid rgba(152, 149, 141, .17);border-radius:22px;background:rgba(23, 22, 20, .76)}.operator-trace>.panel{border-color:rgba(156, 154, 146, .12);background:rgba(39, 38, 35, .56)}@media(max-width:900px){.operator-layout{grid-template-columns:1fr}}
 
@@ -928,11 +947,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
  * `100%` of the flex stage is the honest measure. The vh fallback keeps it
  * sane if this class is ever used outside that stage.
  */
+/*
+ * ABSOLUTE, filling the content pane — not `height: 100%`.
+ *
+ * The pane's height now comes from `flex: 1`, and a percentage height does not
+ * resolve against a flex-derived one. That bit R3F specifically: it wraps its
+ * canvas in two divs carrying inline `height:100%`, so the chain broke at the
+ * first link and the world rendered as a 150px strip at the top of an otherwise
+ * empty page. Making each level a flex column in turn would work and would mean
+ * this rule reaching two levels into a library's private DOM.
+ *
+ * `inset: 0` against a positioned ancestor is a DEFINITE height whatever
+ * produced the ancestor's size, so every `height: 100%` below here resolves
+ * normally again and R3F is left alone.
+ */
 .df-page {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 100vh;
-  height: 100%;
   min-height: 0;
   background: #0b1014;
 }
@@ -1990,4 +2022,117 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .gw-slot-list li > span {
   font: 600 12.5px var(--font-sans), sans-serif;
   color: rgba(226, 224, 220, .86);
+}
+
+/* ---------------------------------------------------------------------------
+   Mobile
+   ---------------------------------------------------------------------------
+   Greenwood is a game you walk around in, and on a phone the browser's own
+   gestures fight that at every step. These rules are about giving the canvas
+   the gestures it needs and keeping the chrome out of the notch — the
+   per-screen layout work is already done in the media queries above.
+   ------------------------------------------------------------------------- */
+
+/* THE IMPORTANT ONE.
+
+   Without touch-action, a one-finger drag on the world pans the camera AND
+   scrolls the page, and a two-finger pinch zooms the whole document instead of
+   the scene. The rig handles both gestures itself (see IsoScene) and cannot
+   stop the browser doing its own thing on top — only this can, because a
+   passive listener is not allowed to preventDefault a scroll.
+
+   `none` rather than `pan-x pan-y`: every gesture over the world belongs to the
+   world. */
+canvas {
+  touch-action: none;
+  /* A long press over the canvas otherwise raises the text-selection
+     magnifier on iOS, mid-walk. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Pull-to-refresh reloads the game.
+
+   The world scenes fill the viewport, so a downward drag that starts at the top
+   — which is most upward pans, since you drag DOWN to pull the map toward you —
+   lands in the browser's refresh gesture. Losing a run to a stray thumb is not
+   a bug a player will read as their own fault. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* The world HUD sits in fixed corners, and on a notched phone in landscape the
+   left and right corners are under the sensor housing. viewportFit is already
+   'cover' (app/layout.tsx), which is what makes these insets non-zero — cover
+   without insets is how content ends up under the notch. */
+@supports (padding: env(safe-area-inset-left)) {
+  .gw-sandbox-top {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .gw-sandbox-controls,
+  .gr-door,
+  .npc-panel {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+  .iso-quest-dock,
+  .iso-shop-dock {
+    margin-left: env(safe-area-inset-left);
+  }
+}
+
+@media (pointer: coarse) {
+  /* This interface is built on 6–9px mono type, which is a deliberate look and
+     an unhittable target. The TEXT stays that size; the tappable box grows
+     under it. 44px is the long-standing platform minimum and roughly the width
+     of an adult fingertip — below it, hit rate falls off a cliff and players
+     blame the game rather than the button.
+
+     Scoped to coarse pointers so the desktop layout is untouched. */
+  .npc-nav,
+  .npc-close,
+  .iso-shop-close,
+  .gw-icon-button,
+  .exchange-modebar button,
+  .stake-amount button,
+  .gw-build-actions button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .gr-door-go,
+  .npc-buy,
+  .npc-action,
+  .btn-primary,
+  .btn-secondary,
+  .mkt-hud-tab {
+    min-height: 44px;
+  }
+
+  /* Hover styling on a touchscreen sticks after the tap — the element keeps the
+     hover state until something else is touched, so a pressed button stays lit
+     and reads as still-busy. Reset the transform ones; colour alone is
+     harmless. */
+  .btn-primary:hover:not(:disabled),
+  .btn-secondary:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* A phone in landscape has almost no vertical room, and the world scenes claim
+   100svh minus a topbar that was sized for a desktop. Give the scene the height
+   back — the HUD floats over it, so nothing is lost by the topbar being the
+   thing that shrinks. */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 520px) {
+  .gw-stage-content > .gw-sandbox {
+    height: calc(100svh - 44px);
+  }
+  .gw-sandbox-top {
+    inset: 6px 6px auto;
+  }
+  .gw-sandbox-controls {
+    bottom: 6px;
+  }
 }

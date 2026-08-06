@@ -25,6 +25,7 @@ import { useRouter } from 'next/navigation';
 import { Lock, Backpack } from '@phosphor-icons/react';
 import { Canvas } from '@react-three/fiber';
 import { IsoRig } from '@/components/iso/IsoScene';
+import { renderTier } from '@/components/iso/render-tier';
 import type { DragState } from '@/components/iso/IsoBoard';
 import GroundsScene from '@/components/iso/GroundsScene';
 import GroundsPlayer from '@/components/iso/GroundsPlayer';
@@ -106,6 +107,8 @@ export default function GroundsPage() {
   const [error, setError] = useState<string | null>(null);
   /** Shared with IsoRig so a pan that ends over a tile is not read as a click. */
   const dragRef = useRef<DragState>({ dragging: false, moved: 0 });
+  /** Device render budget, read once per mount. See render-tier. */
+  const tier = useMemo(() => renderTier(), []);
   /**
    * The character's live position, written every frame by Character.
    *
@@ -400,7 +403,7 @@ export default function GroundsPage() {
         orthographic
         camera={CAMERA}
         shadows
-        dpr={[1, 1.75]}
+        dpr={tier.worldDpr}
         gl={{ powerPreference: 'high-performance', antialias: false, stencil: false, depth: true }}
       >
         {/* The same rig every other region uses: hold left-click to pan, wheel

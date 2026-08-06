@@ -20,6 +20,7 @@ import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { IsoRig, Lighting } from './IsoScene';
+import { renderTier } from './render-tier';
 import { type BoardBounds, type DragState } from './IsoBoard';
 import Character, { lookFor } from './Character';
 import { cellId, findPath, nearestOpen, type Cell } from './pathing';
@@ -460,6 +461,9 @@ export default function IsoTradingFloor({
     router.push(leaveThrough.href);
   }, [leaveThrough, router]);
 
+  // Device render budget, read once per mount. See render-tier.
+  const tier = useMemo(() => renderTier(), []);
+
   const self = peers.find((p) => p.isSelf) ?? null;
   const others = peers.filter((p) => !p.isSelf);
 
@@ -467,10 +471,10 @@ export default function IsoTradingFloor({
     <div className="iso-floor-wrap">
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={tier.dpr}
         orthographic
         camera={CAMERA}
-        gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping }}
+        gl={{ antialias: tier.antialias, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping }}
         onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; }}
       >
         <color attach="background" args={[ISO.void]} />

@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Canvas } from '@react-three/fiber';
 import { IsoRig } from '@/components/iso/IsoScene';
+import { renderTier } from '@/components/iso/render-tier';
 import type { DragState } from '@/components/iso/IsoBoard';
 import HqScene from '@/components/iso/HqScene';
 import RegionPlayer, { type RegionMap } from '@/components/iso/RegionPlayer';
@@ -63,6 +64,8 @@ export default function HqPage() {
   const [entering, setEntering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dragRef = useRef<DragState>({ dragging: false, moved: 0 });
+  /** Device render budget, read once per mount. See render-tier. */
+  const tier = useMemo(() => renderTier(), []);
   /** Live position for the camera, so it travels with the walk. */
   const livePos = useRef<{ x: number; z: number } | null>(null);
 
@@ -170,7 +173,7 @@ export default function HqPage() {
         orthographic
         camera={CAMERA}
         shadows
-        dpr={[1, 1.75]}
+        dpr={tier.worldDpr}
         gl={{ powerPreference: 'high-performance', antialias: false, stencil: false, depth: true }}
       >
         <IsoRig
