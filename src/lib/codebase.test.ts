@@ -66,6 +66,14 @@ const SHARED_NAMES: Record<string, string> = {
   dynamic: 'Next route segment config',
   metadata: 'Next page metadata',
   revalidate: 'Next route segment config',
+  // Next's generated-image convention. Every icon/opengraph-image route
+  // declares these by name — they are how the framework learns the dimensions
+  // and MIME type without opening the file — so opengraph-image, icon and
+  // apple-icon necessarily all export the same three.
+  runtime: 'Next route segment config',
+  size: 'Next generated-image route convention',
+  contentType: 'Next generated-image route convention',
+  alt: 'Next generated-image route convention',
 
   /*
    * The per-region map contract.

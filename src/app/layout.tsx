@@ -72,7 +72,48 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   applicationName: 'Greenwood',
   keywords: ['Greenwood', 'BNTY', 'Robinhood Chain', 'idle game', 'yield', 'RWA', 'DeFi'],
-  icons: { icon: '/gw-mark.svg', apple: '/gw-mark.svg' },
+  /**
+   * Canonical, so the same game shared from two hosts is one page.
+   *
+   * The app answers on playgreenwood.xyz AND on Railway's generated subdomain,
+   * and links to both are already in the wild. Without this they are two URLs
+   * with identical content competing with each other, and share counts and
+   * search ranking split between them.
+   */
+  alternates: { canonical: SITE_URL },
+  /**
+   * Icons are the GENERATED routes, not the SVG.
+   *
+   * `apple: '/gw-mark.svg'` was silently doing nothing: iOS ignores SVG for
+   * touch icons and screenshots the page instead, so adding the game to a home
+   * screen produced a tile showing a shrunken screengrab. See app/apple-icon.
+   * The SVG stays declared as well — browsers that take it get the sharper
+   * asset, and Next serves the raster to everything that does not.
+   */
+  icons: {
+    icon: [
+      { url: '/icon', type: 'image/png', sizes: '180x180' },
+      { url: '/gw-mark.svg', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/apple-icon', type: 'image/png', sizes: '180x180' }],
+  },
+  manifest: '/manifest.webmanifest',
+  /**
+   * Stop iOS turning numbers into phone links.
+   *
+   * Safari autolinks anything that reads like a telephone number, and this
+   * screen is wall-to-wall figures — balances, rates, level counts, countdowns.
+   * They render blue and underlined, and tapping one offers to place a call.
+   */
+  formatDetection: { telephone: false, address: false, email: false },
+  /** Launched from an iOS home screen: full viewport, no browser chrome. */
+  appleWebApp: {
+    capable: true,
+    title: 'Greenwood',
+    // The status bar sits ON the page, so the page has to own that strip. See
+    // viewportFit: 'cover' below and the safe-area insets in globals.css.
+    statusBarStyle: 'black-translucent',
+  },
   openGraph: {
     type: 'website',
     url: SITE_URL,
@@ -105,7 +146,15 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#0b1511',
+  /**
+   * The page's own background, --robin-black.
+   *
+   * It was #0b1511 — a different, greener black that appears nowhere in the
+   * palette. On Android the browser chrome is painted this colour and sits
+   * directly above the page, so the seam between them was visible on every
+   * phone and on no desktop, which is why it survived.
+   */
+  themeColor: '#17160f',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
