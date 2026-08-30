@@ -83,6 +83,14 @@ Three things were handled differently, and all three will surprise you:
   player arrived on, and both work without a code change. That is also why a
   domain must never be pointed at the app before it is attached here — a host
   the server does not expect is a host sign-in rejects.
+- **`OSR_DATA_DIR` is `/data/greenwood` and MUST STAY THAT WAY.** It is the
+  directory the live SQLite database sits in, on a volume mounted at `/data`.
+  Everything else on Railway was renamed to Evergreen — project, service,
+  volume label, generated domain — but this one is a PATH, not a label:
+  pointing it at `/data/evergreen` does not move the database, it creates an
+  empty directory beside it and boots the game with no players, no balances and
+  no funds. It moves only behind a deliberate copy, with backups, and never as
+  part of a rename.
 - **The ticker is GREEN, but the DEPLOYED TOKEN IS NOT.** The contract at
   `NEXT_PUBLIC_OSR_TOKEN` reports `symbol() = "BNTY"` and `name() = "Greenwood"`,
   and both are immutable. `EXPECTED_TOKEN_SYMBOL` in `lib/config` therefore

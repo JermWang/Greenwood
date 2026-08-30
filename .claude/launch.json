@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "osr-dev",
+      "name": "evergreen-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:preview"],
       "port": 3000,

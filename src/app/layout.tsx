@@ -96,9 +96,11 @@ export const metadata: Metadata = {
   /**
    * Canonical, so the same game shared from two hosts is one page.
    *
-   * The app answers on playgreenwood.xyz AND on Railway's generated subdomain,
-   * and links to both are already in the wild. Without this they are two URLs
-   * with identical content competing with each other, and share counts and
+   * The app answers on playevergreen.xyz, still answers on playgreenwood.xyz,
+   * and answers on Railway's generated subdomain as well — links to all three
+   * are in the wild, and the middle one is kept deliberately because everything
+   * shared before the rename points at it. Without a canonical they are three
+   * URLs with identical content competing with each other, and share counts and
    * search ranking split between them.
    */
   alternates: { canonical: SITE_URL },
