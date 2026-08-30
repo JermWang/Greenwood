@@ -29,7 +29,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowRight, CaretDown, Check, Compass, Sparkle } from '@phosphor-icons/react';
+import { ArrowRight, CaretDown, Check, Compass, Hourglass, Sparkle } from '@phosphor-icons/react';
 import { api, type IntroResponse } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
 
@@ -152,6 +152,12 @@ export default function IntroGuide() {
 
           <p className="intro-why">{step.why}</p>
 
+          {/* Said in the panel, not only in the chip, because a step the player
+              cannot act on has to explain itself where they are already looking.
+              See canAct in lib/intro — this is only ever reached when every
+              remaining step is parked, since otherwise the chain moves on. */}
+          {step.parked && step.waiting && <p className="intro-why is-waiting">{step.waiting}</p>}
+
           <footer>
             <span className="intro-reward">
               <Sparkle size={13} weight="duotone" /> {step.xp} XP · {step.scrip.toLocaleString()} Scrip
@@ -160,6 +166,14 @@ export default function IntroGuide() {
               <button className="intro-collect" onClick={() => void collect()} disabled={busy}>
                 {busy ? '…' : <><Check size={14} weight="bold" /> Collect</>}
               </button>
+            ) : step.parked ? (
+              /* No button on purpose. Sending somebody to a room to do a thing
+                 they cannot do yet is worse than saying nothing — they arrive,
+                 find no way to act, and conclude the tutorial is broken. The
+                 waiting line above has already said what to do instead. */
+              <span className="intro-waiting">
+                <Hourglass size={13} weight="duotone" /> Waiting
+              </span>
             ) : (
               /* Links to the room the step happens in. A tutorial that tells you
                  what to do without saying where is a riddle. Collapses on the

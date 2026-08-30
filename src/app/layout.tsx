@@ -22,7 +22,7 @@ const monoFont = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', d
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
   (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null) ??
-  'https://playgreenwood.xyz';
+  'https://playevergreen.xyz';
 
 /**
  * The share copy, and the line it deliberately walks.

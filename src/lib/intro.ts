@@ -15,12 +15,58 @@
 //
 // One step is visible at a time. A list of eight tasks on a fresh account is a
 // wall; one task with a stated reason is a next move.
+//
+// ORDERED IS NOT THE SAME AS BLOCKING, and that distinction is why `canAct`
+// exists. Five of these steps wait on something the player does not control — a
+// random find, money they have not earned yet, another player having listed
+// something — and a strictly ordered chain stops dead at the first of them with
+// everything behind it unreachable, including the two outdoor steps the whole
+// chain was written to reach.
+//
+// That is not hypothetical here. Since the token went live the starter grant is
+// zero (starterGrantFor in lib/game), so a real new fund holds no BNTY at all
+// and the wall arrives at step THREE of ten.
+//
+// So a step whose gate is shut is DEFERRED, not blocking: it keeps its place in
+// the list, the chain moves past it, and it becomes current again the moment the
+// gate opens. Deferred rather than skipped, because the ordering still teaches
+// the dependencies and a player who never fits an instrument has missed the
+// biggest lever in the game.
 
 import { getDb } from './db';
 import { GameError } from './errors';
 import { addXp, type XpTrack } from './progression';
 import { grantScrip } from './scrip';
 import type { QuestAction } from './quests';
+
+/**
+ * What the player can act on right now.
+ *
+ * Supplied by the caller rather than read here, because the introduction must
+ * not reach into the game modules that own these numbers — lib/game already
+ * imports this file to record progress, and importing it back would close the
+ * cycle.
+ *
+ * Every field is optional and every gate treats "not supplied" as PASSING. A
+ * caller that cannot afford the extra reads gets the plain ordered chain, which
+ * is exactly the behaviour this had before gating existed.
+ */
+export interface IntroContext {
+  /** Sealed allocations the player is holding, waiting to be opened. */
+  heldAllocations?: number;
+  /** Instruments in the Portfolio not currently fitted to a desk. */
+  unfittedInstruments?: number;
+  /** Spendable BNTY. */
+  bntyBalance?: number;
+  /** What opening one allocation currently costs, in BNTY. */
+  allocationCost?: number;
+  /** The cheapest desk level-up available, in BNTY. */
+  deskUpgradeCost?: number;
+  /** The smallest Note the treasury will write, in BNTY. */
+  noteMinimum?: number;
+  /** Listings by OTHER players that this player could actually pay for. */
+  affordableListings?: number;
+}
 
 export interface IntroStep {
   key: string;
@@ -35,6 +81,23 @@ export interface IntroStep {
   scrip: number;
   /** Where the player has to be. The client links straight to it. */
   href: string;
+  /**
+   * Whether this step can be acted on at all right now.
+   *
+   * Only steps that depend on LUCK, on MONEY NOT YET EARNED, or on OTHER
+   * PLAYERS define one. A step that merely takes effort is still actionable —
+   * telling somebody to go and do it is the entire point of the chain.
+   *
+   * Absent means always actionable.
+   */
+  canAct?: (ctx: IntroContext) => boolean;
+  /**
+   * Shown INSTEAD of a call to action while `canAct` is false.
+   *
+   * It has to say what to do MEANWHILE, not merely that the player is stuck.
+   * "Come back later" is the sentence that ends a session.
+   */
+  waiting?: string;
 }
 
 /**
@@ -110,6 +173,22 @@ export const INTRO_STEPS: IntroStep[] = [
     // Portfolio is where the instrument lands afterwards, and sending a player
     // there gives them a panel whose own empty state tells them to go back.
     href: '/app',
+    /*
+     * Two conditions, and the player directly controls neither. An allocation
+     * has to be FOUND — desks turn them up as they run, and the whole protocol
+     * only finds CRATES_FOUND_PER_DAY of them a day — and opening one costs
+     * CRATE_OPEN_BNTY, which is ten times what the starter grant used to be and
+     * infinitely more than the zero it is now.
+     *
+     * This is the step that made parking necessary. Ordered third of ten, it
+     * stopped the chain dead on every real new account, and took both outdoor
+     * steps down with it.
+     */
+    canAct: (ctx) =>
+      (ctx.heldAllocations ?? 1) > 0 &&
+      (ctx.bntyBalance ?? Infinity) >= (ctx.allocationCost ?? 0),
+    waiting:
+      'No allocation to open yet — either none found, or not enough BNTY to cover one. Desks find them while they run, so keep yours producing and this comes back on its own.',
   },
   {
     key: 'intro_equip',
@@ -121,6 +200,11 @@ export const INTRO_STEPS: IntroStep[] = [
     xp: 250,
     scrip: 500,
     href: '/app/inventory',
+    // Depends on the step above having actually paid out an instrument, which
+    // is a roll, not a purchase.
+    canAct: (ctx) => (ctx.unfittedInstruments ?? 1) > 0,
+    waiting:
+      'Nothing to fit yet — instruments come out of allocations. This step returns the moment you have one spare.',
   },
   {
     key: 'intro_place',
@@ -146,6 +230,12 @@ export const INTRO_STEPS: IntroStep[] = [
     // price IS the decision, because the capital is shared with every other
     // desk standing on that floor.
     href: '/app/floor',
+    // Gated on the CHEAPEST level-up on the floor, not the dearest: the step
+    // only asks for one desk to reach level 2, so pricing it off the most
+    // expensive desk would park it while an affordable upgrade sat right there.
+    canAct: (ctx) => (ctx.bntyBalance ?? Infinity) >= (ctx.deskUpgradeCost ?? 0),
+    waiting:
+      'Not enough BNTY for a level-up yet. Your desk is earning it while you read this — route the yield when it builds and this comes straight back.',
   },
   {
     key: 'intro_note',
@@ -157,6 +247,9 @@ export const INTRO_STEPS: IntroStep[] = [
     xp: 300,
     scrip: 400,
     href: '/app/stake',
+    canAct: (ctx) => (ctx.bntyBalance ?? Infinity) >= (ctx.noteMinimum ?? 0),
+    waiting:
+      'A Note needs at least the treasury minimum in BNTY and you are short of it. Keep the desk running and route what it makes — this returns as soon as you can cover it.',
   },
   {
     key: 'intro_market',
@@ -168,6 +261,15 @@ export const INTRO_STEPS: IntroStep[] = [
     xp: 300,
     scrip: 600,
     href: '/app/market',
+    /*
+     * The only step in the chain that depends on ANOTHER PLAYER. There is
+     * nothing to buy until somebody else lists something, and no amount of
+     * effort by this player changes that — which is exactly the shape of thing
+     * that must never block a tutorial.
+     */
+    canAct: (ctx) => (ctx.affordableListings ?? 1) > 0,
+    waiting:
+      'Nothing on the Exchange you can afford right now — every listing comes from another player, so the shelf fills on its own. This step returns when there is something to buy.',
   },
   {
     key: 'intro_outside',
@@ -228,6 +330,11 @@ export interface IntroStepView extends IntroStep {
   claimed: boolean;
   /** The one step the player should be looking at. Exactly one is ever true. */
   current: boolean;
+  /**
+   * True when this step is unclaimed but cannot be acted on yet, so the chain
+   * has moved past it for now. It comes back on its own.
+   */
+  parked: boolean;
 }
 
 export interface IntroState {
@@ -247,23 +354,37 @@ export interface IntroState {
  * skipping past it would leave the reward stranded behind a panel nobody
  * reopens.
  */
-export function introState(wallet: string): IntroState {
+export function introState(wallet: string, ctx: IntroContext = {}): IntroState {
   const stored = rows(wallet);
-  let currentKey: string | null = null;
 
-  const steps = INTRO_STEPS.map((step) => {
+  const steps: IntroStepView[] = INTRO_STEPS.map((step) => {
     const row = stored.get(step.key);
     const progress = Math.min(step.target, row?.progress ?? 0);
     const claimed = Boolean(row?.claimed_at);
-    if (!claimed && currentKey === null) currentKey = step.key;
+    const done = progress >= step.target;
     return {
       ...step,
       progress,
-      done: progress >= step.target,
+      done,
       claimed,
       current: false,
+      // A finished step is never parked, whatever its gate now says — the player
+      // did the thing, and it is waiting to be collected.
+      parked: !claimed && !done && step.canAct ? !step.canAct(ctx) : false,
     };
   });
+
+  /*
+   * The current step is the first unclaimed one the player CAN act on.
+   *
+   * The fallback matters as much as the rule. If every remaining step is parked
+   * there is still something to show, so the panel can say what it is waiting
+   * for rather than vanishing and leaving a finished-looking tutorial that is
+   * not finished.
+   */
+  const firstActionable = steps.find((s) => !s.claimed && !s.parked);
+  const firstUnclaimed = steps.find((s) => !s.claimed);
+  const currentKey = (firstActionable ?? firstUnclaimed)?.key ?? null;
 
   for (const step of steps) step.current = step.key === currentKey;
 
@@ -292,10 +413,55 @@ export function introState(wallet: string): IntroState {
 export function recordIntroProgress(wallet: string, action: QuestAction, amount = 1): void {
   if (!(amount > 0)) return;
   try {
+    /*
+     * Credit the first UNCLAIMED step that wants this action...
+     *
+     * It used to credit only whatever step this function computed as current,
+     * and parking broke that in a way worth spelling out, because it is the
+     * opposite of the obvious guess.
+     *
+     * This function calls introState WITHOUT a context — it cannot build one,
+     * since parking needs IntroContext and lib/game already imports this file.
+     * So the step it called current was the first UNCLAIMED one, gates ignored:
+     * the parked step. The parked step therefore still recorded fine. What
+     * could not record was the step the player was actually being told to do —
+     * the panel had moved on to the first ACTIONABLE step, the recorder was
+     * still watching the parked one behind it, and the two never agreed again.
+     * Parking the chain without this would have handed players an instruction
+     * that could not be completed, which is worse than the wall it replaced.
+     *
+     * Matching on the action instead sidesteps the disagreement: it does not
+     * care which step either half thinks is current. Exactly one step carries
+     * any given action and claimed steps are skipped, so opening five
+     * allocations still only ever completes the one allocation step.
+     */
     const state = introState(wallet);
-    if (!state.currentKey) return;
-    const step = BY_KEY.get(state.currentKey);
-    if (!step || step.action !== action) return;
+    const index = state.steps.findIndex((s) => !s.claimed && s.action === action);
+    if (index < 0) return;
+
+    /*
+     * ...but only once everything in front of it is settled or gateable.
+     *
+     * This is the line that keeps both properties. A step is creditable when
+     * every earlier step is either already claimed or CARRIES A GATE — because
+     * a gate is the only honest reason the player could be acting out here
+     * instead of on the step in front of them. An ungated, unclaimed step ahead
+     * of this one means they are simply running ahead, and the original rule
+     * applies: pre-completing a step they have not read defeats the point of
+     * the chain.
+     *
+     * Checked against the gate EXISTING rather than against it being shut,
+     * because whether it is shut depends on IntroContext and this is called
+     * from deep inside lib/game, which cannot build one without closing an
+     * import cycle. Existence is the part that is knowable here, and it is
+     * enough: a gated step is exactly the one that might have been parked.
+     */
+    const settledOrGated = state.steps
+      .slice(0, index)
+      .every((s) => s.claimed || s.canAct);
+    if (!settledOrGated) return;
+
+    const step = state.steps[index];
     getDb()
       .prepare(
         `INSERT INTO daily_quests (wallet, day, quest_key, progress) VALUES (?,?,?,?)

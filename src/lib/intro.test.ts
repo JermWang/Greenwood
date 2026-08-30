@@ -233,3 +233,117 @@ describe('the level cap', () => {
     expect(MAX_TOTAL_LEVEL).toBeGreaterThanOrEqual(10);
   });
 });
+
+describe('the introduction defers steps it cannot act on', () => {
+  /** Record and collect one step, by key. */
+  function complete(key: string) {
+    const step = INTRO_STEPS.find((s) => s.key === key)!;
+    recordIntroProgress(W, step.action, step.target);
+    claimIntroStep(W, step.key);
+  }
+
+  /** Complete the first `n` steps, in order. */
+  function claimThrough(n: number) {
+    for (const step of INTRO_STEPS.slice(0, n)) complete(step.key);
+  }
+
+  /** Nothing found, nothing spare, no money, nothing listed: every gate shut. */
+  const SHUT = {
+    heldAllocations: 0,
+    unfittedInstruments: 0,
+    bntyBalance: 0,
+    allocationCost: 10_000,
+    deskUpgradeCost: 250,
+    noteMinimum: 100,
+    affordableListings: 0,
+  };
+
+  test('no context supplied parks nothing', () => {
+    // The gates are opt-in. A caller that cannot afford the extra reads gets
+    // exactly the chain this had before parking existed.
+    const state = introState(W);
+    expect(state.steps.some((s) => s.parked)).toBe(false);
+    expect(state.currentKey).toBe(INTRO_STEPS[0].key);
+  });
+
+  test('a shut gate defers the step instead of stopping the chain', () => {
+    claimThrough(2);
+    const state = introState(W, SHUT);
+
+    const allocation = state.steps.find((s) => s.key === 'intro_allocation')!;
+    expect(allocation.parked).toBe(true);
+    expect(allocation.current).toBe(false);
+
+    // The whole point: the chain moves to the first step that CAN be acted on.
+    // Before parking, a real new fund stopped dead here — it holds no BNTY at
+    // all since the token went live — and both outdoor steps sit behind it.
+    expect(state.currentKey).toBe('intro_place');
+    expect(state.finished).toBe(false);
+  });
+
+  test('a deferred step comes back the moment its gate opens', () => {
+    claimThrough(2);
+    const found = { ...SHUT, heldAllocations: 1, bntyBalance: 10_000 };
+    const state = introState(W, found);
+    expect(state.steps.find((s) => s.key === 'intro_allocation')!.parked).toBe(false);
+    expect(state.currentKey).toBe('intro_allocation');
+  });
+
+  test('a finished step is never parked, whatever its gate now says', () => {
+    claimThrough(2);
+    recordIntroProgress(W, 'open_allocation', 1);
+
+    const state = introState(W, SHUT);
+    const allocation = state.steps.find((s) => s.key === 'intro_allocation')!;
+    expect(allocation.done).toBe(true);
+    expect(allocation.parked).toBe(false);
+    // Still current, too: a reward you have earned and not collected is the
+    // thing in front of you, and skipping past it strands it.
+    expect(state.currentKey).toBe('intro_allocation');
+  });
+
+  test('progress records against the step the player was actually shown', () => {
+    // The failure parking would otherwise have introduced, and the reason
+    // recordIntroProgress matches on the ACTION. The panel advances to the
+    // first actionable step; the recorder, which has no context and so sees the
+    // ungated chain, is still looking at the parked step behind it. Matching on
+    // current would mean the step being asked for could never complete.
+    claimThrough(2);
+    expect(introState(W, SHUT).currentKey).toBe('intro_place');
+
+    recordIntroProgress(W, 'place_desk', 1);
+    expect(introState(W, SHUT).steps.find((s) => s.key === 'intro_place')!.done).toBe(true);
+  });
+
+  test('running ahead of an ungated step still earns nothing', () => {
+    // The original ordering rule, kept. Only a GATE excuses acting out of turn:
+    // with ungated steps still open in front of it, buying a pack early must
+    // not quietly complete the last step of the chain, or the player collects a
+    // step they never read.
+    recordIntroProgress(W, 'buy_pack', 1);
+    expect(introState(W).steps.find((s) => s.key === 'intro_pack')!.progress).toBe(0);
+  });
+
+  test('something is always current, even with every remaining step parked', () => {
+    // The fallback. If the only unclaimed step left is parked there is still
+    // something to show, so the panel can say what it is waiting for rather
+    // than vanishing and leaving a tutorial that looks finished and is not.
+    claimThrough(7);
+    complete('intro_outside');
+    complete('intro_pack');
+
+    const state = introState(W, SHUT);
+    expect(state.steps.filter((s) => !s.claimed).map((s) => s.key)).toEqual(['intro_market']);
+    expect(state.steps.find((s) => s.key === 'intro_market')!.parked).toBe(true);
+    expect(state.currentKey).toBe('intro_market');
+    expect(state.finished).toBe(false);
+  });
+
+  test('every gated step explains itself', () => {
+    // A gate with no waiting line is a dead end wearing a different hat: the
+    // panel drops the call to action and puts nothing in its place.
+    for (const step of INTRO_STEPS.filter((s) => s.canAct)) {
+      expect(step.waiting, `${step.key} is gated but says nothing`).toBeTruthy();
+    }
+  });
+});

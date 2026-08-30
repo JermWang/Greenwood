@@ -168,6 +168,13 @@ export interface IntroStepView {
   claimed: boolean;
   /** Exactly one step is current at a time. */
   current: boolean;
+  /**
+   * Unclaimed, but not actionable yet, so the chain has moved past it for now.
+   * It comes back on its own. See canAct in lib/intro.
+   */
+  parked: boolean;
+  /** What to do meanwhile. Present only on steps that can park. */
+  waiting?: string;
 }
 
 export interface IntroState {

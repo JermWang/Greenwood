@@ -68,13 +68,21 @@ SQLite. That was checked before the rename, not assumed.
 
 Three things were handled differently, and all three will surprise you:
 
-- **The domain is still `playgreenwood.xyz`.** `metadataBase`, the canonical
-  URLs and the SIWE domain all still say Greenwood, and the SIWE one is
-  load-bearing: the domain in the message is checked against the host the wallet
-  actually signed for, so the code change and the DNS cutover have to land
-  together or sign-in breaks for everyone in the gap. The X account HAS moved,
-  to `@evergreen_rh` — one constant, `X_URL` in `lib/config`, because
-  `X_HANDLE` is derived from it rather than written out a second time.
+- **Both domains are live, and that is deliberate.** `playevergreen.xyz` is the
+  real one and the value of `NEXT_PUBLIC_SITE_URL`; `playgreenwood.xyz` still
+  resolves and still serves, because links and share cards posted before the
+  move point at it. The X account moved to `@evergreen_rh` — one constant,
+  `X_URL` in `lib/config`, since `X_HANDLE` is derived from it rather than
+  written out twice.
+
+  Two things about this that are not obvious. The plan caps custom domains at
+  TWO per service, so there is no `www` on either name and adding one means
+  first turning a domain into a registrar-level redirect to free the slot.
+  And the SIWE domain is NOT configuration: `api/auth/verify` checks the
+  message against the request's own `Host`, so it follows whichever domain the
+  player arrived on, and both work without a code change. That is also why a
+  domain must never be pointed at the app before it is attached here — a host
+  the server does not expect is a host sign-in rejects.
 - **Browser storage keys were renamed WITH a carry-over** (`lib/legacy-keys`).
   Storage is the third place state lives, after env vars and columns, and the
   argument that froze `OSR_*` applies to it: `gw-wallet-store` holds terms
@@ -118,7 +126,16 @@ Income Note, Trading Floor, The Vault.
 
 ## Known state
 
-- **631 tests pass.** The suite is green; if it is not, that is new.
+- **639 tests pass.** The suite is green; if it is not, that is new.
+- **The introduction DEFERS steps it cannot act on** rather than stopping at
+  them (`canAct` in `lib/intro`, context assembled in `api/intro/[wallet]`).
+  Five of the ten steps wait on a random find, money not yet earned, or another
+  player having listed something, and the chain used to halt at the first of
+  them with both outdoor steps stranded behind it — on a real account that was
+  step three of ten, because the starter grant is zero once the token is live.
+  If you add a step that can be blocked by anything the player does not
+  control, give it a `canAct` and a `waiting` line, or you have rebuilt the
+  wall.
 - **The title screen renders the live Deep Forest.** `TitleCinematic` mounts the
   real `DeepForestScene` behind the lockup and drives `IsoRig`'s `followRef`
   along a slow rail — there is no second camera and no video file. The
