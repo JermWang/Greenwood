@@ -68,13 +68,13 @@ SQLite. That was checked before the rename, not assumed.
 
 Three things were handled differently, and all three will surprise you:
 
-- **The domain is still `playgreenwood.xyz` and the X account is still
-  `@greenwoodrh_`.** Live external identities with DNS and followers attached;
-  renaming them is a launch decision, not a rename pass. `metadataBase`, the
-  canonical URLs and the SIWE domain all still say Greenwood — and the SIWE one
-  is load-bearing, because the domain in the message is checked against the host
-  the wallet actually signed for. Change it without changing DNS and sign-in
-  breaks for everyone.
+- **The domain is still `playgreenwood.xyz`.** `metadataBase`, the canonical
+  URLs and the SIWE domain all still say Greenwood, and the SIWE one is
+  load-bearing: the domain in the message is checked against the host the wallet
+  actually signed for, so the code change and the DNS cutover have to land
+  together or sign-in breaks for everyone in the gap. The X account HAS moved,
+  to `@evergreen_rh` — one constant, `X_URL` in `lib/config`, because
+  `X_HANDLE` is derived from it rather than written out a second time.
 - **Browser storage keys were renamed WITH a carry-over** (`lib/legacy-keys`).
   Storage is the third place state lives, after env vars and columns, and the
   argument that froze `OSR_*` applies to it: `gw-wallet-store` holds terms
