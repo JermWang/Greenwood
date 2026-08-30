@@ -98,7 +98,7 @@ describe('doors', () => {
    * A sign must name the place behind it.
    *
    * The fence gate read "The Treeline" long after it had been repointed at
-   * Greenwood HQ, because the label existed twice — once as data and once
+   * Evergreen HQ, because the label existed twice — once as data and once
    * hardcoded in the scene — and only one was updated. A sign naming a
    * different place is worse than no sign: it is the map lying, and a player who
    * walks through expecting a forest and arrives at a plaza stops trusting every

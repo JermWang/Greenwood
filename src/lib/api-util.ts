@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { GameError } from './game';
 import { DEV_WALLET } from './dev-mode';
 import { DEMO_COOKIE, isDemoWallet } from './demo';
+import { readCookie } from './legacy-keys';
 import { requireSessionWallet } from './siwe';
 import { enforce, type LimitName } from './rate-limit';
 
@@ -91,12 +92,7 @@ export async function requireAuthenticatedWallet(
    * only — never to money.
    */
   if (isDemoWallet(wallet)) {
-    const cookie = request.headers
-      .get('cookie')
-      ?.split(';')
-      .map((c) => c.trim())
-      .find((c) => c.startsWith(`${DEMO_COOKIE}=`))
-      ?.slice(DEMO_COOKIE.length + 1);
+    const cookie = readCookie(request.headers.get('cookie'), DEMO_COOKIE);
     if (cookie && cookie.toLowerCase() === wallet) {
       enforce(wallet, limit);
       return wallet;

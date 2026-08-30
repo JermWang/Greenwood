@@ -1,4 +1,4 @@
-// The people of Greenwood, and the job their dialogue is doing.
+// The people of Evergreen, and the job their dialogue is doing.
 //
 // NO IMPORTS. Same contract as the map modules: the server will eventually want
 // to gate lines by level without dragging a client module in behind it.
@@ -11,11 +11,11 @@
 //   TRADE  — the corporate surface. Yield, desks, notes, the Exchange. It has to
 //            be genuinely competent finance talk, because the whole illusion
 //            rests on the front being convincing rather than being a thin skin.
-//   HINT   — the turn (docs/greenwood-turn.md), leaking.
+//   HINT   — the turn (docs/evergreen-turn.md), leaking.
 //
 // HOW THE HINTS WORK, and the rule that must not be broken:
 //
-// NOBODY IN GREENWOOD KNOWS THEY ARE IN A HORROR STORY. Every character here
+// NOBODY IN EVERGREEN KNOWS THEY ARE IN A HORROR STORY. Every character here
 // believes they work at a fund. So no line is ever ominous ON PURPOSE — the
 // dread comes entirely from the player assembling things the speaker thinks are
 // mundane. A watchman complaining about the lighting budget is doing his job;
@@ -94,7 +94,7 @@ export interface Npc {
  * "who do I ask about X" always has an answer. They are also each a different
  * distance from the truth: the technician is closest and least curious, the
  * watchman is furthest and most uneasy, and the retired operator remembers a
- * version of Greenwood nobody else does.
+ * version of Evergreen nobody else does.
  */
 export const NPCS: Npc[] = [
   {
@@ -333,7 +333,7 @@ export const NPCS: Npc[] = [
       {
         kind: 'tip',
         minLevel: 0,
-        text: 'Open a desk first. Nothing else in Greenwood earns, and the first one starts a seventy-two hour boost that only ever runs once. Every hour you spend reading menus is an hour of it gone.',
+        text: 'Open a desk first. Nothing else in Evergreen earns, and the first one starts a seventy-two hour boost that only ever runs once. Every hour you spend reading menus is an hour of it gone.',
       },
       {
         kind: 'tip',
@@ -358,7 +358,7 @@ export const NPCS: Npc[] = [
       {
         kind: 'hint',
         minLevel: 6,
-        text: 'We ran three sites off this floor once. Greenwood, Ashby, and one out east I could not tell you the name of any more. Now it is just us. I asked what happened to Ashby and got a look, not an answer.',
+        text: 'We ran three sites off this floor once. Evergreen, Ashby, and one out east I could not tell you the name of any more. Now it is just us. I asked what happened to Ashby and got a look, not an answer.',
       },
       {
         kind: 'hint',
@@ -623,13 +623,13 @@ export const NPCS: Npc[] = [
   },
 
   // -------------------------------------------------------------------------
-  // Greenwood HQ — the plaza
+  // Evergreen HQ — the plaza
   // -------------------------------------------------------------------------
   {
     id: 'col',
     name: 'Col Whitmore',
     role: 'Front of House',
-    region: 'greenwood-hq',
+    region: 'evergreen-hq',
     x: -3,
     z: -1,
     facing: Math.PI,
@@ -667,7 +667,7 @@ export const NPCS: Npc[] = [
     id: 'yusuf',
     name: 'Yusuf Demir',
     role: 'Grounds Keeper',
-    region: 'greenwood-hq',
+    region: 'evergreen-hq',
     x: -6,
     z: 8,
     facing: -Math.PI / 2,
@@ -705,7 +705,7 @@ export const NPCS: Npc[] = [
     id: 'rae',
     name: 'Rae Okonkwo',
     role: 'Yard Supervisor',
-    region: 'greenwood-hq',
+    region: 'evergreen-hq',
     x: -16,
     z: 4,
     facing: Math.PI / 2,
@@ -959,7 +959,7 @@ export const NPCS: Npc[] = [
       {
         kind: 'hint',
         minLevel: 21,
-        text: 'You want to know what my job actually is. It is making sure Greenwood never goes off. Not the fund — the lights. I have never been given a reason and I have never once needed one, and neither has anybody who has stood where you are standing at this hour.',
+        text: 'You want to know what my job actually is. It is making sure Evergreen never goes off. Not the fund — the lights. I have never been given a reason and I have never once needed one, and neither has anybody who has stood where you are standing at this hour.',
       },
     ],
   },

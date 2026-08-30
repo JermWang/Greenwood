@@ -2,7 +2,7 @@
 //
 // SEPARATE FROM icon.tsx BECAUSE iOS IS SEPARATE.
 //
-// The metadata declared `apple: '/gw-mark.svg'`, and iOS does not support SVG
+// The metadata declared `apple: '/eg-mark.svg'`, and iOS does not support SVG
 // for apple-touch-icon at all — it ignores the declaration and screenshots the
 // page instead, so "Add to Home Screen" produced a tile showing a shrunken
 // screengrab of whatever was on screen. That is the one icon a player looks at

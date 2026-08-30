@@ -21,7 +21,7 @@ export function signInMessage(wallet: string, nonce: string, domain: string, cha
     `${domain} wants you to sign in with your Ethereum account:`,
     wallet.toLowerCase(),
     '',
-    'Sign in to Greenwood. This does not cost anything and does not approve any transaction.',
+    'Sign in to Evergreen. This does not cost anything and does not approve any transaction.',
     '',
     `URI: https://${domain}`,
     `Chain ID: ${chainId}`,

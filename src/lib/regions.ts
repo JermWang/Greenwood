@@ -6,8 +6,8 @@
 // Splitting those across a scene component, a route guard and a lighting rig is
 // how a zone ends up enforcing three different answers to "may I be here".
 //
-// This is the front half of the world's hidden layer (see docs/greenwood-turn.md):
-// Greenwood presents as a yield game and the outdoors reveals, slowly, that the
+// This is the front half of the world's hidden layer (see docs/evergreen-turn.md):
+// Evergreen presents as a yield game and the outdoors reveals, slowly, that the
 // yield is power and the desks are generators. The regions below are the pacing
 // of that reveal, which is why the level gates are not evenly spaced — the
 // Grounds open early and read as a park, the Treeline is the first wrongness you
@@ -17,7 +17,7 @@ export type RegionId =
   | 'machine-room'
   | 'trading-floor'
   | 'grounds'
-  | 'greenwood-hq'
+  | 'evergreen-hq'
   | 'hq-lobby'
   | 'hq-lounge'
   | 'treeline'
@@ -34,7 +34,7 @@ export type RegionId =
  * ordinary real-world colour, and Robin Neon is reserved for branding, signage,
  * UI and status. It has been broken twice and reverted twice. The Deep Forest is
  * where that discipline pays off — under moonlight, the only neon left in the
- * world is on working equipment, so the brand colour stops meaning "Greenwood"
+ * world is on working equipment, so the brand colour stops meaning "Evergreen"
  * and starts meaning "this still works".
  */
 export type LightingProfile = 'interior-neutral' | 'overcast-afternoon' | 'amber-dusk' | 'moonlit-fog';
@@ -128,7 +128,7 @@ export const REGIONS: Region[] = [
   },
   {
     id: 'grounds',
-    name: 'Greenwood Grounds',
+    name: 'Evergreen Grounds',
     href: '/app/grounds',
     minTotalLevel: 0,
     // Ungated on purpose, on both axes. The first step outside is the reveal,
@@ -155,7 +155,7 @@ export const REGIONS: Region[] = [
   },
   {
     /**
-     * Greenwood HQ — the plaza and the tower on it.
+     * Evergreen HQ — the plaza and the tower on it.
      *
      * Sits between the Grounds and the Treeline, which is the point of adding
      * it: the route used to go straight from "a pleasant park" to "something
@@ -167,8 +167,8 @@ export const REGIONS: Region[] = [
      * an introduction that has already taught a player to open a desk and route
      * yield is exactly three levels long.
      */
-    id: 'greenwood-hq',
-    name: 'Greenwood HQ',
+    id: 'evergreen-hq',
+    name: 'Evergreen HQ',
     href: '/app/hq',
     minTotalLevel: 3,
     minDeskLevel: 0,

@@ -1,6 +1,6 @@
-// The people of Greenwood, and the two rules their dialogue must not break.
+// The people of Evergreen, and the two rules their dialogue must not break.
 //
-// Most of this file guards the REVEAL. docs/greenwood-turn.md is explicit that
+// Most of this file guards the REVEAL. docs/evergreen-turn.md is explicit that
 // the turn is environmental, lands between levels three and ten, and is worth
 // nothing if a player arrives already knowing — and dialogue is by far the
 // easiest place to leak it, because writing an ominous line is fun and writing a
@@ -20,7 +20,7 @@ import { isWalkable as forestWalkable, GATES, GATE_RADIUS } from './deep-forest-
 import { regionById } from './regions';
 
 /** Every region with a scene a player can stand in. */
-const STAFFED = ['machine-room', 'trading-floor', 'grounds', 'greenwood-hq', 'treeline', 'deep-forest'] as const;
+const STAFFED = ['machine-room', 'trading-floor', 'grounds', 'evergreen-hq', 'treeline', 'deep-forest'] as const;
 // The player palette, so a resident can be checked against it rather than
 // against a copy that would drift the first time somebody added a colour.
 // Imported from palette rather than from Character: this test runs in a node
@@ -32,7 +32,7 @@ import { MAX_TOTAL_LEVEL } from './progression';
 /**
  * Words that give the game away.
  *
- * Nobody in Greenwood knows they are in a horror story — every one of these
+ * Nobody in Evergreen knows they are in a horror story — every one of these
  * characters believes they work at a fund. A line containing any of this is a
  * line where the writer knew something the speaker does not.
  */
@@ -85,7 +85,7 @@ describe('the cast', () => {
     // cannot be quietly buried under a tree by a density change.
     for (const [region, map] of [
       ['grounds', { isWalkable, onPath }],
-      ['greenwood-hq', { isWalkable: hqWalkable, onPath: hqPath }],
+      ['evergreen-hq', { isWalkable: hqWalkable, onPath: hqPath }],
     ] as const) {
       for (const npc of npcsIn(region)) {
         expect(map.isWalkable(npc.x, npc.z), `${npc.id} is inside something`).toBe(true);

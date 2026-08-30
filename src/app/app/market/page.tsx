@@ -118,7 +118,7 @@ export default function MarketPage() {
     >
       <div className="exchange-layout">
         <section className="exchange-hero">
-          <div><span className="gw-scene-kicker">FUND-TO-FUND / LIVE BOOK</span><h2>Route assets.<br /><em>Reprice yield.</em></h2><p>Every order is backed by a real portfolio asset: an instrument, a sealed allocation, or a complete desk.</p></div>
+          <div><span className="eg-scene-kicker">FUND-TO-FUND / LIVE BOOK</span><h2>Route assets.<br /><em>Reprice yield.</em></h2><p>Every order is backed by a real portfolio asset: an instrument, a sealed allocation, or a complete desk.</p></div>
           <div className="exchange-hero-stats"><span><small>OPEN LOTS</small><strong>{listings?.length ?? '—'}</strong></span><span><small>SETTLED</small><strong>{sales.length}</strong></span><span><small>FEE</small><strong>{(feeBps / 100).toFixed(2)}%</strong></span></div>
         </section>
         <div className="exchange-modebar">

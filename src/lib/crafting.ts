@@ -196,7 +196,7 @@ export const RECIPES: Recipe[] = [
    *
    * Bolts are a REPEATING sink, which is what a top tier actually needs. It
    * also answers the design doc's requirement that ranged weapons be limited by
-   * ammunition rather than by rate of fire (docs/greenwood-turn.md): a crossbow
+   * ammunition rather than by rate of fire (docs/evergreen-turn.md): a crossbow
    * you cannot feed is self-limiting without a cooldown, and the limiter is
    * something you go and gather rather than something you wait out.
    *

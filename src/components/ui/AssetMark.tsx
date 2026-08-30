@@ -5,7 +5,7 @@
 // WHY NOT A GLB.
 //
 // There are none, and that is the art direction rather than an omission: every
-// model in Greenwood is procedural three.js — flat-shaded boxes, cones and
+// model in Evergreen is procedural three.js — flat-shaded boxes, cones and
 // cylinders assembled in components under components/iso. Exporting them to GLB
 // to put one on a page would add a build step, a binary in the repo, and a
 // second copy of every desk that goes stale the first time somebody adjusts the
@@ -34,7 +34,7 @@ const CAMERA = { position: ISO_OFFSET, zoom: 74, near: -100, far: 200 } as const
 
 export default memo(function AssetMark({
   kind = 'rack',
-  className = 'gw-page-mark',
+  className = 'eg-page-mark',
 }: {
   kind?: MachineKind;
   className?: string;

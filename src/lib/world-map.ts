@@ -39,7 +39,7 @@ export const MAP_LAYOUT: Record<RegionId, { x: number; y: number }> = {
   treeline: { x: 1, y: -2 },
   'hq-lobby': { x: -1, y: -2 },
   'hq-lounge': { x: -2, y: -1 },
-  'greenwood-hq': { x: 0, y: -1 },
+  'evergreen-hq': { x: 0, y: -1 },
   grounds: { x: 0, y: 0 },
   'machine-room': { x: -1, y: 1 },
   'trading-floor': { x: 1, y: 1 },
@@ -58,12 +58,12 @@ export const MAP_LINKS: Array<[RegionId, RegionId]> = [
   ['grounds', 'machine-room'],
   ['grounds', 'trading-floor'],
   ['machine-room', 'trading-floor'],
-  ['grounds', 'greenwood-hq'],
-  ['greenwood-hq', 'hq-lobby'],
+  ['grounds', 'evergreen-hq'],
+  ['evergreen-hq', 'hq-lobby'],
   // The lift: every floor is one hop from the tower, not a chain through the
   // floors below it. That is what a lift IS.
-  ['greenwood-hq', 'hq-lounge'],
-  ['greenwood-hq', 'treeline'],
+  ['evergreen-hq', 'hq-lounge'],
+  ['evergreen-hq', 'treeline'],
   ['treeline', 'deep-forest'],
 ];
 
@@ -95,7 +95,7 @@ export const REGION_STYLE: Record<
   RegionId,
   { fill: string; edge: string; motif: 'grid' | 'trees' | 'dense' }
 > = {
-  'greenwood-hq': { fill: '#4a4d47', edge: '#9aa08f', motif: 'grid' },
+  'evergreen-hq': { fill: '#4a4d47', edge: '#9aa08f', motif: 'grid' },
   'hq-lobby': { fill: '#3f423c', edge: '#8d9184', motif: 'grid' },
   'hq-lounge': { fill: '#46403a', edge: '#94897c', motif: 'grid' },
   'machine-room': { fill: '#3a3a34', edge: '#6f6d64', motif: 'grid' },

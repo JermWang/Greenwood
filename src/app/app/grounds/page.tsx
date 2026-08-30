@@ -1,6 +1,6 @@
 'use client';
 
-// Greenwood Grounds — the hub.
+// Evergreen Grounds — the hub.
 //
 // This page is the game's navigation. There is no nav rail and no dock by
 // design (CLAUDE.md), which for a long time meant there was no navigation at
@@ -532,7 +532,7 @@ export default function GroundsPage() {
               the fund", so the answer to "you are not high enough level yet" was
               a button that closed the game and returned you to a dashboard. A
               locked door is a reason to turn around and go somewhere else in
-              Greenwood, not a reason to leave it — and the Machine Room, where
+              Evergreen, not a reason to leave it — and the Machine Room, where
               the work actually happens, is a door on this very screen about
               twenty tiles away.
 

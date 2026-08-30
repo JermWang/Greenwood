@@ -115,7 +115,7 @@ export default function TokenomicsPage() {
   return (
     <PageShell
       title="BNTY Network Model"
-      subtitle="The live emission, burn, treasury, and yield logic behind the Greenwood economy."
+      subtitle="The live emission, burn, treasury, and yield logic behind the Evergreen economy."
     >
       <div className="space-y-10">
         {/* 1. The Economic Loop */}
@@ -372,7 +372,7 @@ export default function TokenomicsPage() {
           </p>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
             {AURA_BANDS.map((band) => (
-              <div key={band.label} className="gw-grade" style={{ ['--grade' as string]: band.color }}>
+              <div key={band.label} className="eg-grade" style={{ ['--grade' as string]: band.color }}>
                 <b>{auraRange(band)}</b>
                 <small>{band.label}</small>
               </div>
@@ -427,11 +427,11 @@ export default function TokenomicsPage() {
           <p className="text-sm leading-relaxed text-steel-300">
             All constants on this page are imported from{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">
-              @greenwood/protocol
+              @evergreen/protocol
             </code>{' '}
             and{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">
-              @greenwood/yield-engine
+              @evergreen/yield-engine
             </code>
             , and the live family config comes from{' '}
             <code className="rounded bg-ink-700 px-1 font-mono text-xs text-lime-300">
@@ -449,7 +449,7 @@ export default function TokenomicsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="gw-doc-heading mb-3">{title}</h2>
+      <h2 className="eg-doc-heading mb-3">{title}</h2>
       {children}
     </section>
   );

@@ -6,7 +6,7 @@
 //
 // WHY SHARDS AT ALL
 //
-// Greenwood's outdoor regions are shared space: the Deep Forest shows you other
+// Evergreen's outdoor regions are shared space: the Deep Forest shows you other
 // players, lets them kill you, and drops your pack where you fall. That is the
 // whole tension, and it has a population curve — too few people and the zone is
 // a walking simulator, too many and every generator has a queue and every fight
@@ -53,10 +53,10 @@ export interface Shard {
  * disappears with load is a place nobody can arrange to meet in.
  */
 export const SHARDS: Shard[] = [
-  { id: 'greenwood-1', name: 'Greenwood I', region: 'North America', soft: 40, hard: 60 },
-  { id: 'greenwood-2', name: 'Greenwood II', region: 'North America', soft: 40, hard: 60 },
-  { id: 'greenwood-eu', name: 'Ashby', region: 'Europe', soft: 40, hard: 60 },
-  { id: 'greenwood-ap', name: 'Cardell', region: 'Asia-Pacific', soft: 40, hard: 60 },
+  { id: 'evergreen-1', name: 'Evergreen I', region: 'North America', soft: 40, hard: 60 },
+  { id: 'evergreen-2', name: 'Evergreen II', region: 'North America', soft: 40, hard: 60 },
+  { id: 'evergreen-eu', name: 'Ashby', region: 'Europe', soft: 40, hard: 60 },
+  { id: 'evergreen-ap', name: 'Cardell', region: 'Asia-Pacific', soft: 40, hard: 60 },
 ];
 
 const BY_ID = new Map(SHARDS.map((s) => [s.id, s]));
@@ -107,4 +107,4 @@ export function recommendShard(counts: Record<string, number>): Shard {
 }
 
 /** Cookie the browser remembers its shard in, readable by both halves. */
-export const SHARD_COOKIE = 'greenwood_shard';
+export const SHARD_COOKIE = 'evergreen_shard';

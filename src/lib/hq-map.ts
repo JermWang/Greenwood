@@ -1,4 +1,4 @@
-// Greenwood HQ — the plaza, and the tower standing on it.
+// Evergreen HQ — the plaza, and the tower standing on it.
 //
 // NO IMPORTS, the same contract lib/grounds-map and lib/deep-forest-map hold.
 //
@@ -15,7 +15,7 @@
 // before the fence means anything. You should have somewhere to lose.
 //
 // THIS FILE IS THE EXTERIOR ONLY. The lobby, the floors and the elevator are
-// their own regions reached through the tower door — see docs/greenwood-turn.md
+// their own regions reached through the tower door — see docs/evergreen-turn.md
 // for why the interior matters and CLAUDE.md for the door rules. An elevator is
 // the first VERTICAL door in this game and the portal table has no concept of
 // floors yet; that is deliberately not being solved here.
@@ -118,7 +118,7 @@ export const DOORS: Doorway[] = [
     z: BOUNDS.maxZ,
     axis: 'x',
     rotation: 0,
-    label: 'Greenwood Grounds',
+    label: 'Evergreen Grounds',
     href: '/app/grounds',
     region: 'grounds',
     blurb: 'Back down the avenue.',
@@ -132,7 +132,7 @@ export const DOORS: Doorway[] = [
     z: TOWER.maxZ + 1,
     axis: 'x',
     rotation: Math.PI,
-    label: 'Greenwood HQ',
+    label: 'Evergreen HQ',
     href: '/app/hq/lobby',
     region: 'hq-lobby',
     blurb: 'The lobby, the desks, and everything above them.',

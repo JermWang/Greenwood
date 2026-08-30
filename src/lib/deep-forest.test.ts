@@ -158,7 +158,7 @@ describe('regions', () => {
   it('points at the nearest locked region, not the first in the table', () => {
     // HQ is the first gate now: it opens at 3, ahead of the Treeline's 6.
     const early = nextRegion({ totalLevel: 2, hasPack: false });
-    expect(early!.region.id).toBe('greenwood-hq');
+    expect(early!.region.id).toBe('evergreen-hq');
     expect(early!.check.code).toBe('level');
   });
 

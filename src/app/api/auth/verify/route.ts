@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This sign-in request expired. Try again.' }, { status: 401 });
     }
 
-    const host = request.headers.get('host') ?? 'greenwood';
+    const host = request.headers.get('host') ?? 'evergreen';
     const message = signInMessage(wallet, nonce, host, CHAIN.id);
 
     const valid = await verifyMessage({

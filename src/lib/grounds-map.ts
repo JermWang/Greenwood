@@ -1,4 +1,4 @@
-// Greenwood Grounds — the hub, and the game's actual navigation.
+// Evergreen Grounds — the hub, and the game's actual navigation.
 //
 // NO IMPORTS, the same contract lib/deep-forest-map holds, and for a weaker
 // reason: nothing out here is contested, so the server does not strictly need to
@@ -17,7 +17,7 @@
 // SO IT IS DELIBERATELY BORING. Overcast, flat, safe, nothing to fight and
 // nothing to lose. It is the last place in the game that behaves the way the
 // front of the fiction claims the whole world does — which is exactly what makes
-// the fence at the north end land. Read docs/greenwood-turn.md before adding
+// the fence at the north end land. Read docs/evergreen-turn.md before adding
 // anything with teeth to it.
 //
 // SIZE IS SET BY CONTENT, NOT BY AMBITION.
@@ -231,14 +231,14 @@ export const DOORS: Doorway[] = [
      * and the last one before the fence means anything. The Treeline is reached
      * from HQ's service gate instead — see lib/hq-map.
      */
-    id: 'greenwood-hq',
+    id: 'evergreen-hq',
     axis: 'x',
     x: 0,
     z: FENCE_Z + 1,
     rotation: Math.PI,
-    label: 'Greenwood HQ',
+    label: 'Evergreen HQ',
     href: '/app/hq',
-    region: 'greenwood-hq',
+    region: 'evergreen-hq',
     blurb: 'The plaza and the tower. Where the lights are run from.',
     // The Treeline has no scene yet, and will not want a door table when it
     // does: outdoor regions spawn at their own arrival cell.

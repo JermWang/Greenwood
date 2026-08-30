@@ -243,12 +243,12 @@ export default function CommandPage() {
 
   if (!storeWallet) {
     return (
-      <div className="gw-page mx-auto max-w-[1180px]">
-        <div className="gw-uplink-empty">
-          <div className="gw-uplink-visual" aria-hidden>
-            <span className="gw-uplink-orbit orbit-a" />
-            <span className="gw-uplink-orbit orbit-b" />
-            <span className="gw-uplink-chip">BNTY</span>
+      <div className="eg-page mx-auto max-w-[1180px]">
+        <div className="eg-uplink-empty">
+          <div className="eg-uplink-visual" aria-hidden>
+            <span className="eg-uplink-orbit orbit-a" />
+            <span className="eg-uplink-orbit orbit-b" />
+            <span className="eg-uplink-chip">BNTY</span>
           </div>
           <div className="relative z-10 max-w-xl">
             <div className="font-mono text-[9px] font-bold uppercase tracking-[.28em] text-lime-300">Fund uplink offline</div>
@@ -262,7 +262,7 @@ export default function CommandPage() {
                 ['02', 'Open a desk'],
                 ['03', 'Start yield'],
               ].map(([step, label]) => (
-                <div key={step} className="gw-uplink-step"><span>{step}</span>{label}</div>
+                <div key={step} className="eg-uplink-step"><span>{step}</span>{label}</div>
               ))}
             </div>
             <p className="mt-5 font-mono text-[9px] uppercase tracking-[.15em] text-emerald-100/35">Use the connect control in the command bar to begin</p>
@@ -274,9 +274,9 @@ export default function CommandPage() {
 
   if (!op) {
     return (
-      <div className="gw-page mx-auto max-w-[1180px]">
-        <div className="gw-loading-deck">
-          <span className="gw-loading-scan" />
+      <div className="eg-page mx-auto max-w-[1180px]">
+        <div className="eg-loading-deck">
+          <span className="eg-loading-scan" />
           <div className="font-mono text-[10px] uppercase tracking-[.28em] text-lime-300">Synchronizing fund analytics</div>
           <p className="mt-2 text-sm text-emerald-100/45">Reading desks, yield buffers, and network share…</p>
         </div>
@@ -285,7 +285,7 @@ export default function CommandPage() {
   }
 
   return (
-    <main className="gw-command-page">
+    <main className="eg-command-page">
       <FundProfileCard
         wallet={wallet}
         quests={quests}
@@ -309,8 +309,8 @@ export default function CommandPage() {
         profile card, and this row carries only the two figures that are not
         stated anywhere else on the page.
       */}
-      <section className="gw-command-bar">
-        <div className="gw-command-actions">
+      <section className="eg-command-bar">
+        <div className="eg-command-actions">
           <button className="btn-secondary" onClick={() => setDeployOpen(true)} disabled={capacityFull}>+ Open desk</button>
           <button
             className="btn-primary"
@@ -320,22 +320,22 @@ export default function CommandPage() {
             {busy === 'claim' ? 'Routing yield…' : op.claimCooldownRemainingMs > 0 ? `Buffer locked · ${Math.ceil(op.claimCooldownRemainingMs / 60000)}m` : `Route ${fmt(pendingTotal)} BNTY`}
           </button>
         </div>
-        <div className="gw-command-metrics">
+        <div className="eg-command-metrics">
           <div><span>FLOW</span><strong>{nodes.length ? fmt(dailyBnty, 0) : '0'}</strong><small>BNTY / day</small></div>
           <div><span>SHARE</span><strong>{networkShare.toFixed(1)}%</strong><small>Emission grid</small></div>
         </div>
       </section>
 
-      <div className="gw-alert-stack">
-        {!TOKEN_LIVE && <div className="gw-system-alert"><span>SIM</span><p>Pre-token simulation is active. Fund activity is tracked now and settles when BNTY goes live.</p></div>}
+      <div className="eg-alert-stack">
+        {!TOKEN_LIVE && <div className="eg-system-alert"><span>SIM</span><p>Pre-token simulation is active. Fund activity is tracked now and settles when BNTY goes live.</p></div>}
         {unseen.length > 0 && (
-          <button className="gw-system-alert is-reward" onClick={() => { setCrateOpen(true); void api.markCratesSeen(wallet!).then(refresh).catch(() => {}); }}>
+          <button className="eg-system-alert is-reward" onClick={() => { setCrateOpen(true); void api.markCratesSeen(wallet!).then(refresh).catch(() => {}); }}>
             <CrateThumb size={34} rarity="legendary" />
             <p><strong>{unseen.length} sealed {unseen.length === 1 ? 'allocation' : 'allocations'}</strong><br />Recovered by your desks · inspect contents</p>
             <span className="ml-auto">OPEN</span>
           </button>
         )}
-        {error && <div className="gw-system-alert is-error"><span>ERR</span><p>{/^\d{3}\b|auth|privy|token|unauthor/i.test(error) ? `Fund uplink verification failed (${error}) · retrying` : `Fund API unreachable (${error}) · retrying`}</p></div>}
+        {error && <div className="eg-system-alert is-error"><span>ERR</span><p>{/^\d{3}\b|auth|privy|token|unauthor/i.test(error) ? `Fund uplink verification failed (${error}) · retrying` : `Fund API unreachable (${error}) · retrying`}</p></div>}
       </div>
 
       <NextStep
@@ -346,23 +346,23 @@ export default function CommandPage() {
         onOpenPod={() => setCrateOpen(true)}
       />
 
-      <div className="gw-command-grid">
-        <section className="gw-digital-twin" aria-label="Interactive fund digital twin">
-          <div className="gw-scene-head">
-            <div><span className="gw-scene-kicker">DIGITAL TWIN / REALTIME</span><strong>{focusedRig ? `${focusedRig.type === 'oil' ? 'EQUITY DESK' : 'TREASURY DESK'} · L${focusedRig.level}` : 'FUND OVERVIEW'}</strong></div>
-            <div className="gw-lighting-tabs" aria-label="Board legend">
+      <div className="eg-command-grid">
+        <section className="eg-digital-twin" aria-label="Interactive fund digital twin">
+          <div className="eg-scene-head">
+            <div><span className="eg-scene-kicker">DIGITAL TWIN / REALTIME</span><strong>{focusedRig ? `${focusedRig.type === 'oil' ? 'EQUITY DESK' : 'TREASURY DESK'} · L${focusedRig.level}` : 'FUND OVERVIEW'}</strong></div>
+            <div className="eg-lighting-tabs" aria-label="Board legend">
               <span>DRAG TO PAN</span>
               <span>SCROLL TO ZOOM</span>
             </div>
           </div>
-          <div className="gw-scene-canvas">
+          <div className="eg-scene-canvas">
             <IsoTwin
               nodes={sceneNodes}
               selectedNodeId={selectedNodeId}
               onSelect={(id) => { selectNode(id || null); setCameraFocusId(id || null); }}
             />
             {focusedRig && (
-              <div className="gw-focus-card">
+              <div className="eg-focus-card">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: auraHex(focusedRig.level), boxShadow: `0 0 12px ${auraHex(focusedRig.level)}` }} />
                   <strong>{auraLabel(focusedRig.level)} DESK</strong>
@@ -377,7 +377,7 @@ export default function CommandPage() {
                 </div>
               </div>
             )}
-            <div className="gw-scene-nav">
+            <div className="eg-scene-nav">
               <button onClick={() => cycleCameraFocus(-1)} aria-label="Previous desk">←</button>
               <button onClick={() => setCameraFocusId(null)}>{focusedRig ? 'Release focus' : 'Fund view'}</button>
               <button onClick={() => cycleCameraFocus(1)} aria-label="Next desk">→</button>
@@ -385,25 +385,25 @@ export default function CommandPage() {
           </div>
         </section>
 
-        <aside className="gw-console-stack">
-          <section className="gw-console-card is-yield">
-            <div className="gw-console-heading"><span>YIELD BUFFER</span><span>{overview ? `HALVING ${overview.halving.cycleIndex + 2}` : 'SYNCING'}</span></div>
+        <aside className="eg-console-stack">
+          <section className="eg-console-card is-yield">
+            <div className="eg-console-heading"><span>YIELD BUFFER</span><span>{overview ? `HALVING ${overview.halving.cycleIndex + 2}` : 'SYNCING'}</span></div>
             <div className="mt-5 flex items-end justify-between gap-4">
               <div><strong className="text-[clamp(2.2rem,5vw,4.2rem)] font-semibold leading-none tracking-[-.06em] text-white">{fmt(pendingTotal)}</strong><span className="ml-2 font-mono text-[10px] text-lime-300">BNTY</span></div>
               <span className="font-mono text-[9px] text-emerald-100/42">{fmt(op.productionRate, 4)} / SEC</span>
             </div>
-            <div className="gw-flow-track"><span style={{ width: `${Math.max(4, Math.min(100, networkShare))}%` }} /></div>
+            <div className="eg-flow-track"><span style={{ width: `${Math.max(4, Math.min(100, networkShare))}%` }} /></div>
             <div className="mt-2 flex justify-between font-mono text-[8px] uppercase tracking-[.14em] text-emerald-100/38"><span>Grid ownership {networkShare.toFixed(2)}%</span><span>{overview ? <Countdown ms={Math.max(0, overview.halving.nextHalvingMs - Date.now())} /> : '—'}</span></div>
-            {boostActive && <div className="gw-boost-chip">WELCOME ACCELERATOR · {op.welcomeBoostFactor.toFixed(2)}× · {Math.round(boostPct * 100)}% WINDOW</div>}
+            {boostActive && <div className="eg-boost-chip">WELCOME ACCELERATOR · {op.welcomeBoostFactor.toFixed(2)}× · {Math.round(boostPct * 100)}% WINDOW</div>}
           </section>
 
-          <section className="gw-console-card" id="production-lines">
-            <div className="gw-console-heading"><span>DESKS</span><span>{nodes.length}/{totalCapacity}</span></div>
+          <section className="eg-console-card" id="production-lines">
+            <div className="eg-console-heading"><span>DESKS</span><span>{nodes.length}/{totalCapacity}</span></div>
             <div className="mt-3 space-y-2">
-              {nodes.length === 0 && <button className="gw-empty-line" onClick={() => setDeployOpen(true)}><span>+</span><strong>Open your first desk</strong><small>Start earning yield</small></button>}
+              {nodes.length === 0 && <button className="eg-empty-line" onClick={() => setDeployOpen(true)}><span>+</span><strong>Open your first desk</strong><small>Start earning yield</small></button>}
               {nodes.map((node, index) => (
-                <button key={node.id} onClick={() => { selectNode(node.id); setCameraFocusId(node.id); }} className={`gw-line-row ${node.id === selectedNodeId ? 'is-active' : ''}`}>
-                  <span className="gw-line-index">{String(index + 1).padStart(2, '0')}</span>
+                <button key={node.id} onClick={() => { selectNode(node.id); setCameraFocusId(node.id); }} className={`eg-line-row ${node.id === selectedNodeId ? 'is-active' : ''}`}>
+                  <span className="eg-line-index">{String(index + 1).padStart(2, '0')}</span>
                   <span className="min-w-0 text-left"><strong>{node.type === 'oil' ? 'Equity Desk' : 'Treasury Desk'}</strong><small>{auraLabel(node.level)} · {fmt(node.productionRate, 4)} BNTY/s</small></span>
                   <span className="ml-auto text-right"><strong style={{ color: auraHex(node.level) }}>L{node.level}</strong><small>{fmt(node.pendingBnty)} BNTY</small></span>
                 </button>
@@ -430,18 +430,18 @@ export default function CommandPage() {
         <RecentUpdates />
       </div>
 
-      <div className="gw-lower-grid">
+      <div className="eg-lower-grid">
         <div id="compound-panel" className="contents"><CompoundPanel busy={busy} run={run} /></div>
         {selected ? <NodeDetail node={selected} busy={busy} run={run} onOpenCrate={() => setCrateOpen(true)} /> : (
-          <section className="gw-console-card gw-inspector-empty"><div className="gw-console-heading"><span>DESK INSPECTOR</span><span>STANDBY</span></div><div className="mt-7"><strong>Select a desk in the digital twin.</strong><p>Inspect fitted instruments, storage saturation, yield rate, and calibration options without leaving the trading floor.</p></div></section>
+          <section className="eg-console-card eg-inspector-empty"><div className="eg-console-heading"><span>DESK INSPECTOR</span><span>STANDBY</span></div><div className="mt-7"><strong>Select a desk in the digital twin.</strong><p>Inspect fitted instruments, storage saturation, yield rate, and calibration options without leaving the trading floor.</p></div></section>
         )}
-        <section className="gw-console-card">
-          <div className="gw-console-heading"><span>ALLOCATIONS</span><span>{op.crates.length} SEALED</span></div>
+        <section className="eg-console-card">
+          <div className="eg-console-heading"><span>ALLOCATIONS</span><span>{op.crates.length} SEALED</span></div>
           <div className="mt-4 flex items-center gap-4"><CrateThumb size={68} rarity={unseen.length ? 'legendary' : 'rare'} /><div><strong className="text-white">Open allocations</strong><p className="mt-1 text-xs leading-5 text-emerald-100/45">Your desks recover randomized instruments. Fit them in Instruments to increase yield power.</p></div></div>
           <button className="btn-secondary mt-4 w-full text-xs" onClick={() => setCrateOpen(true)}>Open allocation inventory</button>
         </section>
-        <section className="gw-console-card is-co-yield">
-          <div className="gw-console-heading"><span>THE OUTFITTER</span><span>TRADING FLOOR</span></div>
+        <section className="eg-console-card is-co-yield">
+          <div className="eg-console-heading"><span>THE OUTFITTER</span><span>TRADING FLOOR</span></div>
           <div className="mt-5 text-3xl font-semibold tracking-[-.04em] text-white">Make the fund yours.</div>
           <p className="mt-3 text-xs leading-5 text-emerald-100/46">Buy a look, then refine it up a five-step track. Cosmetics never touch yield — what they buy is the finish, Trading XP, and something worth reselling.</p>
           <Link href="/app/outfitter" className="btn-secondary mt-4 block w-full text-center text-xs">Open the Outfitter</Link>
@@ -451,7 +451,7 @@ export default function CommandPage() {
       {deployOpen && <DeployModal onClose={() => setDeployOpen(false)} busy={busy} counts={{ oil: oilCount, mine: mineCount }} capacities={{ oil: oilCapacity, mine: mineCapacity }} onDeploy={(familyKey) => run('mint', async (onStep) => { await api.mintNode(wallet!, familyKey, onStep); setDeployOpen(false); say('Desk opened'); })} />}
       {crateOpen && <CratePicker onClose={() => setCrateOpen(false)} busy={busy} op={op} onOpen={openCrate} />}
       {crateResult && <CrateCinematic result={crateResult} onClose={() => setCrateResult(null)} onOpenAnother={() => { setCrateResult(null); setCrateOpen(true); }} />}
-      {toast && <div className="gw-toast">{toast}</div>}
+      {toast && <div className="eg-toast">{toast}</div>}
     </main>
   );
 

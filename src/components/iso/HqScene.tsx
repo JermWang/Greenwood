@@ -1,6 +1,6 @@
 'use client';
 
-// Greenwood HQ, rendered: a paved plaza, a fountain, and the tower.
+// Evergreen HQ, rendered: a paved plaza, a fountain, and the tower.
 //
 // THE BRIEF IS THE OPPOSITE OF THE GROUNDS.
 //
@@ -261,7 +261,7 @@ const Tower = memo(function Tower() {
         <pointLight position={[0, 3, 2.6]} color={ISO.accent} intensity={7} distance={12} decay={2} />
       </group>
 
-      <PlaceLabel position={[cx, y + 5.2, cz]}>Greenwood HQ</PlaceLabel>
+      <PlaceLabel position={[cx, y + 5.2, cz]}>Evergreen HQ</PlaceLabel>
     </group>
   );
 });

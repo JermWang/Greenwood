@@ -17,7 +17,7 @@
 //   2. NEON MEANS WORKING. The brand rule said Robin Neon is for branding and
 //      status, never for the world. Under moonlight that pays off: the only
 //      neon left is on extraction gates and live generators, so the brand
-//      colour stops meaning "Greenwood" and starts meaning "this still works".
+//      colour stops meaning "Evergreen" and starts meaning "this still works".
 //      Everything else is lit by failing sodium, which is amber, or by nothing.
 //   3. THE SCATTER IS DETERMINISTIC. Every prop position comes from a seeded
 //      hash of its own coordinates, so every client renders the identical
@@ -119,9 +119,12 @@ function DeepForestLighting() {
  * scale would actively mislead about how far a step goes. The texture itself and
  * the three traps in building it are documented on gridTexture in mapkit.
  */
-function Ground({ extent }: { extent: number }) {
+function Ground({ extent, gridStrength }: { extent: number; gridStrength: number }) {
   const span = extent * 2 + 1;
-  const texture = useMemo(() => gridTexture('#3a4634', 'rgba(180, 202, 168, 0.34)', span), [span]);
+  const texture = useMemo(
+    () => gridTexture('#3a4634', `rgba(180, 202, 168, ${gridStrength})`, span),
+    [span, gridStrength]
+  );
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
@@ -260,6 +263,18 @@ export interface DeepForestProps {
   extent?: number;
   /** Tiles whose tree is currently a stump, so the forest can leave a hole. */
   felled?: Set<string>;
+  /**
+   * How strongly the tile grid reads, as the alpha of its line.
+   *
+   * A prop rather than a constant because the grid is an AFFORDANCE, not
+   * decoration: out here you move by clicking a tile, and the grid is what makes
+   * a step a knowable distance rather than a guess. That argument is the whole
+   * reason the bare plane was rejected (see Ground) -- and it applies exactly as
+   * far as the clicking does. On the title screen nothing is walked and nothing
+   * is clicked, so the same lines stop being a scale reference and become a
+   * lattice drawn over a forest. Lowered there, untouched here.
+   */
+  gridStrength?: number;
 }
 
 /**
@@ -270,7 +285,7 @@ export interface DeepForestProps {
  * streamer to reach; this renders the whole map at once, so it is sized to what
  * one draw can carry. Growing it is a number change once streaming exists.
  */
-export default function DeepForestScene({ extent = EXTENT, felled }: DeepForestProps) {
+export default function DeepForestScene({ extent = EXTENT, felled, gridStrength = 0.34 }: DeepForestProps) {
   // Everything drawn here comes from lib/deep-forest-map, which the server also
   // reads. Nothing about the world is decided in this file.
   const nodes = useMemo(() => salvageNodes(), []);
@@ -278,7 +293,7 @@ export default function DeepForestScene({ extent = EXTENT, felled }: DeepForestP
   return (
     <>
       <DeepForestLighting />
-      <Ground extent={extent} />
+      <Ground extent={extent} gridStrength={gridStrength} />
 
       <InstancedForest felled={felled} />
 

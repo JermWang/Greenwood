@@ -97,7 +97,7 @@ export default function ProfilePage() {
     if (!supabase) return;
     const normalized = wallet.toLowerCase();
     const channel = supabase
-      .channel(`gw-operator-profile-${normalized}`)
+      .channel(`eg-operator-profile-${normalized}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'profiles', filter: `wallet=eq.${normalized}` },
@@ -139,7 +139,7 @@ export default function ProfilePage() {
         <div className="operator-layout">
           <section className="operator-pass">
             <div className="operator-pass-head">
-              <span className="operator-pass-code">GREENWOOD / FUND CREDENTIAL</span>
+              <span className="operator-pass-code">EVERGREEN / FUND CREDENTIAL</span>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   {/* Avatar: uploaded image, or the wallet's aura-tinted initial. */}
@@ -265,7 +265,7 @@ export default function ProfilePage() {
                         {eventLabels[item.eventType] || item.eventType.replaceAll('_', ' ')}
                       </p>
                       <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-steel-500">
-                        {item.source === 'onchain' ? 'Verified on-chain' : 'Greenwood network'}{' '}
+                        {item.source === 'onchain' ? 'Verified on-chain' : 'Evergreen network'}{' '}
                         ·{' '}
                         {new Date(item.createdAt).toLocaleString()}
                       </p>

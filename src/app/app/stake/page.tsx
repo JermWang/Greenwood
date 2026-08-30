@@ -135,7 +135,7 @@ export default function StakePage() {
   if (!wallet) {
     return (
       <PageShell title="Fixed Income" subtitle="Lock BNTY for a fixed term and draw a published rate from the emission reserve.">
-        <section className="gw-floor-gate">
+        <section className="eg-floor-gate">
           <VaultIcon size={38} weight="duotone" />
           <h1>Link a fund.</h1>
           <p>Notes are held against a wallet. Connect one to open a position, or read the current rate card below.</p>
@@ -152,12 +152,12 @@ export default function StakePage() {
       subtitle="Lock BNTY for a fixed term and draw a published rate from the emission reserve. Rates are fixed when a Note opens and never move underneath it."
       maxWidth="max-w-[1500px]"
     >
-      {error && <div className="gw-system-alert is-error"><span>VAULT</span><p>{error}</p></div>}
-      {notice && <div className="gw-system-alert"><span>VAULT</span><p>{notice}</p></div>}
+      {error && <div className="eg-system-alert is-error"><span>VAULT</span><p>{error}</p></div>}
+      {notice && <div className="eg-system-alert"><span>VAULT</span><p>{notice}</p></div>}
 
       <div className="stake-layout">
         <section className="stake-open panel">
-          <div className="gw-console-heading"><span>OPEN A NOTE</span><span>{bnty(balance)} BNTY AVAILABLE</span></div>
+          <div className="eg-console-heading"><span>OPEN A NOTE</span><span>{bnty(balance)} BNTY AVAILABLE</span></div>
 
           <div className="stake-terms">
             {rates?.terms.map((candidate) => (
@@ -213,7 +213,7 @@ export default function StakePage() {
         </section>
 
         <section className="stake-positions">
-          <div className="gw-console-heading">
+          <div className="eg-console-heading">
             <span>YOUR NOTES</span>
             <span>{totals?.openContracts ?? 0} OPEN · {bnty(totals?.lockedPrincipal ?? 0)} BNTY LOCKED</span>
           </div>
@@ -282,7 +282,7 @@ function RateCard({ rates }: { rates: StakeRates }) {
   const committedShare = rates.reserveBalance > 0 ? rates.committedInterest / rates.reserveBalance : 0;
   return (
     <section className="stake-capacity panel">
-      <div className="gw-console-heading"><span>RESERVE CAPACITY</span><span>LIVE</span></div>
+      <div className="eg-console-heading"><span>RESERVE CAPACITY</span><span>LIVE</span></div>
       <div className="stake-capacity-bar"><i style={{ width: `${Math.min(100, committedShare * 100)}%` }} /></div>
       <dl>
         <div><dt>Emission reserve</dt><dd>{bnty(rates.reserveBalance)} BNTY</dd></div>

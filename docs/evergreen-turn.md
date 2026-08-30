@@ -1,6 +1,6 @@
 # The Turn
 
-Design spec for Greenwood's hidden layer: what the game is really about, how the
+Design spec for Evergreen's hidden layer: what the game is really about, how the
 reveal is paced, and what has to exist for the Deep Forest to work.
 
 This is a design document, not a record of built code. Nothing below is
@@ -10,11 +10,11 @@ implemented yet.
 
 ## 1. The premise
 
-Greenwood presents as a Real-World-Asset yield game. You run a fund, your desks
+Evergreen presents as a Real-World-Asset yield game. You run a fund, your desks
 produce BNTY, you upgrade them, you compete on a leaderboard. Nothing in the
 first hour suggests otherwise, and nothing in the first hour is a lie.
 
-The turn is that **the yield is power, and the desks are generators.** Greenwood
+The turn is that **the yield is power, and the desks are generators.** Evergreen
 is one of the last lit settlements. What your fund "produces" is what keeps the
 floodlights on. The reason instruments are scarce is that nobody manufactures
 them any more — every one is salvage. The reason the emission schedule halves is
@@ -27,7 +27,7 @@ The player is never told this. They work it out.
 The reskin never renamed the internal identifiers. In the code as it stands
 today, an Equity Desk is an `equity_desk`, a Treasury Desk is a `treasury_desk`, the
 allocation crates are `equity_allocation` and `treasury_allocation`, and the CSS is prefixed
-`gw-*`. That was a pragmatic decision about churn.
+`eg-*`. That was a pragmatic decision about churn.
 
 It is now canon. The corporate skin is the layer on top; the machinery
 underneath was always industrial, and a player who opens devtools finds the
@@ -44,9 +44,9 @@ same yield, recontextualised.
 
 | Stage | Level | What the player sees | What they conclude |
 |---|---|---|---|
-| **Clean** | 1–2 | Corporate Greenwood exactly as it ships today | Nothing is wrong |
+| **Clean** | 1–2 | Corporate Evergreen exactly as it ships today | Nothing is wrong |
 | **Wrongness** | 3–5 | Machine Room windows are boarded from the *outside*. Ticker headlines repeat with the same date. The Handbook has a redacted page. | Something is off, probably flavour |
-| **Perimeter** | 6–9 | Greenwood Grounds unlocks. A fence. Floodlights aimed *outward*. Permanent overcast dusk. A locked gate with a queue of nobody. | This is not an office park |
+| **Perimeter** | 6–9 | Evergreen Grounds unlocks. A fence. Floodlights aimed *outward*. Permanent overcast dusk. A locked gate with a queue of nobody. | This is not an office park |
 | **The Turn** | 10 | Deep Forest unlocks. Full reveal. | Oh. |
 
 The Grounds are the load-bearing stage. They must read as *pleasant* on first
@@ -71,7 +71,7 @@ the whole trick:
 Three new regions, connected in a ring rather than a star so travel has
 geography.
 
-### Greenwood Grounds — level 1, safe
+### Evergreen Grounds — level 1, safe
 The first outdoor area. Bounded, no ceiling, tree lines and paths instead of
 walls. Gathering nodes for quests. Roughly 4× the Machine Room's footprint.
 
@@ -90,7 +90,7 @@ technical item in this document.
 
 ## 4. PvP, and the rule that makes it survivable
 
-Instruments and desks are tokenized. If another player can take them, Greenwood
+Instruments and desks are tokenized. If another player can take them, Evergreen
 becomes a venue where players lose real money to each other, which is a
 different product with a different legal posture. It is also worse design.
 
@@ -307,7 +307,7 @@ fight. This is the largest single item here and should not be underestimated.
    required. Regions get bounds, a lighting profile, a PvP flag and a level
    gate; packs get tiers, Scrip pricing, capacity and the entry check. All of it
    is pure state and enforceable before a single tree is modelled.
-2. **Greenwood Grounds.** One outdoor scene, safe, gathering nodes. Proves the
+2. **Evergreen Grounds.** One outdoor scene, safe, gathering nodes. Proves the
    outdoor art direction at a size the current renderer handles.
 3. **Chunked terrain.** The renderer work, proven on the Grounds before the
    Deep Forest depends on it.

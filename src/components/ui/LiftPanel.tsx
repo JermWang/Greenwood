@@ -2,7 +2,7 @@
 
 // The lift, as a panel of buttons.
 //
-// This is the one place in Greenwood where choosing a destination from a LIST is
+// This is the one place in Evergreen where choosing a destination from a LIST is
 // the right interaction rather than a violation of the no-nav-rail rule, and the
 // distinction is worth being precise about because it is the exact thing that
 // rule exists to stop.
@@ -64,7 +64,7 @@ export default function LiftPanel({
     <div className="lift-panel" role="dialog" aria-label="Floor directory">
       <header>
         <span>
-          <b>Greenwood HQ</b>
+          <b>Evergreen HQ</b>
           <em>Floor directory</em>
         </span>
         <button className="lift-close" onClick={onClose} aria-label="Close">

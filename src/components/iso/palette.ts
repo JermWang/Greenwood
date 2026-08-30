@@ -1,4 +1,4 @@
-// Greenwood's isometric art direction.
+// Evergreen's isometric art direction.
 //
 // Split deliberately into two groups, because conflating them is what made the
 // first pass a green wash:

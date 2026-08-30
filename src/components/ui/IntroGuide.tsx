@@ -128,20 +128,20 @@ export default function IntroGuide() {
   const { totalLevel, maxTotalLevel } = data.progression;
 
   return (
-    <div className="gw-guide">
+    <div className="eg-guide">
       <button
-        className={`gw-guide-chip${step.done ? ' is-ready' : ''}`}
+        className={`eg-guide-chip${step.done ? ' is-ready' : ''}`}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
         <Compass size={14} weight="duotone" />
-        <span className="gw-guide-label">{step.done ? 'Step complete' : step.label}</span>
+        <span className="eg-guide-label">{step.done ? 'Step complete' : step.label}</span>
         <b>{completed}/{total}</b>
         <CaretDown size={11} weight="bold" className={open ? 'is-open' : undefined} />
       </button>
 
       {open && (
-        <section className="intro-panel gw-guide-panel" aria-label="Getting started">
+        <section className="intro-panel eg-guide-panel" aria-label="Getting started">
           <header>
             <div>
               <span className="intro-eyebrow">Getting started</span>

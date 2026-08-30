@@ -48,10 +48,10 @@ export default function CopyContract() {
   if (!published) {
     return (
       <span
-        className="gw-topbar-ca gw-topbar-ca-soon glass-control pointer-events-auto flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em]"
+        className="eg-topbar-ca eg-topbar-ca-soon glass-control pointer-events-auto flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em]"
         title={`The BNTY contract address will be published here at launch on ${CHAIN.name}`}
       >
-        <span className="gw-topbar-ca-label">CA</span>
+        <span className="eg-topbar-ca-label">CA</span>
         <span>Coming soon</span>
       </span>
     );
@@ -65,7 +65,7 @@ export default function CopyContract() {
       onClick={copy}
       title={`Copy the BNTY contract address on ${CHAIN.name}`}
       aria-label={`Copy BNTY contract address ${BNTY_TOKEN_ADDRESS}`}
-      className="gw-topbar-ca glass-control pointer-events-auto flex items-center gap-2 rounded-full border-amber-400/30 px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em] text-amber-100/80 transition hover:border-amber-400/60 hover:text-amber-200"
+      className="eg-topbar-ca glass-control pointer-events-auto flex items-center gap-2 rounded-full border-amber-400/30 px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em] text-amber-100/80 transition hover:border-amber-400/60 hover:text-amber-200"
     >
       <span className="text-amber-100/55">CA</span>
       {/* The truncated address is shown so it can be eyeballed against a

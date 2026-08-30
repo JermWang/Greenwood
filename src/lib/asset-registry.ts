@@ -229,7 +229,7 @@ for (const prop of DRESSING) {
 }
 
 /**
- * Outdoor props, for Greenwood Grounds and the Treeline.
+ * Outdoor props, for Evergreen Grounds and the Treeline.
  *
  * Registered before any scene uses them, so each piece can be judged on its own.
  * The alternative is building a two-hundred-tree wood and discovering the tree

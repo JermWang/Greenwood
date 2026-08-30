@@ -1,6 +1,6 @@
 'use client';
 
-// Greenwood Grounds, rendered.
+// Evergreen Grounds, rendered.
 //
 // The brief for this scene is unusual: it has to be UNREMARKABLE. Every other
 // place in the game is trying to be interesting — the Machine Room is a machine
@@ -14,7 +14,7 @@
 //   happens in the world; this is the world that claim was waiting on. Doors are
 //   things you walk to.
 //
-//   IT IS THE CONTROL SAMPLE. The reveal in docs/greenwood-turn.md needs a
+//   IT IS THE CONTROL SAMPLE. The reveal in docs/evergreen-turn.md needs a
 //   baseline of ordinariness to be measured against. A player who has spent an
 //   hour in a pleasant, well-kept, boring park is a player for whom the fence at
 //   the north end means something. If this scene ever gets atmospheric, the Deep
@@ -49,7 +49,7 @@ import {
  * The gate in the fence, looked up rather than assumed.
  *
  * Whatever region sits north of the Grounds owns this arch — it was the Treeline,
- * it is now Greenwood HQ, and it will move again. Found by POSITION rather than
+ * it is now Evergreen HQ, and it will move again. Found by POSITION rather than
  * by id so the scene never needs to know which, and so the sign on it can never
  * again name a different place from the one behind it.
  */
@@ -304,7 +304,7 @@ const EntranceGate = memo(function EntranceGate() {
         />
       </mesh>
       <pointLight position={[0, 3.2, 1.4]} color={ISO.accent} intensity={5} distance={10} decay={2} />
-      <PlaceLabel position={[0, 4.7, 0]}>Greenwood Grounds</PlaceLabel>
+      <PlaceLabel position={[0, 4.7, 0]}>Evergreen Grounds</PlaceLabel>
     </group>
   );
 });
@@ -482,7 +482,7 @@ const GroundsScene = memo(function GroundsScene({ felled }: { felled: Set<string
         </mesh>
         {/*
           The sign READS FROM THE DOOR TABLE. It said "The Treeline" while the
-          gate led to Greenwood HQ, because the label existed twice — once as
+          gate led to Evergreen HQ, because the label existed twice — once as
           data and once hardcoded here — and only one of them got updated when
           HQ was slotted between the two regions.
           A sign that names a different place from the one behind it is worse

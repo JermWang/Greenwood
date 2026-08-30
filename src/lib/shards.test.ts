@@ -28,7 +28,7 @@ describe('the shard list', () => {
   it('resolves unknown ids to null rather than to a default', () => {
     // A stale cookie naming a retired shard must fail visibly at the menu, not
     // silently drop somebody into a world they did not pick.
-    expect(shardById('greenwood-nowhere')).toBeNull();
+    expect(shardById('evergreen-nowhere')).toBeNull();
     expect(shardById(null)).toBeNull();
   });
 });

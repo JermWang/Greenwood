@@ -31,7 +31,7 @@ const SITE_URL =
  * only thing — so it has to sell the game that is actually on the tin (an idle
  * DeFi yield game) without lying, and without giving away the turn.
  *
- * The rule from docs/greenwood-turn.md holds here more than anywhere: the reveal
+ * The rule from docs/evergreen-turn.md holds here more than anywhere: the reveal
  * is environmental, it lands between levels three and ten, and it is worthless
  * the moment a player arrives already knowing. So nothing here says zombie,
  * survival, apocalypse, or horror. Not one word.
@@ -75,7 +75,7 @@ const SHARE_CARD = {
   url: '/og-card.png',
   width: 1200,
   height: 630,
-  alt: 'Greenwood — one of the last lit settlements. Yield never sleeps.',
+  alt: 'Evergreen — one of the last lit settlements. Yield never sleeps.',
 } as const;
 
 export const metadata: Metadata = {
@@ -85,14 +85,14 @@ export const metadata: Metadata = {
   //
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Greenwood — Real-World Yield',
-    // Sub-pages get "Trading Floor — Greenwood" rather than repeating the
+    default: 'Evergreen — Real-World Yield',
+    // Sub-pages get "Trading Floor — Evergreen" rather than repeating the
     // tagline, so a shared deep link says which room it is.
-    template: '%s — Greenwood',
+    template: '%s — Evergreen',
   },
   description: DESCRIPTION,
-  applicationName: 'Greenwood',
-  keywords: ['Greenwood', 'BNTY', 'Robinhood Chain', 'idle game', 'yield', 'RWA', 'DeFi'],
+  applicationName: 'Evergreen',
+  keywords: ['Evergreen', 'BNTY', 'Robinhood Chain', 'idle game', 'yield', 'RWA', 'DeFi'],
   /**
    * Canonical, so the same game shared from two hosts is one page.
    *
@@ -105,7 +105,7 @@ export const metadata: Metadata = {
   /**
    * Icons are the GENERATED routes, not the SVG.
    *
-   * `apple: '/gw-mark.svg'` was silently doing nothing: iOS ignores SVG for
+   * `apple: '/eg-mark.svg'` was silently doing nothing: iOS ignores SVG for
    * touch icons and screenshots the page instead, so adding the game to a home
    * screen produced a tile showing a shrunken screengrab. See app/apple-icon.
    * The SVG stays declared as well — browsers that take it get the sharper
@@ -114,7 +114,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/icon', type: 'image/png', sizes: '180x180' },
-      { url: '/gw-mark.svg', type: 'image/svg+xml' },
+      { url: '/eg-mark.svg', type: 'image/svg+xml' },
     ],
     apple: [{ url: '/apple-icon', type: 'image/png', sizes: '180x180' }],
   },
@@ -130,7 +130,7 @@ export const metadata: Metadata = {
   /** Launched from an iOS home screen: full viewport, no browser chrome. */
   appleWebApp: {
     capable: true,
-    title: 'Greenwood',
+    title: 'Evergreen',
     // The status bar sits ON the page, so the page has to own that strip. See
     // viewportFit: 'cover' below and the safe-area insets in globals.css.
     statusBarStyle: 'black-translucent',
@@ -138,8 +138,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: SITE_URL,
-    siteName: 'Greenwood',
-    title: `Greenwood — ${TAGLINE}`,
+    siteName: 'Evergreen',
+    title: `Evergreen — ${TAGLINE}`,
     description: DESCRIPTION,
     locale: 'en_GB',
     images: [SHARE_CARD],
@@ -153,7 +153,7 @@ export const metadata: Metadata = {
     // credits cannot name two different places.
     site: X_HANDLE,
     creator: X_HANDLE,
-    title: `Greenwood — ${TAGLINE}`,
+    title: `Evergreen — ${TAGLINE}`,
     description: DESCRIPTION,
     images: [SHARE_CARD],
   },

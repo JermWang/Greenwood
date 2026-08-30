@@ -13,10 +13,10 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Greenwood — Real-World Yield',
-    // What actually fits under an icon. "Greenwood — Real-World Yield" is
+    name: 'Evergreen — Real-World Yield',
+    // What actually fits under an icon. "Evergreen — Real-World Yield" is
     // truncated to about eight characters by every launcher.
-    short_name: 'Greenwood',
+    short_name: 'Evergreen',
     description:
       'An idle yield game on Robinhood Chain. Open desks, fit instruments, compound BNTY, ' +
       'and take what you earn out past the fence.',

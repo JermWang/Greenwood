@@ -77,22 +77,22 @@ export default function NextStep({
   return (
     <section
       aria-label="What to do next"
-      className={`gw-nextstep ${step.tone === 'act' ? 'is-act' : 'is-wait'}`}
+      className={`eg-nextstep ${step.tone === 'act' ? 'is-act' : 'is-wait'}`}
     >
-      <div className="gw-nextstep-head">
+      <div className="eg-nextstep-head">
         <Icon size={15} weight="fill" aria-hidden />
         <span>{step.tag}</span>
       </div>
       <h3>{step.title}</h3>
       <p>{step.body}</p>
       {a?.kind === 'link' ? (
-        <Link className="gw-nextstep-cta" href={a.href}>
+        <Link className="eg-nextstep-cta" href={a.href}>
           {a.label} <ArrowRight size={15} weight="bold" aria-hidden />
         </Link>
       ) : a ? (
         <button
           type="button"
-          className="gw-nextstep-cta"
+          className="eg-nextstep-cta"
           onClick={
             a.kind === 'mint' ? onMint
             : a.kind === 'claim' ? onClaim

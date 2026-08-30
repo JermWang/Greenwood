@@ -306,7 +306,7 @@ export const medallionTexture = () =>
       ctx.stroke();
     }
 
-    // The mark itself: two chevrons and a trunk, matching public/gw-mark.svg.
+    // The mark itself: two chevrons and a trunk, matching public/eg-mark.svg.
     ctx.fillStyle = 'rgba(255,255,255,.62)';
     const tree = (topY: number, halfW: number, h: number) => {
       ctx.beginPath();

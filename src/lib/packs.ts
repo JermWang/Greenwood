@@ -150,7 +150,7 @@ export const CARRIABLE: readonly CarryClass[] = [
    * The alternative — a weapon that survives death — was tempting and wrong. It
    * would make the gun the one thing in the zone with no downside to bringing,
    * so everyone would always carry their best one and the ammo scarcity in
-   * docs/greenwood-turn.md would be the only brake left. Losing the weapon is
+   * docs/evergreen-turn.md would be the only brake left. Losing the weapon is
    * what makes taking the good one out a decision.
    *
    * Melee is craftable and cheap to replace, so this bites hardest on firearms,

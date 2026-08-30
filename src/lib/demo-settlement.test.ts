@@ -29,7 +29,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-process.env.OSR_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-demo-settle-'));
+process.env.OSR_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'eg-demo-settle-'));
 delete process.env.VERCEL;
 
 const REAL = `0x${'1'.repeat(40)}`;

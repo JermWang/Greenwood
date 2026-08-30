@@ -1,6 +1,6 @@
 // Central app config — Robinhood Chain (EVM, Arbitrum Orbit L2).
 
-export const APP_NAME = 'Greenwood — Real-World Yield';
+export const APP_NAME = 'Evergreen — Real-World Yield';
 export const X_URL = 'https://x.com/greenwoodrh_';
 /**
  * The same account as an @handle, for the Twitter card tags in app/layout.

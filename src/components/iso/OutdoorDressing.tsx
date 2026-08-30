@@ -1,6 +1,6 @@
 'use client';
 
-// Outdoor props: the vocabulary Greenwood Grounds and the Treeline are built from.
+// Outdoor props: the vocabulary Evergreen Grounds and the Treeline are built from.
 //
 // Separate from MapDressing because the two sets answer different questions.
 // Indoors, everything is architecture — walls, columns, service panels — and the

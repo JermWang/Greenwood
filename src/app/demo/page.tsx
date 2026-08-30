@@ -67,38 +67,38 @@ export default function DemoPage() {
   }, []);
 
   return (
-    <main className="gw-onboarding-screen">
-      <div className="gw-onboarding-grid" aria-hidden />
-      <header className="gw-onboarding-top">
+    <main className="eg-onboarding-screen">
+      <div className="eg-onboarding-grid" aria-hidden />
+      <header className="eg-onboarding-top">
         <Link href="/" aria-label="Return to title screen"><ArrowLeft size={18} /> Title screen</Link>
         <span>DEMO // NO WALLET REQUIRED</span>
       </header>
 
-      <section className="gw-onboarding-card">
-        <div className="gw-onboarding-step">{error ? 'HELD AT THE GATE' : '01 / ARRIVING'}</div>
+      <section className="eg-onboarding-card">
+        <div className="eg-onboarding-step">{error ? 'HELD AT THE GATE' : '01 / ARRIVING'}</div>
 
         {error ? (
           <>
             <h1>That gate did not open.</h1>
             <p>The demo asks the server for a throwaway fund, and that request did not come back.</p>
-            <div className="gw-onboarding-error">{error}</div>
-            <div className="gw-onboarding-wallet">
+            <div className="eg-onboarding-error">{error}</div>
+            <div className="eg-onboarding-wallet">
               <button className="btn-primary" onClick={retry}>Try again</button>
             </div>
           </>
         ) : (
-          <div className="gw-profile-check">
+          <div className="eg-profile-check">
             <span />
             <h1>Opening the gate.</h1>
             <p>
               A throwaway fund, seeded with Scrip, playing the real game against the real
-              database. You arrive outside Greenwood with nothing built — the Machine Room is a
+              database. You arrive outside Evergreen with nothing built — the Machine Room is a
               door you walk to.
             </p>
           </div>
         )}
 
-        <div className="gw-safety-note">
+        <div className="eg-safety-note">
           <ShieldCheck size={20} weight="duotone" />
           <span>
             <b>Nothing here is real</b>
@@ -110,7 +110,7 @@ export default function DemoPage() {
         </div>
       </section>
 
-      <aside className="gw-demo-invite">
+      <aside className="eg-demo-invite">
         <ShieldCheck size={22} weight="duotone" />
         <span><b>Want to keep it?</b><small>A linked fund is the same game, saved to a wallet you own.</small></span>
         <Link href="/start">Link a fund</Link>

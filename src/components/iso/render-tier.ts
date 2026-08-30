@@ -15,7 +15,7 @@
 // is deliberate: this world is lit in ordinary colour under neutral light
 // (CLAUDE.md), so the shadows are doing most of the work of saying it is a
 // place. A phone build without them does not look like a cheaper version of
-// Greenwood, it looks like a different, flatter game. They get a smaller map
+// Evergreen, it looks like a different, flatter game. They get a smaller map
 // instead — 1024² over the same shadow camera is half the texels per world
 // unit, which softens the edges rather than removing them, and soft is what an
 // overcast sky gives you anyway.

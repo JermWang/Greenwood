@@ -1,4 +1,4 @@
-// The Greenwood mark, as something an image generator can draw.
+// The Evergreen mark, as something an image generator can draw.
 //
 // Server-only: reads from disk. Imported by the icon routes, never by a client
 // component.
@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * `public/gw-mark.svg` as a base64 data URI.
+ * `public/eg-mark.svg` as a base64 data URI.
  *
  * Handed to satori as an `<img>` rather than rebuilt as JSX, deliberately.
  * Satori paints rectangles, gradients and text and very little else — the
@@ -26,6 +26,6 @@ import { join } from 'node:path';
  * definition of the logo in this repo and this is how the icons stay tied to it.
  */
 export function markDataUri(): string {
-  const svg = readFileSync(join(process.cwd(), 'public', 'gw-mark.svg'), 'utf8');
+  const svg = readFileSync(join(process.cwd(), 'public', 'eg-mark.svg'), 'utf8');
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }

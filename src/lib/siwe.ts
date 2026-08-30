@@ -15,7 +15,7 @@
 //
 // WHY THE MESSAGE NAMES THE DOMAIN AND CHAIN. Without them the same signature
 // authenticates on any site that asks for the same text — a phishing page can
-// collect a signature "for Greenwood" and replay it here. The wallet shows the
+// collect a signature "for Evergreen" and replay it here. The wallet shows the
 // user what they are signing, so the domain has to be in the text they see.
 //
 // SESSIONS LIVE IN SQLITE, not in a signed cookie, for the reason CLAUDE.md

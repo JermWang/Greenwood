@@ -54,7 +54,7 @@ export default function ShowroomActor() {
   // A stable, pleasant look. A fixed pseudo-wallet so lookFor is deterministic —
   // the title screen should look the same every visit — and a high tier so the
   // cap wears the brand.
-  const look = useMemo(() => lookFor({ wallet: '0x6greenwoodshowroomactor0001', tier: 8 }), []);
+  const look = useMemo(() => lookFor({ wallet: '0x6evergreenshowroomactor0001', tier: 8 }), []);
 
   // One-element paths, memoised on the index so the array identity only changes
   // when the station does. An inline `[STATIONS[index]]` would be a new array
@@ -93,7 +93,7 @@ export default function ShowroomActor() {
       path={path}
       onStep={onStep}
       action={action}
-      name="Greenwood"
+      name="Evergreen"
     />
   );
 }

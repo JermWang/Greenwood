@@ -147,7 +147,7 @@ export default function WorldMap({
   return (
     <aside className="wm-panel">
       <header>
-        <span className="wm-kicker">Greenwood</span>
+        <span className="wm-kicker">Evergreen</span>
         <button className="wm-close" onClick={() => setOpen(false)} aria-label="Close map">
           ✕
         </button>

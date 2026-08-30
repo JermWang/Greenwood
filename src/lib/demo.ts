@@ -143,7 +143,7 @@ export const DEMO_WALLET_LIKE = `${DEMO_PREFIX}%`;
  * authenticated-wallet check runs on the API side, and a demo request needs to
  * prove which demo account it is without a signature.
  */
-export const DEMO_COOKIE = 'greenwood_demo';
+export const DEMO_COOKIE = 'evergreen_demo';
 
 /** A month. Long enough to come back to, short enough not to be permanent. */
 export const DEMO_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;

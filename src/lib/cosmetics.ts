@@ -121,7 +121,7 @@ export const COSMETICS: CosmeticDef[] = [
   // Priced in earned currency, and written to be recognised rather than
   // explained. These lean on trading-floor and crypto culture the way a real
   // wardrobe leans on a workplace: the joke is that the fund thinks it is
-  // dressing for a bank. After the turn (docs/greenwood-turn.md) the same items
+  // dressing for a bank. After the turn (docs/evergreen-turn.md) the same items
   // read completely differently — a hi-vis vest and a hard hat stop being an
   // ironic costume and start being what the job actually is — so nothing here
   // needs replacing when the world changes underneath it.

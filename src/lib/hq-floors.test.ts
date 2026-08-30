@@ -70,7 +70,7 @@ describe('riding', () => {
     const gated = FLOORS.find((f) => regionById(f.region)!.minTotalLevel > 0);
     expect(gated, 'expected at least one gated floor to make this meaningful').toBeDefined();
     // Rideable regardless of level, because riding is not entering.
-    expect(canRide('greenwood-hq', gated!.region)).toBe(true);
+    expect(canRide('evergreen-hq', gated!.region)).toBe(true);
   });
 });
 
@@ -103,7 +103,7 @@ describe('the map agrees the lift exists', () => {
     for (const floor of FLOORS) {
       // The two floors that are also reachable on foot from the Grounds are
       // linked there instead; what matters is that no floor is unreachable.
-      const viaTower = linked('greenwood-hq', floor.region);
+      const viaTower = linked('evergreen-hq', floor.region);
       const viaGrounds = linked('grounds', floor.region);
       expect(viaTower || viaGrounds, `${floor.region} is cut off`).toBe(true);
     }

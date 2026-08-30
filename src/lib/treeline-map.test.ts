@@ -72,7 +72,7 @@ describe('its gates', () => {
   it('connects HQ to the Deep Forest and nothing else', () => {
     // A region whose job is to be a RUNG should not also be a junction, or the
     // ladder stops reading as a ladder.
-    expect(DOORS.map((d) => d.region).sort()).toEqual(['deep-forest', 'greenwood-hq']);
+    expect(DOORS.map((d) => d.region).sort()).toEqual(['deep-forest', 'evergreen-hq']);
   });
 
   it('makes every threshold three tiles wide and all of it walkable', () => {

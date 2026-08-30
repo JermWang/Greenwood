@@ -1,6 +1,6 @@
 'use client';
 
-// Greenwood HQ — the plaza.
+// Evergreen HQ — the plaza.
 //
 // Same shape as the Grounds page, which is the point: a region is a scene, a
 // player, a door prompt and a map, and adding one should not invent a fourth way
@@ -87,7 +87,7 @@ export default function HqPage() {
    */
   const onMove = useCallback((cell: { x: number; z: number }) => {
     setHere(cell);
-    setTalking((current) => (current && !npcAt('greenwood-hq', cell.x, cell.z) ? null : current));
+    setTalking((current) => (current && !npcAt('evergreen-hq', cell.x, cell.z) ? null : current));
   }, []);
   const onDoor = useCallback((d: Doorway | null) => { setDoor(d); setError(null); }, []);
 
@@ -188,7 +188,7 @@ export default function HqPage() {
           minZoom={14}
         />
         <HqScene />
-        <NpcField region="greenwood-hq" playerAt={here} onTalk={setTalking} />
+        <NpcField region="evergreen-hq" playerAt={here} onTalk={setTalking} />
         {(wallet || DEV_WALLET_BYPASS) && (
           <RegionPlayer
             wallet={wallet ?? 'dev'}
@@ -206,11 +206,11 @@ export default function HqPage() {
 
       <NpcDialogue npc={talking} totalLevel={regions?.totalLevel ?? 0} onClose={() => setTalking(null)} />
 
-      <WorldMap wallet={wallet} at="greenwood-hq" position={here} />
+      <WorldMap wallet={wallet} at="evergreen-hq" position={here} />
 
       <LiftPanel
         open={atLift}
-        at="greenwood-hq"
+        at="evergreen-hq"
         regions={regions?.regions ?? []}
         busy={entering}
         error={error}

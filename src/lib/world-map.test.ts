@@ -81,13 +81,13 @@ describe('finding the way home', () => {
     // and the Treeline. A player should always be told the door they can
     // actually walk to from where they are, never the destination.
     expect(stepHome('deep-forest')).toBe('treeline');
-    expect(stepHome('treeline')).toBe('greenwood-hq');
-    expect(stepHome('greenwood-hq')).toBe(HOME);
+    expect(stepHome('treeline')).toBe('evergreen-hq');
+    expect(stepHome('evergreen-hq')).toBe(HOME);
   });
 
   it('takes the shortest route rather than the first one found', () => {
     const route = routeBetween('deep-forest', HOME);
-    expect(route).toEqual(['deep-forest', 'treeline', 'greenwood-hq', 'grounds']);
+    expect(route).toEqual(['deep-forest', 'treeline', 'evergreen-hq', 'grounds']);
   });
 });
 

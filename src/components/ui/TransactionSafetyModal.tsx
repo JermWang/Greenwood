@@ -16,14 +16,14 @@ export default function TransactionSafetyModal() {
   const pendingRef = useRef<PendingPreview | null>(null);
 
   useEffect(() => {
-    const onPreview = (event: WindowEventMap['greenwood:transaction-preview']) => {
+    const onPreview = (event: WindowEventMap['evergreen:transaction-preview']) => {
       pendingRef.current?.resolve(false);
       pendingRef.current = event.detail;
       setPending(event.detail);
     };
-    window.addEventListener('greenwood:transaction-preview', onPreview);
+    window.addEventListener('evergreen:transaction-preview', onPreview);
     return () => {
-      window.removeEventListener('greenwood:transaction-preview', onPreview);
+      window.removeEventListener('evergreen:transaction-preview', onPreview);
       pendingRef.current?.resolve(false);
       pendingRef.current = null;
     };
@@ -37,11 +37,11 @@ export default function TransactionSafetyModal() {
   };
 
   return (
-    <div className="gw-tx-backdrop" role="presentation" onClick={() => finish(false)}>
-      <section className="gw-tx-modal" role="dialog" aria-modal="true" aria-labelledby="gw-tx-title" onClick={(event) => event.stopPropagation()}>
+    <div className="eg-tx-backdrop" role="presentation" onClick={() => finish(false)}>
+      <section className="eg-tx-modal" role="dialog" aria-modal="true" aria-labelledby="eg-tx-title" onClick={(event) => event.stopPropagation()}>
         <header><span><ShieldCheck size={19} weight="duotone" /> VERIFIED ACTION</span><button onClick={() => finish(false)} aria-label="Cancel transaction"><X size={18} /></button></header>
-        <div className="gw-tx-pass"><CheckCircle size={20} weight="fill" /><span><b>Preflight simulation passed</b><small>The exact call below executed successfully against current chain state.</small></span></div>
-        <h2 id="gw-tx-title">Review before wallet.</h2>
+        <div className="eg-tx-pass"><CheckCircle size={20} weight="fill" /><span><b>Preflight simulation passed</b><small>The exact call below executed successfully against current chain state.</small></span></div>
+        <h2 id="eg-tx-title">Review before wallet.</h2>
         <p>Your wallet should show the same token, receiver, and amount. Reject it if anything differs.</p>
         <dl>
           <div><dt>Game action</dt><dd>{pending.preview.action}</dd></div>
@@ -52,7 +52,7 @@ export default function TransactionSafetyModal() {
           <div><dt>Token contract</dt><dd title={pending.preview.tokenAddress}>{short(pending.preview.tokenAddress)}</dd></div>
           <div><dt>Protocol treasury</dt><dd title={pending.preview.treasuryAddress}>{short(pending.preview.treasuryAddress)}</dd></div>
         </dl>
-        <div className="gw-tx-no-approval"><b>No approval. No unlimited allowance.</b><span>This is one direct ERC-20 transfer. Greenwood cannot spend from your wallet later.</span></div>
+        <div className="eg-tx-no-approval"><b>No approval. No unlimited allowance.</b><span>This is one direct ERC-20 transfer. Evergreen cannot spend from your wallet later.</span></div>
         <footer><button className="btn-secondary" onClick={() => finish(false)}>Cancel</button><button className="btn-primary" onClick={() => finish(true)}>Continue to wallet</button></footer>
       </section>
     </div>

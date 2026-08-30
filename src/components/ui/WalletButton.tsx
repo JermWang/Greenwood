@@ -265,7 +265,7 @@ export default function WalletButton() {
           {(error || signError) && <p className="px-3 py-2 text-[11px] text-red-400">{error ?? signError}</p>}
           <div className="mt-1 border-t border-ink-600 px-3 py-2 text-[10px] leading-relaxed text-steel-500">
             Signing in is a free signature — it proves you own the wallet and never moves funds or
-            approves a transaction. Greenwood never receives your private key.
+            approves a transaction. Evergreen never receives your private key.
           </div>
         </div>
       )}

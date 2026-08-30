@@ -37,7 +37,7 @@ import {
 } from '@/lib/rarity';
 
 const CONTENTS: Array<{ href: string; label: string }> = [
-  { href: '#overview', label: '1. What is Greenwood?' },
+  { href: '#overview', label: '1. What is Evergreen?' },
   { href: '#quickstart', label: '2. Quick start' },
   { href: '#nodes', label: '3. Desks: Equity vs Treasury' },
   { href: '#levels', label: '4. Desk Grades' },
@@ -97,7 +97,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     q: 'Is BNTY a financial product or investment?',
     a: (
       <p>
-        No. Greenwood is an on-chain game. Rewards are not guaranteed — they depend on the halving
+        No. Evergreen is an on-chain game. Rewards are not guaranteed — they depend on the halving
         emission schedule, reserve health, and the BNTY token&rsquo;s market value. Nothing here is
         investment advice; treat any token interaction as risk capital.
       </p>
@@ -119,7 +119,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     q: 'What if I lose access to my wallet?',
     a: (
       <p>
-        Greenwood cannot recover wallet access. Protect your seed phrase. If you switch wallets, your
+        Evergreen cannot recover wallet access. Protect your seed phrase. If you switch wallets, your
         desks stay with the original wallet — there&rsquo;s no transfer or migration feature in v1.
       </p>
     ),
@@ -172,8 +172,8 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     q: 'Is my data safe?',
     a: (
       <p>
-        Greenwood reads wallet addresses only — no email, no KYC. Your game state (desks, instruments,
-        pending rewards) lives on Greenwood servers keyed to your wallet; token balances, burns, and claim
+        Evergreen reads wallet addresses only — no email, no KYC. Your game state (desks, instruments,
+        pending rewards) lives on Evergreen servers keyed to your wallet; token balances, burns, and claim
         payouts settle on Robinhood Chain to your wallet.
       </p>
     ),
@@ -184,7 +184,7 @@ export default function DocsPage() {
   return (
     <PageShell
       title="Handbook"
-      subtitle="Field procedures for opening desks, tuning instruments, and navigating the Greenwood network."
+      subtitle="Field procedures for opening desks, tuning instruments, and navigating the Evergreen network."
       maxWidth="max-w-4xl"
     >
       <div className="space-y-10">
@@ -203,9 +203,9 @@ export default function DocsPage() {
         </nav>
 
         {/* 1. What is BNTY? */}
-        <Section id="overview" title="1. What is Greenwood?">
+        <Section id="overview" title="1. What is Evergreen?">
           <p>
-            <strong className="text-white">Greenwood — Real-World Yield</strong> is a gamified,
+            <strong className="text-white">Evergreen — Real-World Yield</strong> is a gamified,
             virtual real-world-asset (RWA) yield game on Robinhood Chain — an EVM L2 settling on Ethereum. You
             burn{' '}
             <strong className="text-white">$BNTY</strong> tokens to open virtual{' '}
@@ -325,7 +325,7 @@ export default function DocsPage() {
             {AURA_BANDS.map((band) => (
               <div
                 key={band.label}
-                className="gw-grade"
+                className="eg-grade"
                 // The colour is a CSS variable so the rail, the glow and the
                 // range text all read the one value — three places to restate
                 // it is three places for it to drift.
@@ -429,7 +429,7 @@ export default function DocsPage() {
             <p className="stat-label mb-3">Rarity multipliers</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
               {RARITIES.map((r) => (
-                <div key={r} className="gw-grade" style={{ ['--grade' as string]: rarityHex(r) }}>
+                <div key={r} className="eg-grade" style={{ ['--grade' as string]: rarityHex(r) }}>
                   <b>{RARITY_MULT[r].toFixed(2)}×</b>
                   <small>{rarityLabel(r)}</small>
                 </div>
@@ -444,9 +444,9 @@ export default function DocsPage() {
                 { family: 'mine' as const, title: 'Treasury Desk sockets' },
               ] as const
             ).map(({ family, title }) => (
-              <div key={family} className="gw-doc-card">
-                <p className="gw-doc-heading mb-3">{title}</p>
-                <ul className="gw-slot-list">
+              <div key={family} className="eg-doc-card">
+                <p className="eg-doc-heading mb-3">{title}</p>
+                <ul className="eg-slot-list">
                   {NODE_SLOTS[family].map((slot) => (
                     <li key={slot}>
                       {/* One representative rarity. The glyph identifies the
@@ -543,28 +543,28 @@ export default function DocsPage() {
         {/*
           8 and 9 cover the half of the game the handbook did not mention at
           all: the world, woodcutting and crafting. Written in the fund's own
-          register on purpose — this document is published BY Greenwood, so it
+          register on purpose — this document is published BY Evergreen, so it
           calls the outdoors a site and the things living in it wildlife. What
           is actually out there is for the player to find, and a handbook that
           spoiled it would undo the pacing the whole design rests on.
         */}
         <Section id="outside" title="8. Going outside">
           <p>
-            Greenwood is a place before it is a dashboard. Your desks sit in the{' '}
+            Evergreen is a place before it is a dashboard. Your desks sit in the{' '}
             <strong className="text-white">Machine Room</strong>; the{' '}
             <strong className="text-white">Trading Floor</strong> is where the stalls and the
-            Outfitter are; and both are buildings on <strong className="text-white">Greenwood
+            Outfitter are; and both are buildings on <strong className="text-white">Evergreen
             Grounds</strong>, which you walk around. There is no menu for travel — you walk to a
             door and through it.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <RegionCard
-              name="Greenwood Grounds"
+              name="Evergreen Grounds"
               gate="Open to everyone"
               body="The hub. Doors to the Machine Room, the Trading Floor, and the way north."
             />
             <RegionCard
-              name="Greenwood HQ"
+              name="Evergreen HQ"
               gate="Total Level 3"
               body="The plaza and the tower. The most civilised address on the network, and the last one before the fence means anything."
             />
@@ -604,7 +604,7 @@ export default function DocsPage() {
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {WOOD_LADDER.map((w) => (
-              <div key={w.name} className="gw-doc-card flex flex-col items-center gap-1">
+              <div key={w.name} className="eg-doc-card flex flex-col items-center gap-1">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-steel-500">
                   T{w.tier}
                 </span>
@@ -667,7 +667,7 @@ export default function DocsPage() {
         {/* 11. Emission */}
         <Section id="emission" title="11. How emission works">
           <p>
-            Greenwood uses a <strong className="text-white">halving emission curve</strong>. Global BNTY
+            Evergreen uses a <strong className="text-white">halving emission curve</strong>. Global BNTY
             issuance starts at{' '}
             <strong className="text-white">{GENESIS_RATE_PER_SEC.toFixed(1)} BNTY/sec</strong> at
             genesis and halves every <strong className="text-white">{HALVING_PERIOD_LABEL}</strong>{' '}
@@ -721,7 +721,7 @@ export default function DocsPage() {
         {/* Footer */}
         <footer className="space-y-2 border-t border-ink-600 pt-4 text-xs text-steel-500">
           <p>
-            <strong className="text-steel-300">Continue through the Greenwood terminal:</strong>{' '}
+            <strong className="text-steel-300">Continue through the Evergreen terminal:</strong>{' '}
             <Link href="/app/tokenomics" className="text-lime-300 hover:underline">
               BNTY Network Model
             </Link>{' '}
@@ -825,7 +825,7 @@ function Section({
 }) {
   return (
     <section id={id} className="scroll-mt-20 space-y-4 text-sm leading-relaxed text-steel-300">
-      <h2 className="gw-doc-heading">
+      <h2 className="eg-doc-heading">
         {title}
       </h2>
       {children}
@@ -888,9 +888,9 @@ function NodeCard({
  */
 function RegionCard({ name, gate, body, warn }: { name: string; gate: string; body: string; warn?: boolean }) {
   return (
-    <div className={`gw-doc-card gw-region${warn ? ' is-outside' : ''}`}>
+    <div className={`eg-doc-card eg-region${warn ? ' is-outside' : ''}`}>
       <h4>{name}</h4>
-      <p className="gw-region-gate mt-1">{gate}</p>
+      <p className="eg-region-gate mt-1">{gate}</p>
       <p className="mt-2 text-sm text-steel-300">{body}</p>
     </div>
   );

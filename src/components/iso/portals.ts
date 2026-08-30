@@ -217,7 +217,7 @@ export function machineRoomDoors(bounds: Bounds): Door[] {
  * navigation, it is per-tab, and a stale value cannot do anything worse than
  * put you at a door you did in fact use last.
  */
-const ARRIVAL_KEY = 'greenwood:arrived-from';
+const ARRIVAL_KEY = 'evergreen:arrived-from';
 
 export function rememberExit(doorId: string) {
   try {

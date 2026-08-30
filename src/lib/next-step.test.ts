@@ -138,7 +138,7 @@ describe('decideNextStep — the outdoors', () => {
   });
 
   test('an open region replaces the idle wait state', () => {
-    const s = decideNextStep(idle(), [], [region({ id: 'grounds', name: 'Greenwood Grounds' })]);
+    const s = decideNextStep(idle(), [], [region({ id: 'grounds', name: 'Evergreen Grounds' })]);
     expect(s.id).toBe('go-outside');
     expect(s.tone).toBe('act');
     expect(s.action).toMatchObject({ kind: 'link', href: '/app/grounds' });
@@ -147,7 +147,7 @@ describe('decideNextStep — the outdoors', () => {
   test('names the furthest open region, not the nearest', () => {
     // Pointing a Deep Forest player at the doorstep would be correct and useless.
     const s = decideNextStep(idle(), [], [
-      region({ id: 'grounds', name: 'Greenwood Grounds' }),
+      region({ id: 'grounds', name: 'Evergreen Grounds' }),
       region({ id: 'deep-forest', name: 'The Deep Forest' }),
     ]);
     expect(s.title).toContain('Deep Forest');
@@ -157,7 +157,7 @@ describe('decideNextStep — the outdoors', () => {
     // Smaller, more concrete, and it opens somewhere new. "Go for a walk"
     // competes badly with a named purchase at a known price.
     const s = decideNextStep(idle(), [], [
-      region({ id: 'grounds', name: 'Greenwood Grounds' }),
+      region({ id: 'grounds', name: 'Evergreen Grounds' }),
       region({ id: 'treeline', name: 'The Treeline', minTotalLevel: 6, allowed: false, code: 'pack', reason: 'You need a pack.' }),
     ]);
     expect(s.id).toBe('need-pack');
@@ -184,7 +184,7 @@ describe('decideNextStep — the outdoors', () => {
   });
 
   test('a brand-new fund is still told to open a desk first', () => {
-    const s = decideNextStep(op(), [], [region({ id: 'grounds', name: 'Greenwood Grounds' })]);
+    const s = decideNextStep(op(), [], [region({ id: 'grounds', name: 'Evergreen Grounds' })]);
     expect(s.id).toBe('mint-first');
   });
 

@@ -278,7 +278,7 @@ export default function DeepForestPage() {
             cannot enter yet, and its only action used to be a link to the
             dashboard — so being told "come back at level 10" ended with the
             game closing. The Grounds are the hub every outdoor region hangs
-            off; sending them there leaves them standing in Greenwood with the
+            off; sending them there leaves them standing in Evergreen with the
             other doors in front of them, which is the correct answer to a door
             that will not open. */}
         <Link className="btn-secondary" href="/app/grounds">Back to the Grounds</Link>

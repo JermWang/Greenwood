@@ -1,4 +1,4 @@
-# Greenwood
+# Evergreen
 
 An idle DeFi yield game on Robinhood Chain — an EVM L2 settling on Ethereum
 (chain ID 4663, gas token ETH). Token: **BNTY**.
@@ -8,7 +8,7 @@ route it, upgrade them, arrange your floor for the layout bonus, and compete on
 a leaderboard. Then you go outside, and the game turns out to be about
 something else.
 
-The design of that turn is in [`docs/greenwood-turn.md`](docs/greenwood-turn.md).
+The design of that turn is in [`docs/evergreen-turn.md`](docs/evergreen-turn.md).
 Read it before touching regions, packs, loot, or anything outdoors — it is the
 spine the world hangs off, and it is easy to break by accident.
 
@@ -18,8 +18,8 @@ spine the world hangs off, and it is easy to break by accident.
   tiers, sealed allocations, Fixed Income Notes, a player-to-player market, and
   a floor-layout bonus that makes desk placement a real decision rather than
   storage.
-- **A walkable world.** Greenwood Grounds is the hub; the Machine Room, Trading
-  Floor and Greenwood HQ are buildings you walk into, and the Treeline and Deep
+- **A walkable world.** Evergreen Grounds is the hub; the Machine Room, Trading
+  Floor and Evergreen HQ are buildings you walk into, and the Treeline and Deep
   Forest are outdoors. There is no nav rail — navigation happens by walking,
   and doors transition you when you stand in them.
 - **Woodcutting and crafting.** A species ladder gated by axe tier, a craft
@@ -119,13 +119,13 @@ guard on it can then be driven end to end.
 - `src/components/ui` — HUD and panels
 - `src/components/three` — the free-camera pieces (allocation reveal, previews)
 - `docs/` — the design of the turn, and the rendering conventions
-- `public/` — the Greenwood mark, and nothing else
+- `public/` — the Evergreen mark, and nothing else
 
 ## Art
 
 Everything visible is built from primitives in code. There are no image, model
 or environment-map assets — the artwork from the previous themes was removed
-wholesale, and commissioned Greenwood art will land here when it exists.
+wholesale, and commissioned Evergreen art will land here when it exists.
 
 `/dev/assets` renders every model in the game on a turntable. Look at anything
 you add there before wiring it into a scene.

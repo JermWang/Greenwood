@@ -25,7 +25,7 @@
 // game says so — the Exchange lists it as a commodity and the desks list it as a
 // material — but a player who notices that the thing they burn and the thing
 // that produces their "yield" are the same thing has found the twist by playing
-// rather than by being told. See docs/greenwood-turn.md. Do not put a line of
+// rather than by being told. See docs/evergreen-turn.md. Do not put a line of
 // dialogue on this.
 
 /** Seeds species selection. Constant: the same tree is the same species forever. */

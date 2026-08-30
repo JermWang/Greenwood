@@ -3,6 +3,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { DEV_WALLET } from './dev-mode';
+import { carryOverLocal } from './legacy-keys';
+
+const STORE_KEY = 'eg-wallet-store';
+
+// Carried before create(), not inside it: persist() reads storage while the
+// store is being built, so a carry-over that ran any later would already have
+// lost to an empty rehydration.
+carryOverLocal(STORE_KEY);
 
 export type ThemeName = 'sunset' | 'noon' | 'midnight';
 
@@ -36,7 +44,7 @@ export const useWalletStore = create<WalletStore>()(
       setTheme: (theme) => set({ theme }),
     }),
     {
-      name: 'gw-wallet-store',
+      name: STORE_KEY,
       /**
        * Rehydration must not undo the dev wallet.
        *

@@ -41,7 +41,7 @@ export default function SoundToggle() {
       aria-pressed={muted}
       aria-label={muted ? 'Unmute sound effects' : 'Mute sound effects'}
       title={muted ? 'Sound off' : 'Sound on'}
-      className="gw-icon-button !h-[42px] !w-[42px] hover:border-lime-300/30 hover:text-lime-300"
+      className="eg-icon-button !h-[42px] !w-[42px] hover:border-lime-300/30 hover:text-lime-300"
     >
       {muted ? <SpeakerSlash size={16} weight="duotone" /> : <SpeakerHigh size={16} weight="duotone" />}
     </button>

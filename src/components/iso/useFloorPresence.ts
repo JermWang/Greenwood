@@ -40,7 +40,7 @@ export interface PresenceIdentity {
   outfitLevel?: number;
 }
 
-const CHANNEL = 'greenwood-trading-floor';
+const CHANNEL = 'evergreen-trading-floor';
 /** Position updates are throttled: a click-to-move sends one per step, not per frame. */
 const TRACK_INTERVAL_MS = 220;
 

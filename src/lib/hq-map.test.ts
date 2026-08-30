@@ -29,7 +29,7 @@ describe('the HQ plaza', () => {
    * its own, and players spawned outside the world with no error anywhere.
    */
   it('agrees with the region table about how big it is', () => {
-    expect(regionById('greenwood-hq')!.bounds).toEqual({ ...BOUNDS });
+    expect(regionById('evergreen-hq')!.bounds).toEqual({ ...BOUNDS });
   });
 
   it('spawns the player somewhere they can stand', () => {
@@ -213,13 +213,13 @@ describe('where HQ sits in the world', () => {
    * worth losing. HQ has to sit strictly between them or it is not doing its job.
    */
   it('gates below the Treeline and above the Grounds', () => {
-    const hq = regionById('greenwood-hq')!;
+    const hq = regionById('evergreen-hq')!;
     expect(hq.minTotalLevel).toBeGreaterThan(regionById('grounds')!.minTotalLevel);
     expect(hq.minTotalLevel).toBeLessThan(regionById('treeline')!.minTotalLevel);
   });
 
   it('is safe — it is the last civilised place before the fence means anything', () => {
-    const hq = regionById('greenwood-hq')!;
+    const hq = regionById('evergreen-hq')!;
     expect(hq.pvp).toBe(false);
     expect(hq.hostiles).toBe(false);
     expect(hq.requiresPack).toBe(false);

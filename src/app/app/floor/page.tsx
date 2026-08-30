@@ -71,18 +71,18 @@ export default function CompanyFloorPage() {
 
   if (!wallet) {
     return (
-      <div className="gw-page mx-auto max-w-[900px]">
-        <section className="gw-floor-gate"><Flask size={38} weight="duotone" /><h1>Walk the floor first.</h1><p>Connect a fund to build desks and arrange them, or start the wallet-free demo outside and walk in.</p><div><Link href="/demo" className="btn-primary">Play demo</Link><Link href="/start" className="btn-secondary">Link fund</Link></div></section>
+      <div className="eg-page mx-auto max-w-[900px]">
+        <section className="eg-floor-gate"><Flask size={38} weight="duotone" /><h1>Walk the floor first.</h1><p>Connect a fund to build desks and arrange them, or start the wallet-free demo outside and walk in.</p><div><Link href="/demo" className="btn-primary">Play demo</Link><Link href="/start" className="btn-secondary">Link fund</Link></div></section>
       </div>
     );
   }
 
-  if (loading && machines.length === 0) return <div className="gw-floor-loading">Loading owned instruments…</div>;
+  if (loading && machines.length === 0) return <div className="eg-floor-loading">Loading owned instruments…</div>;
   return (
     <IsoFloor
       machines={machines}
       wallet={wallet.toLowerCase()}
-      storageKey={`greenwood:company-floor:${wallet.toLowerCase()}:v1`}
+      storageKey={`evergreen:company-floor:${wallet.toLowerCase()}:v1`}
     />
   );
 }

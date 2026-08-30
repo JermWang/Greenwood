@@ -9,6 +9,7 @@ import {
   isDemoWallet,
   newDemoWallet,
 } from '@/lib/demo';
+import { readCookie } from '@/lib/legacy-keys';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,12 +33,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: Request) {
   try {
-    const existing = request.headers
-      .get('cookie')
-      ?.split(';')
-      .map((c) => c.trim())
-      .find((c) => c.startsWith(`${DEMO_COOKIE}=`))
-      ?.slice(DEMO_COOKIE.length + 1);
+    const existing = readCookie(request.headers.get('cookie'), DEMO_COOKIE);
 
     if (existing && isDemoWallet(existing)) {
       // Touch it so the row exists even if the database was reset under a live

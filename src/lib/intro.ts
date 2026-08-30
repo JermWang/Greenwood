@@ -72,7 +72,7 @@ export const INTRO_STEPS: IntroStep[] = [
   {
     key: 'intro_mint',
     label: 'Open your first desk',
-    why: 'Desks are the only thing that earns. Everything else in Greenwood exists to make a desk earn more.',
+    why: 'Desks are the only thing that earns. Everything else in Evergreen exists to make a desk earn more.',
     action: 'mint_desk',
     target: 1,
     track: 'operations',
@@ -172,7 +172,7 @@ export const INTRO_STEPS: IntroStep[] = [
   {
     key: 'intro_outside',
     label: 'Step outside',
-    why: 'Greenwood is a place, not a menu. There is no nav bar — the Machine Room, the Exchange and everything past the fence are doors you walk to, and they are all off the Grounds.',
+    why: 'Evergreen is a place, not a menu. There is no nav bar — the Machine Room, the Exchange and everything past the fence are doors you walk to, and they are all off the Grounds.',
     action: 'enter_region',
     target: 1,
     track: 'scouting',

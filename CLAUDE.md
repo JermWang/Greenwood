@@ -1,4 +1,4 @@
-# Greenwood — orientation
+# Evergreen — orientation
 
 Read this first. It is short on purpose; the detail is in `docs/`.
 
@@ -8,10 +8,10 @@ An idle DeFi yield game (token **BNTY**, Robinhood Chain) with a hidden layer.
 The front is a Real-World-Asset fund: desks produce yield, you upgrade them, you
 compete on a leaderboard. The turn — revealed environmentally between levels 3
 and 10, never in a cutscene — is that **the yield is power and the desks are
-generators**, and Greenwood is one of the last lit settlements in a zombie
+generators**, and Evergreen is one of the last lit settlements in a zombie
 apocalypse.
 
-Full design: **`docs/greenwood-turn.md`**. Read it before touching regions,
+Full design: **`docs/evergreen-turn.md`**. Read it before touching regions,
 packs, loot or anything outdoors.
 
 ## Before you write rendering code
@@ -39,8 +39,8 @@ the industrial truth before the game tells them.
 | `euv` / `packaging` machine kinds | `equity` / `settlement` |
 | `wafer`, `cleanroom` | `desk`, `vault` |
 | `osrBalance`, `osrAmount`, … | `bntyBalance`, `bntyAmount`, … |
-| CSS `fab-*`, `gpu-*` | `gw-*` |
-| package `gpu-fab-game` | `greenwood` |
+| CSS `fab-*`, `gpu-*` | `eg-*` |
+| package `gpu-fab-game` | `evergreen` |
 
 Two categories were **deliberately not renamed**, and both will bite you if you
 assume otherwise:
@@ -56,6 +56,35 @@ assume otherwise:
 Stored *values* were migrated (`renameAllocationKinds` in `lib/db`), because a
 CHECK constraint the code violates is a bug no fresh-database test can see.
 `nodes.family` still stores `'oil'`/`'mine'` for the same reason the columns do.
+
+### The third rename: Greenwood → Evergreen
+
+The settlement, the fund and the package were called **Greenwood** until this
+pass. Identifiers, CSS classes, copy, region ids (`greenwood-hq` →
+`evergreen-hq`), shard ids and docs all moved together, and none of it needed a
+migration: `expedition_state` has no region column and `loot_piles.region_id`
+only ever receives a hostile region, so no `greenwood-*` value has ever reached
+SQLite. That was checked before the rename, not assumed.
+
+Three things were handled differently, and all three will surprise you:
+
+- **The domain is still `playgreenwood.xyz` and the X account is still
+  `@greenwoodrh_`.** Live external identities with DNS and followers attached;
+  renaming them is a launch decision, not a rename pass. `metadataBase`, the
+  canonical URLs and the SIWE domain all still say Greenwood — and the SIWE one
+  is load-bearing, because the domain in the message is checked against the host
+  the wallet actually signed for. Change it without changing DNS and sign-in
+  breaks for everyone.
+- **Browser storage keys were renamed WITH a carry-over** (`lib/legacy-keys`).
+  Storage is the third place state lives, after env vars and columns, and the
+  argument that froze `OSR_*` applies to it: `gw-wallet-store` holds terms
+  acceptance and the onboarding list, `evergreen_demo` holds somebody's
+  half-built demo fund. Here the carry-over was cheap enough to do properly
+  instead of freezing the name, so the new names are authoritative and the old
+  ones are read once and copied forward. That file is the entire list and can be
+  deleted when the old keys have aged out.
+- **`public/GREENWOOD/`** is gitignored marketing output. Not served, not built,
+  not renamed.
 
 Player-facing vocabulary: Warehouse→Portfolio, Equity Desk, Treasury Desk,
 node→desk, crate→allocation, component→instrument, Capacity Contract→Fixed
@@ -89,13 +118,20 @@ Income Note, Trading Floor, The Vault.
 
 ## Known state
 
-- **588 tests pass.** The suite is green; if it is not, that is new.
+- **631 tests pass.** The suite is green; if it is not, that is new.
+- **The title screen renders the live Deep Forest.** `TitleCinematic` mounts the
+  real `DeepForestScene` behind the lockup and drives `IsoRig`'s `followRef`
+  along a slow rail — there is no second camera and no video file. The
+  consequence worth knowing: **the landing page is now a consumer of
+  `DeepForestScene`**, so a change to the region's lighting, props or ground
+  shows up on the front page too. Its two title-only deviations (a fill light,
+  and a quieter tile grid via `gridStrength`) are argued at the component.
 - The Deep Forest is playable: map, server-authoritative movement, loot
   visibility, extraction geometry, HUD, and combat against shamblers and wolves.
 - **PvP is live.** Players see each other, can strike each other, and dying
   spills the pack as a loot pile where you fell. Creature bites kill too — both
   routes go through one damage() so there is a single definition of dying.
-- **Greenwood Grounds is the hub, and it is what makes the no-nav-rail rule
+- **Evergreen Grounds is the hub, and it is what makes the no-nav-rail rule
   true.** Doors to the Machine Room, the Trading Floor and the Treeline are
   placed in `lib/grounds-map` and walked to. Movement there is client-side on
   purpose — nothing in that region can be contested — but the gate still runs

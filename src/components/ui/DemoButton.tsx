@@ -17,7 +17,8 @@ import { useRouter } from 'next/navigation';
 import { Play } from '@phosphor-icons/react';
 import { AUTO_WALLET, demoWalletFromCookie, useOperation } from '@/lib/useOperation';
 import { useWalletStore } from '@/lib/store';
-import { DEMO_ENTRY, isDemoWallet } from '@/lib/demo';
+import { DEMO_COOKIE, DEMO_ENTRY, isDemoWallet } from '@/lib/demo';
+import { legacyKey } from '@/lib/legacy-keys';
 import { api } from '@/lib/api-client';
 
 /**
@@ -123,8 +124,12 @@ export function DemoBanner() {
       <button
         onClick={() => {
           // Clear the cookie as well as the store, or the next load resumes the
-          // session that was just exited.
-          document.cookie = 'greenwood_demo=; Max-Age=0; path=/';
+          // session that was just exited. Both names, because a session that
+          // predates the Evergreen rename is still holding the old one and
+          // readCookie would happily resume from it (see lib/legacy-keys).
+          for (const name of [DEMO_COOKIE, legacyKey(DEMO_COOKIE)]) {
+            document.cookie = `${name}=; Max-Age=0; path=/`;
+          }
           signIn(null);
         }}
       >

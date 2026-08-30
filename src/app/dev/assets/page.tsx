@@ -17,7 +17,7 @@ import AssetBrowser from './AssetBrowser';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Asset Builder — Greenwood',
+  title: 'Asset Builder — Evergreen',
   // Belt and braces: even if it somehow rendered, it should never be indexed.
   robots: { index: false, follow: false },
 };

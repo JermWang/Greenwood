@@ -232,7 +232,7 @@ const TreelineScene = memo(function TreelineScene({ felled }: { felled: Set<stri
             <meshStandardMaterial color={ISO.steelDark} flatShading roughness={0.5} metalness={0.6} />
           </mesh>
           {/* The only neon out here. Under a dying sky it stops meaning
-              "Greenwood" and starts meaning "this still has power". */}
+              "Evergreen" and starts meaning "this still has power". */}
           <mesh position={[0.16, 3.5, 0]}>
             <boxGeometry args={[0.05, 0.1, 3.2]} />
             <meshStandardMaterial

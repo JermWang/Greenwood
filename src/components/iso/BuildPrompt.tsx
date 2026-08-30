@@ -4,7 +4,7 @@
 //
 // This is the first verb moved out of the dashboard and into the world, and it
 // is the one that mattered most: opening a desk is the first and most important
-// thing anybody does in Greenwood, and it was a card on a summary screen that
+// thing anybody does in Evergreen, and it was a card on a summary screen that
 // opened a modal. The Machine Room already exists, already holds your desks, and
 // is already where you go to arrange them — so it is where one should be built.
 //

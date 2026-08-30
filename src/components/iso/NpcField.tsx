@@ -3,7 +3,7 @@
 // The people standing around, and walking up to one.
 //
 // NPCs are drawn with the same Character model as players and peers, which is
-// the point rather than a shortcut: the residents of Greenwood are not a
+// the point rather than a shortcut: the residents of Evergreen are not a
 // different class of thing from you. What separates them is a nameplate that
 // carries a role and a quiet marker underfoot — enough to read as "you can talk
 // to this one" from across the forecourt, not enough to look like a quest icon.

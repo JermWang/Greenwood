@@ -5,25 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { BookOpenText, CaretRight, Flask, Play, XLogo } from '@phosphor-icons/react';
-import type { TwinNode } from '@/components/iso/IsoTwin';
 import CopyContract from '@/components/ui/CopyContract';
 import SoundToggle from '@/components/ui/SoundToggle';
 import { X_URL } from '@/lib/config';
 
-const IsoTwin = dynamic(() => import('@/components/iso/IsoTwin'), { ssr: false });
-
-/**
- * A hand-picked fund for the title screen — a mix of both desk types at high
- * level, so the board behind the lockup shows the game at its best rather than
- * an empty floor. Slots are left empty: the title screen is a silhouette, and
- * instrument detail does not read at this scale.
- */
-const SHOWROOM_NODES: TwinNode[] = [
-  { id: 'showroom-equity-1', type: 'oil', level: 8, isActive: true, components: [] },
-  { id: 'showroom-treasury-1', type: 'mine', level: 7, isActive: true, components: [] },
-  { id: 'showroom-treasury-2', type: 'mine', level: 5, isActive: true, components: [] },
-  { id: 'showroom-equity-2', type: 'oil', level: 4, isActive: true, components: [] },
-];
+// ssr: false because the scene builds three.js objects at render scope, and a
+// throw inside a Canvas subtree during the server pass takes the whole scene
+// with it -- black canvas, empty console. See docs/iso-conventions.md.
+const TitleCinematic = dynamic(() => import('@/components/iso/TitleCinematic'), { ssr: false });
 
 /**
  * The menu, weighted rather than uniform.
@@ -103,69 +92,69 @@ export default function Landing() {
   }, [activeIndex, menuOpen, router]);
 
   return (
-    <main className="gw-title-screen">
-      <div className="gw-title-world">
-        <IsoTwin nodes={SHOWROOM_NODES} selectedNodeId={null} ambient />
+    <main className="eg-title-screen">
+      <div className="eg-title-world">
+        <TitleCinematic />
       </div>
-      <div className="gw-title-vignette" />
-      <div className="gw-title-scanlines" aria-hidden />
+      <div className="eg-title-vignette" />
+      <div className="eg-title-scanlines" aria-hidden />
 
-      <header className="gw-title-topbar">
-        <Link href="/" className="gw-title-mark" aria-label="Greenwood home">
+      <header className="eg-title-topbar">
+        <Link href="/" className="eg-title-mark" aria-label="Evergreen home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/gw-mark.svg" alt="" />
-          <span>Greenwood</span>
+          <img src="/eg-mark.svg" alt="" />
+          <span>Evergreen</span>
         </Link>
-        <div className="gw-title-top-actions">
+        <div className="eg-title-top-actions">
           {/* Renders nothing until the token address is configured, so it simply
               appears in the top bar the moment the CA goes live. */}
           <CopyContract />
-          <a href={X_URL} target="_blank" rel="noreferrer" aria-label="Greenwood on X"><XLogo size={18} weight="fill" /></a>
+          <a href={X_URL} target="_blank" rel="noreferrer" aria-label="Evergreen on X"><XLogo size={18} weight="fill" /></a>
           <SoundToggle />
         </div>
       </header>
 
-      <section className={`gw-title-center ${menuOpen ? 'is-menu' : ''}`}>
-        <div className="gw-title-lockup">
+      <section className={`eg-title-center ${menuOpen ? 'is-menu' : ''}`}>
+        <div className="eg-title-lockup">
           <span>REAL-WORLD YIELD</span>
-          <h1>Greenwood</h1>
+          <h1>Evergreen</h1>
           <p>Build the fund. Own the yield.</p>
         </div>
 
         {!menuOpen ? (
-          <button type="button" className="gw-press-start" onClick={choose}>
+          <button type="button" className="eg-press-start" onClick={choose}>
             <span>Press Enter</span>
             <small>to start</small>
           </button>
         ) : (
-          <nav className="gw-main-menu" aria-label="Main menu">
+          <nav className="eg-main-menu" aria-label="Main menu">
             <Link
               href={PRIMARY.href}
-              className={`gw-menu-primary ${activeIndex === 0 ? 'is-active' : ''}`}
+              className={`eg-menu-primary ${activeIndex === 0 ? 'is-active' : ''}`}
               onMouseEnter={() => setActiveIndex(0)}
               aria-current={activeIndex === 0 ? 'true' : undefined}
             >
-              <span className="gw-menu-icon">
+              <span className="eg-menu-icon">
                 <PRIMARY.Icon size={22} weight={activeIndex === 0 ? 'fill' : 'duotone'} />
               </span>
               <span>
                 <b>{PRIMARY.label}</b>
                 <small>{PRIMARY.detail}</small>
-                <span className="gw-menu-rooms">
+                <span className="eg-menu-rooms">
                   {PRIMARY.rooms.map((room) => <span key={room}>{room}</span>)}
                 </span>
               </span>
               <CaretRight size={17} weight="bold" />
             </Link>
 
-            <div className="gw-menu-pair">
+            <div className="eg-menu-pair">
               {SECONDARY.map(({ label, detail, href, Icon }, index) => {
                 const position = index + 1;
                 return (
                   <Link
                     key={href}
                     href={href}
-                    className={`gw-menu-tile ${position === activeIndex ? 'is-active' : ''}`}
+                    className={`eg-menu-tile ${position === activeIndex ? 'is-active' : ''}`}
                     onMouseEnter={() => setActiveIndex(position)}
                     aria-current={position === activeIndex ? 'true' : undefined}
                   >
@@ -177,7 +166,7 @@ export default function Landing() {
               })}
             </div>
 
-            <div className="gw-menu-controls">
+            <div className="eg-menu-controls">
               <kbd>W</kbd><kbd>S</kbd><span>Navigate</span>
               <kbd>ENTER</kbd><span>Select</span>
               <kbd>ESC</kbd><span>Back</span>
@@ -186,8 +175,8 @@ export default function Landing() {
         )}
       </section>
 
-      <footer className="gw-title-footer">
-        <span className="gw-title-build"><i /> ROBINHOOD CHAIN // BUILD 02</span>
+      <footer className="eg-title-footer">
+        <span className="eg-title-build"><i /> ROBINHOOD CHAIN // BUILD 02</span>
       </footer>
     </main>
   );

@@ -20,14 +20,14 @@ interface TransactionPreviewRequest {
 
 declare global {
   interface WindowEventMap {
-    'greenwood:transaction-preview': CustomEvent<TransactionPreviewRequest>;
+    'evergreen:transaction-preview': CustomEvent<TransactionPreviewRequest>;
   }
 }
 
 export function confirmTransactionPreview(preview: TransactionPreview): Promise<boolean> {
   if (typeof window === 'undefined') return Promise.resolve(false);
   return new Promise((resolve) => {
-    window.dispatchEvent(new CustomEvent('greenwood:transaction-preview', { detail: { preview, resolve } }));
+    window.dispatchEvent(new CustomEvent('evergreen:transaction-preview', { detail: { preview, resolve } }));
   });
 }
 

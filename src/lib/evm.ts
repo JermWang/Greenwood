@@ -12,6 +12,10 @@ import {
   type Address,
 } from 'viem';
 import { CHAIN, BNTY_TOKEN_ADDRESS, isConfiguredAddress } from './config';
+import { carryOverLocal } from './legacy-keys';
+
+/** Which wallet to reconnect to without asking. See lib/legacy-keys. */
+const LAST_RDNS_KEY = 'evergreen:last-wallet-rdns';
 
 export interface Eip1193Provider {
   request: (args: { method: string; params?: readonly unknown[] | object }) => Promise<unknown>;
@@ -212,7 +216,8 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
   initialize: () => {
     if (typeof window === 'undefined' || discoveryBound) return;
     discoveryBound = true;
-    const lastRdns = window.localStorage.getItem('greenwood:last-wallet-rdns');
+    carryOverLocal(LAST_RDNS_KEY);
+    const lastRdns = window.localStorage.getItem(LAST_RDNS_KEY);
     window.addEventListener('eip6963:announceProvider', (event) => {
       const { info, provider } = event.detail;
       if (!info?.uuid || !provider?.request) return;
@@ -256,7 +261,7 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
       const address = getAddress(accounts[0]);
       const chainId = await providerChainId(option.provider);
       bindProvider(option.provider);
-      window.localStorage.setItem('greenwood:last-wallet-rdns', option.rdns);
+      window.localStorage.setItem(LAST_RDNS_KEY, option.rdns);
       set({ address, chainId, selectedWalletUuid: option.uuid, connecting: false });
       await get().refreshBalances();
       return address;

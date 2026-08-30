@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { api, type UserOperation, type ProtocolOverview } from './api-client';
 import { DEV_WALLET } from './dev-mode';
 import { DEMO_COOKIE, isDemoWallet } from './demo';
+import { readCookie } from './legacy-keys';
 
 // Polls the game API (operation every 15s, overview every 30s — same cadence
 // as the original) and exposes shared state + refresh triggers.
@@ -128,10 +129,6 @@ export const AUTO_WALLET = DEV_WALLET;
  */
 export function demoWalletFromCookie(): string | null {
   if (typeof document === 'undefined') return null;
-  const cookie = document.cookie
-    .split(';')
-    .map((c) => c.trim())
-    .find((c) => c.startsWith(`${DEMO_COOKIE}=`))
-    ?.slice(DEMO_COOKIE.length + 1);
+  const cookie = readCookie(document.cookie, DEMO_COOKIE);
   return cookie && isDemoWallet(cookie) ? cookie.toLowerCase() : null;
 }

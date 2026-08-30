@@ -16,6 +16,7 @@ import { lookFor } from './Character';
 import { type IsoMachine, type MachineKind, type PlacedIsoMachine } from './palette';
 import MachineSpec from '@/components/ui/MachineSpec';
 import { LAYOUT_RULES } from '@/lib/floor-rules';
+import { carryOverLocal } from '@/lib/legacy-keys';
 import { api, type BenchRecipe, type FloorBonus } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
 import { atBench } from '@/lib/craft-bench';
@@ -37,6 +38,7 @@ const KIND_ICON: Record<MachineKind, typeof ChartLineUp> = {
 
 function readLocal(storageKey: string, machines: IsoMachine[]): PlacedIsoMachine[] {
   try {
+    carryOverLocal(storageKey);
     const raw = window.localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as PlacedIsoMachine[];
@@ -459,7 +461,7 @@ export default function IsoFloor({
   const selectedMachine = selectedId ? machines.find((m) => m.id === selectedId) : null;
 
   return (
-    <main className="gw-sandbox">
+    <main className="eg-sandbox">
       <IsoScene
         machines={machines}
         layout={layout}
@@ -579,19 +581,19 @@ export default function IsoFloor({
         onClose={() => { setBuildAt(null); setBuildError(null); }}
       />
 
-      <header className="gw-sandbox-top">
+      <header className="eg-sandbox-top">
         <div>
           <b>MACHINE ROOM</b>
           <span>{holdingId ? 'CLICK A TILE TO PLACE' : `${layout.length}/${machines.length} DESKS RUNNING`}</span>
         </div>
       </header>
 
-      <aside className="gw-build-catalog is-open">
-        <button className="gw-build-title" onClick={() => setBookOpen((v) => !v)} aria-expanded={bookOpen}>
+      <aside className="eg-build-catalog is-open">
+        <button className="eg-build-title" onClick={() => setBookOpen((v) => !v)} aria-expanded={bookOpen}>
           <span>DESK BOOK</span>
           <b>{layout.length}/{machines.length} placed {bookOpen ? <CaretUp size={10} weight="bold" /> : <CaretDown size={10} weight="bold" />}</b>
         </button>
-        <div className="gw-build-items" hidden={!bookOpen}>
+        <div className="eg-build-items" hidden={!bookOpen}>
           {machines.map((machine) => {
             const isPlaced = placedIds.has(machine.id);
             const active = holdingId === machine.id || selectedId === machine.id;
@@ -610,17 +612,17 @@ export default function IsoFloor({
                 <b>
                   {machine.label}
                   {machine.cost != null && (
-                    <em className="gw-build-cost">{Math.round(machine.cost).toLocaleString()} BNTY</em>
+                    <em className="eg-build-cost">{Math.round(machine.cost).toLocaleString()} BNTY</em>
                   )}
                 </b>
-                {machine.detail && <small className="gw-build-detail">{machine.detail}</small>}
+                {machine.detail && <small className="eg-build-detail">{machine.detail}</small>}
                 {machine.blurb && <small>{machine.blurb}</small>}
                 <small>{isPlaced ? 'Placed · click a tile to move' : 'Click a tile to place'}</small>
               </button>
             );
           })}
         </div>
-        <div className="gw-build-actions" hidden={!bookOpen}>
+        <div className="eg-build-actions" hidden={!bookOpen}>
           <button onClick={rotateSelected} disabled={!selectedId}><ArrowsClockwise size={15} /> Rotate</button>
           <button onClick={storeSelected} disabled={!selectedId}><Trash size={15} /> Store</button>
         </div>
@@ -629,14 +631,14 @@ export default function IsoFloor({
             a separate modal because this is the moment the player is choosing
             where to put it — the multipliers are the decision. */}
         {bookOpen && selectedMachine && (
-          <div className="gw-build-spec">
+          <div className="eg-build-spec">
             <MachineSpec kind={selectedMachine.kind} />
           </div>
         )}
       </aside>
 
-      <aside className="gw-yield-panel">
-        <button className="gw-yield-head" onClick={() => setYieldOpen((v) => !v)} aria-expanded={yieldOpen}>
+      <aside className="eg-yield-panel">
+        <button className="eg-yield-head" onClick={() => setYieldOpen((v) => !v)} aria-expanded={yieldOpen}>
           <span>LAYOUT YIELD</span>
           <b className={bonus && bonus.multiplier < 1 ? 'is-down' : 'is-up'}>
             {bonus ? `${bonus.multiplier >= 1 ? '+' : ''}${Math.round((bonus.multiplier - 1) * 100)}%` : '—'}
@@ -659,7 +661,7 @@ export default function IsoFloor({
           )}
         </ul>
         {/* The placement rules the score is computed from, stated outright. */}
-        <dl className="gw-layout-rules" hidden={!yieldOpen}>
+        <dl className="eg-layout-rules" hidden={!yieldOpen}>
           {LAYOUT_RULES.map((rule) => (
             <div key={rule.label}>
               <dt>{rule.label}</dt>
@@ -680,7 +682,7 @@ export default function IsoFloor({
         </footer>
       </aside>
 
-      <div className="gw-sandbox-controls">
+      <div className="eg-sandbox-controls">
         {selectedMachine ? (
           <><b>{selectedMachine.label}</b><kbd>R</kbd><span>Rotate</span><kbd>DEL</kbd><span>Store</span></>
         ) : (

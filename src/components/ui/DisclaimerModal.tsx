@@ -14,15 +14,15 @@ export default function DisclaimerModal() {
   if (pathname === '/' || pathname?.startsWith('/rarity-test') || isWalletFreeRoute || termsAcceptedAt) return null;
 
   return (
-    <div className="gw-safety-overlay">
-      <div className="gw-safety-modal">
-        <div className="gw-safety-code"><span>SAFETY INTERLOCK</span><span>MAINNET / {CHAIN.id}</span></div>
-        <div className="gw-safety-layout">
-          <div className="gw-safety-desk" aria-hidden><span>!</span></div>
+    <div className="eg-safety-overlay">
+      <div className="eg-safety-modal">
+        <div className="eg-safety-code"><span>SAFETY INTERLOCK</span><span>MAINNET / {CHAIN.id}</span></div>
+        <div className="eg-safety-layout">
+          <div className="eg-safety-desk" aria-hidden><span>!</span></div>
           <div>
             <h2 className="text-[clamp(2rem,5vw,3.8rem)] font-semibold leading-[.92] tracking-[-.055em] text-white">Real network.<br />Exact review.</h2>
             <p className="mt-5 text-sm leading-relaxed text-emerald-100/58">
-              You are entering Greenwood on <strong>{CHAIN.name}</strong> (chain {CHAIN.id}), an EVM L2 that settles with ETH gas. Connect MetaMask, Rabby, or Robinhood Wallet and sign a free message to prove it is yours. Mainnet transfers use real assets and cannot be reversed. Before any wallet prompt, Greenwood simulates the exact direct transfer and shows the amount, token, treasury, network, and zero native value. Greenwood never requests an unlimited token allowance. Greenwood is a game, not a financial product, and rewards are not guaranteed.
+              You are entering Evergreen on <strong>{CHAIN.name}</strong> (chain {CHAIN.id}), an EVM L2 that settles with ETH gas. Connect MetaMask, Rabby, or Robinhood Wallet and sign a free message to prove it is yours. Mainnet transfers use real assets and cannot be reversed. Before any wallet prompt, Evergreen simulates the exact direct transfer and shows the amount, token, treasury, network, and zero native value. Evergreen never requests an unlimited token allowance. Evergreen is a game, not a financial product, and rewards are not guaranteed.
             </p>
           </div>
         </div>

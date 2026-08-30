@@ -91,14 +91,14 @@ export interface Doorway {
  */
 export const DOORS: Doorway[] = [
   {
-    id: 'greenwood-hq',
+    id: 'evergreen-hq',
     x: BOUNDS.minX,
     z: TRACK_Z,
     axis: 'z',
     rotation: -Math.PI / 2,
-    label: 'Greenwood HQ',
+    label: 'Evergreen HQ',
     href: '/app/hq',
-    region: 'greenwood-hq',
+    region: 'evergreen-hq',
     blurb: 'Back down the track to the plaza.',
     arriveAt: null,
   },
