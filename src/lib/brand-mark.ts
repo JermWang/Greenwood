@@ -10,9 +10,10 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { MARK_SRC } from './brand-assets';
 
 /**
- * `public/eg-mark.svg` as a base64 data URI.
+ * The mark file as a base64 data URI.
  *
  * Handed to satori as an `<img>` rather than rebuilt as JSX, deliberately.
  * Satori paints rectangles, gradients and text and very little else — the
@@ -26,6 +27,9 @@ import { join } from 'node:path';
  * definition of the logo in this repo and this is how the icons stay tied to it.
  */
 export function markDataUri(): string {
-  const svg = readFileSync(join(process.cwd(), 'public', 'eg-mark.svg'), 'utf8');
+  // Resolved from MARK_SRC rather than typed out again, so the icons follow
+  // the art wherever it moves. MARK_SRC is a URL path, hence the leading slash
+  // being dropped before it is joined onto public/.
+  const svg = readFileSync(join(process.cwd(), 'public', MARK_SRC.replace(/^\//, '')), 'utf8');
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }

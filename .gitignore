@@ -32,9 +32,18 @@ tmp/
 
 # Launch/brand kit: 51MB of source artwork and two video files.
 #
-# Deliberately not committed. Git keeps every version of a binary forever, so a
-# 16MB trailer costs 16MB in every clone from now on even after it is deleted —
-# and these are exports, regenerated from the design source rather than edited
-# here. The ONE asset the site actually serves (the share card) is copied to
-# public/og-card.png and committed on its own.
+# Rollout collateral: deliberately not committed. Git keeps every version of a
+# binary forever, so a 19MB kit costs 19MB in every clone from now on even after
+# it is deleted — and these are exports, regenerated from the design source
+# rather than edited here. They are also not for the SITE: the banner goes on an
+# X profile, the poster goes to a printer, the press sheet goes in an email.
+#
+# The three files the site actually serves are un-ignored below and committed in
+# place, rather than copied to public/ as the previous kit did it. A copy is the
+# thing that silently goes stale — the same argument app/icon.tsx makes for
+# rasterising the mark instead of committing a PNG beside it.
 public/GREENWOOD/
+public/evergreen/*
+!public/evergreen/README.md
+!public/evergreen/logo/
+!public/evergreen/08-og-share-card-1200x630.png

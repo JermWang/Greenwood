@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { BookOpenText, CaretRight, Flask, Play, XLogo } from '@phosphor-icons/react';
 import CopyContract from '@/components/ui/CopyContract';
 import SoundToggle from '@/components/ui/SoundToggle';
+import { MARK_SRC } from '@/lib/brand-assets';
 import { X_URL } from '@/lib/config';
 
 // ssr: false because the scene builds three.js objects at render scope, and a
@@ -102,7 +103,7 @@ export default function Landing() {
       <header className="eg-title-topbar">
         <Link href="/" className="eg-title-mark" aria-label="Evergreen home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/eg-mark.svg" alt="" />
+          <img src={MARK_SRC} alt="" />
           <span>Evergreen</span>
         </Link>
         <div className="eg-title-top-actions">

@@ -6,6 +6,7 @@ import { Cpu, Lightning, Radio } from '@phosphor-icons/react';
 import WalletButton from '@/components/ui/WalletButton';
 import { DemoBanner, DemoButton } from '@/components/ui/DemoButton';
 import IntroGuide from '@/components/ui/IntroGuide';
+import { MARK_SRC } from '@/lib/brand-assets';
 import MarketHud from '@/components/ui/MarketHud';
 import { useOperation } from '@/lib/useOperation';
 import DeployNotice from '@/components/ui/DeployNotice';
@@ -61,7 +62,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="eg-topbar">
           <Link href="/" className="flex items-center gap-2 lg:hidden" aria-label="Evergreen home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/eg-mark.svg" alt="" className="h-8 w-8 rounded-[10px]" />
+            <img src={MARK_SRC} alt="" className="h-8 w-8 rounded-[10px]" />
             {/* The wordmark goes below 640px and the mark stays. The bar has
                 room for exactly one more thing at that width, and the guide is
                 that thing — the mark alone already says where you are. */}

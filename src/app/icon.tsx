@@ -1,6 +1,6 @@
 // The favicon, as a real PNG.
 //
-// `/favicon.ico` was a 404 and the only declared icon was `/eg-mark.svg`.
+// `/favicon.ico` was a 404 and the only declared icon was the mark SVG.
 // Modern browsers do accept an SVG favicon, so tabs looked right — but Safari
 // does not, and neither does anything that falls back to requesting
 // /favicon.ico by convention, which is why that 404 was being served on every

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import { MARK_SRC, SHARE_CARD_SRC } from '@/lib/brand-assets';
 import { X_HANDLE } from '@/lib/config';
 import './globals.css';
 
@@ -72,7 +73,7 @@ const TAGLINE = 'One of the last lit settlements. Yield never sleeps.';
  * rendered as a small summary while the fetch is still in flight.
  */
 const SHARE_CARD = {
-  url: '/og-card.png',
+  url: SHARE_CARD_SRC,
   width: 1200,
   height: 630,
   alt: 'Evergreen — one of the last lit settlements. Yield never sleeps.',
@@ -107,7 +108,7 @@ export const metadata: Metadata = {
   /**
    * Icons are the GENERATED routes, not the SVG.
    *
-   * `apple: '/eg-mark.svg'` was silently doing nothing: iOS ignores SVG for
+   * Declaring the mark SVG for `apple` was silently doing nothing: iOS ignores SVG for
    * touch icons and screenshots the page instead, so adding the game to a home
    * screen produced a tile showing a shrunken screengrab. See app/apple-icon.
    * The SVG stays declared as well — browsers that take it get the sharper
@@ -116,7 +117,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/icon', type: 'image/png', sizes: '180x180' },
-      { url: '/eg-mark.svg', type: 'image/svg+xml' },
+      { url: MARK_SRC, type: 'image/svg+xml' },
     ],
     apple: [{ url: '/apple-icon', type: 'image/png', sizes: '180x180' }],
   },
