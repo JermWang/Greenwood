@@ -386,7 +386,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
    pointer, no hover — it reads as a label, which is what it is. */
 .eg-topbar-ca-soon{border:1px solid rgba(192,191,186,.17);background:rgba(18,17,16,.42);color:rgba(238,237,236,.5);cursor:default;user-select:none}
 .eg-topbar-ca-soon .eg-topbar-ca-label{color:rgba(238,237,236,.32)}
-.eg-title-center{position:absolute;z-index:6;left:50%;top:48%;display:flex;width:min(760px,calc(100% - 40px));translate:-50% -50%;flex-direction:column;align-items:center;text-align:center;transition:.35s ease}.eg-title-lockup>span{display:block;font:750 clamp(7px,1vw,10px) var(--font-mono),monospace;letter-spacing:.48em;color:#dbff4a;text-shadow:0 0 16px rgba(219, 255, 74, .46)}.eg-title-lockup h1{margin-top:7px;font-size:clamp(8rem,21vw,18rem);font-weight:650;line-height:.72;letter-spacing:-.095em;color:#fff;text-shadow:0 20px 70px rgba(0,0,0,.72),0 0 90px rgba(155, 153, 145, .2);transition:.32s ease}.eg-title-lockup p{margin-top:27px;font:700 clamp(9px,1vw,12px) var(--font-mono),monospace;letter-spacing:.22em;text-transform:uppercase;color:rgba(240, 239, 238, .62);text-shadow:0 5px 24px #0d0d0c}.eg-press-start{margin-top:52px;padding:12px 28px;border:0;background:transparent;text-transform:uppercase;color:#fff;animation:title-start-pulse 1.55s ease-in-out infinite}.eg-press-start span{display:block;font:800 12px var(--font-mono),monospace;letter-spacing:.32em;text-shadow:0 0 18px rgba(219, 255, 74, .72)}.eg-press-start small{display:block;margin-top:7px;font:700 7px var(--font-mono),monospace;letter-spacing:.28em;color:rgba(222, 221, 218, .46)}
+.eg-title-center{position:absolute;z-index:6;left:50%;top:48%;display:flex;width:min(760px,calc(100% - 40px));translate:-50% -50%;flex-direction:column;align-items:center;text-align:center;transition:.35s ease}.eg-title-lockup>span{display:block;font:750 clamp(7px,1vw,10px) var(--font-mono),monospace;letter-spacing:.48em;color:#dbff4a;text-shadow:0 0 16px rgba(219, 255, 74, .46)}
+/* The wordmark, and the descender it has to make room for.
+
+   line-height .72 is what makes the lockup read as one solid mass rather than
+   as a line of type, and it is deliberate. What it also does is put the
+   baseline 0.705em down a 0.72em box -- fifteen thousandths of an em of box
+   below the baseline -- so anything that descends hangs outside the element
+   entirely and lands on whatever follows.
+
+   Nothing did, until the name changed. "Greenwood" descends 0.02em (the
+   overshoot on its round letters and nothing else); "Evergreen" descends 0.2em,
+   because it has a g. The tagline sits 27px under the box, the g reached about
+   50px past it at full size, and the two collided.
+
+   So the box reserves the descender: 0.185em is what hangs below it, rounded up.
+   In em rather than px because the font-size is fluid across three clamps and a
+   breakpoint, and a fixed reserve would be right at exactly one viewport width.
+
+   The tagline's own 27px margin is unchanged and still measures the gap you
+   actually see, because it now starts from the bottom of the g rather than from
+   the middle of it. */
+.eg-title-lockup h1{margin-top:7px;padding-bottom:.19em;font-size:clamp(8rem,21vw,18rem);font-weight:650;line-height:.72;letter-spacing:-.095em;color:#fff;text-shadow:0 20px 70px rgba(0,0,0,.72),0 0 90px rgba(155, 153, 145, .2);transition:.32s ease}
+.eg-title-lockup p{margin-top:27px;font:700 clamp(9px,1vw,12px) var(--font-mono),monospace;letter-spacing:.22em;text-transform:uppercase;color:rgba(240, 239, 238, .62);text-shadow:0 5px 24px #0d0d0c}.eg-press-start{margin-top:52px;padding:12px 28px;border:0;background:transparent;text-transform:uppercase;color:#fff;animation:title-start-pulse 1.55s ease-in-out infinite}.eg-press-start span{display:block;font:800 12px var(--font-mono),monospace;letter-spacing:.32em;text-shadow:0 0 18px rgba(219, 255, 74, .72)}.eg-press-start small{display:block;margin-top:7px;font:700 7px var(--font-mono),monospace;letter-spacing:.28em;color:rgba(222, 221, 218, .46)}
 .eg-title-center.is-menu{top:47%}.eg-title-center.is-menu .eg-title-lockup h1{font-size:clamp(5.5rem,12vw,10rem)}.eg-title-center.is-menu .eg-title-lockup p{margin-top:18px}
 /* --- Title menu ---------------------------------------------------------- */
 /* Weighted, not uniform: the fund dashboard is the hub the whole game hangs
