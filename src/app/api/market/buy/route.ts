@@ -8,7 +8,7 @@ import { splitSale, transferSoldItem } from '@/lib/market';
 import {
   settlesOnChain,
   encodeDetail,
-  payoutBnty,
+  payoutGreen,
   quoteSpend,
   recordPayout,
   settleSpend,
@@ -83,9 +83,9 @@ export async function POST(request: Request) {
 
       let payoutHash: string | null = null;
       try {
-        const payout = await payoutBnty(listing.seller, toSeller);
+        const payout = await payoutGreen(listing.seller, toSeller);
         payoutHash = payout.hash;
-        recordPayout(listing.seller, payout.sentBnty, payout.hash, { listingId: listing.id });
+        recordPayout(listing.seller, payout.sentGreen, payout.hash, { listingId: listing.id });
       } catch (payoutError) {
         // Null, not a placeholder string: the unique index on tx_hash is
         // partial, so a literal would insert once then collide on every later
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       const buyer = getOrCreateUser(wallet);
       if (buyer.osr_balance < listing.price_osr) {
         throw new GameError(
-          `Not enough BNTY: need ${listing.price_osr.toLocaleString()} (you have ${Math.floor(buyer.osr_balance).toLocaleString()}).`,
+          `Not enough GREEN: need ${listing.price_osr.toLocaleString()} (you have ${Math.floor(buyer.osr_balance).toLocaleString()}).`,
           400
         );
       }
@@ -136,13 +136,13 @@ export async function POST(request: Request) {
       // Charge before handing over the item, and make the charge itself enforce
       // the balance. The check above reads a row fetched earlier, so two
       // purchases in flight at once can both pass it and both spend the same
-      // BNTY; the condition on the UPDATE is what actually prevents that, since
+      // GREEN; the condition on the UPDATE is what actually prevents that, since
       // the schema has no CHECK keeping the balance non-negative.
       const charged = db
         .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
         .run(listing.price_osr, wallet, listing.price_osr);
       if (Number(charged.changes) === 0) {
-        throw new GameError(`Not enough BNTY: need ${listing.price_osr.toLocaleString()}.`, 400);
+        throw new GameError(`Not enough GREEN: need ${listing.price_osr.toLocaleString()}.`, 400);
       }
 
       // transferSoldItem runs its own transaction, so this cannot be wrapped in
@@ -175,7 +175,7 @@ export async function POST(request: Request) {
     const payment = await quoteSpend(wallet, {
       action: 'MarketBuy',
       detail: encodeDetail(String(listingId)),
-      bntyAmount: listing.price_osr,
+      greenAmount: listing.price_osr,
     });
     return NextResponse.json({ settled: false, payment, fee, toSeller });
   } catch (e) {

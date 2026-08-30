@@ -71,7 +71,7 @@ export const MACHINE_SPECS: Record<MachineKind, MachineSpec> = {
     kind: 'equity',
     name: 'Equity Desk',
     role: 'Yield desk',
-    summary: 'Earns BNTY every second. The higher-yielding of the two desk families, and the one instrument sets are built around.',
+    summary: 'Earns GREEN every second. The higher-yielding of the two desk families, and the one instrument sets are built around.',
     facts: [
       { label: 'Earns emissions', value: 'Yes', tone: 'good' },
       { label: 'Level multiplier', value: 'L1 1.00x → L10 5.00x, then +0.6/level' },
@@ -83,7 +83,7 @@ export const MACHINE_SPECS: Record<MachineKind, MachineSpec> = {
     kind: 'rack',
     name: 'Treasury Desk',
     role: 'Yield desk',
-    summary: 'Earns BNTY from tokenized T-bills, reinvests far cheaper than an Equity Desk, and raises your desk cap as your portfolio grows.',
+    summary: 'Earns GREEN from tokenized T-bills, reinvests far cheaper than an Equity Desk, and raises your desk cap as your portfolio grows.',
     facts: [
       { label: 'Earns emissions', value: 'Yes', tone: 'good' },
       { label: 'Level multiplier', value: 'L1 1.00x → L10 5.00x, then +0.6/level' },

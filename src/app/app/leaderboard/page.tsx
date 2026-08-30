@@ -10,8 +10,8 @@ interface Row { rank: number; wallet: string; displayName?: string | null; onlin
 
 const METRICS: Array<{ key: Metric; label: string; unit: string; description: string }> = [
   { key: 'compound_level', label: 'Portfolio tier', unit: 'TIER', description: 'Portfolio progression and installed capacity' },
-  { key: 'total_produced', label: 'BNTY output', unit: 'BNTY', description: 'Lifetime BNTY routed through desks' },
-  { key: 'total_burned', label: 'BNTY retired', unit: 'BNTY', description: 'Token permanently removed while expanding your fund' },
+  { key: 'total_produced', label: 'GREEN output', unit: 'GREEN', description: 'Lifetime GREEN routed through desks' },
+  { key: 'total_burned', label: 'GREEN retired', unit: 'GREEN', description: 'Token permanently removed while expanding your fund' },
 ];
 const valueFor = (row: Row, metric: Metric) => metric === 'total_produced' ? row.totalProduced : metric === 'total_burned' ? row.totalBurned : row.compoundLevel ?? row.maxLevel;
 const operatorName = (row: Row) => row.displayName?.trim() || `${row.wallet.slice(0, 7)}…${row.wallet.slice(-4)}`;

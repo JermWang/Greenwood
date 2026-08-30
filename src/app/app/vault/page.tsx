@@ -71,8 +71,8 @@ export default function VaultPage() {
 
   const reserveFill = useMemo(() => {
     if (!overview) return 0;
-    const reserve = Math.max(0, overview.bntyReserveBalance ?? 0);
-    const retired = Math.max(0, overview.totalBntyBurned ?? 0);
+    const reserve = Math.max(0, overview.greenReserveBalance ?? 0);
+    const retired = Math.max(0, overview.totalGreenBurned ?? 0);
     return reserve + retired > 0 ? reserve / (reserve + retired) : 0;
   }, [overview]);
 
@@ -90,7 +90,7 @@ export default function VaultPage() {
           <section className="treasury-reactor">
             <div className="treasury-reactor-copy">
               <span className="eg-scene-kicker">EMISSION CHAMBER / LIVE</span>
-              <h2>{compact(overview?.bntyReserveBalance)} <small>BNTY</small></h2>
+              <h2>{compact(overview?.greenReserveBalance)} <small>GREEN</small></h2>
               <p>Unrouted network reserve</p>
               <div className="treasury-flow-legend">
                 <span><i className="is-reserve" /> Reserve {Math.round(reserveFill * 100)}%</span>
@@ -100,14 +100,14 @@ export default function VaultPage() {
             <div className="treasury-orbit" style={{ '--reserve-fill': `${reserveFill * 360}deg` } as CSSProperties}>
               <span className="treasury-orbit-ring is-a" />
               <span className="treasury-orbit-ring is-b" />
-              <span className="treasury-orbit-core"><b>BNTY</b><small>RESERVE</small></span>
+              <span className="treasury-orbit-core"><b>GREEN</b><small>RESERVE</small></span>
             </div>
           </section>
 
           <section className="treasury-signal-grid">
-            <Signal code="BURN" label="BNTY permanently retired" value={compact(overview?.totalBntyBurned)} unit="BNTY" tone="lime" />
+            <Signal code="BURN" label="GREEN permanently retired" value={compact(overview?.totalGreenBurned)} unit="GREEN" tone="lime" />
             <Signal code="DESKS" label="Active desks" value={String(overview?.totalNodes ?? 0)} unit="UNITS" tone="cobalt" />
-            <Signal code="FLOW" label="Network yield output" value={overview?.networkProductionRate?.toFixed(3) ?? '—'} unit="BNTY/S" tone="cyan" />
+            <Signal code="FLOW" label="Network yield output" value={overview?.networkProductionRate?.toFixed(3) ?? '—'} unit="GREEN/S" tone="cyan" />
           </section>
 
           <section className="treasury-network">
@@ -117,7 +117,7 @@ export default function VaultPage() {
                 <span>Next halving</span>
                 <b>{countdown}</b>
                 <small>
-                  {overview?.halving.currentRatePerSec.toFixed(3) ?? '—'} → {overview?.halving.nextRatePerSec.toFixed(3) ?? '—'} BNTY/sec
+                  {overview?.halving.currentRatePerSec.toFixed(3) ?? '—'} → {overview?.halving.nextRatePerSec.toFixed(3) ?? '—'} GREEN/sec
                 </small>
               </div>
               {/* The bar is cycle progress, which is also how close the rate is
@@ -135,13 +135,13 @@ export default function VaultPage() {
               </div>
               <div>
                 <dt>Emitted to date</dt>
-                <dd>{compact(overview?.totalEmitted)} <em>BNTY</em></dd>
+                <dd>{compact(overview?.totalEmitted)} <em>GREEN</em></dd>
                 <small>Drawn from the reserve since genesis</small>
               </div>
               <div>
                 <dt>Locked in Notes</dt>
-                <dd>{compact(overview?.contracts.lockedPrincipal)} <em>BNTY</em></dd>
-                <small>{overview?.contracts.open ?? 0} open · {compact(overview?.contracts.committedInterest)} BNTY promised</small>
+                <dd>{compact(overview?.contracts.lockedPrincipal)} <em>GREEN</em></dd>
+                <small>{overview?.contracts.open ?? 0} open · {compact(overview?.contracts.committedInterest)} GREEN promised</small>
               </div>
               <div>
                 <dt>Your share of output</dt>
@@ -157,7 +157,7 @@ export default function VaultPage() {
               <div className="treasury-empty">
                 <span className="treasury-empty-icon">◇</span>
                 <strong>{TOKEN_LIVE ? 'No balances returned' : 'Custody cells awaiting token launch'}</strong>
-                <p>{TOKEN_LIVE ? 'The configured treasury returned no indexed assets.' : 'Protocol accounting is active; public chain balances appear here after BNTY launches.'}</p>
+                <p>{TOKEN_LIVE ? 'The configured treasury returned no indexed assets.' : 'Protocol accounting is active; public chain balances appear here after GREEN launches.'}</p>
               </div>
             ) : (
               <div className="treasury-cell-grid">

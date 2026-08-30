@@ -78,28 +78,28 @@ describe('the house cut', () => {
   });
 });
 
-describe('buying with BNTY', () => {
+describe('buying with GREEN', () => {
   test('charges the price and routes the whole fee back to players', () => {
     const w = wallet(1);
     const def = cosmeticDef('desk_brushed_steel');
     fund(w, 100_000);
 
-    const result = buyCosmetic(w, def.key, 'BNTY');
+    const result = buyCosmetic(w, def.key, 'GREEN');
 
-    expect(balanceOf(w)).toBe(100_000 - def.bnty);
-    expect(result.fee).toBeCloseTo(def.bnty * 0.02, 10);
+    expect(balanceOf(w)).toBe(100_000 - def.green);
+    expect(result.fee).toBeCloseTo(def.green * 0.02, 10);
     // Half destroyed, half back into the pool that pays rewards.
     expect(counter('burned')).toBeCloseTo(result.fee / 2, 10);
     expect(counter('reserve')).toBeCloseTo(result.fee / 2, 10);
     expect(counter('burned') + counter('reserve')).toBeCloseTo(result.fee, 10);
     // Remainder is protocol revenue: a primary sale has no seller to pay.
-    expect(counter('treasury')).toBeCloseTo(def.bnty - result.fee, 10);
+    expect(counter('treasury')).toBeCloseTo(def.green - result.fee, 10);
   });
 
   test('refuses a purchase the balance cannot cover, and charges nothing', () => {
     const w = wallet(2);
     fund(w, 10);
-    expect(() => buyCosmetic(w, 'plinth_founders', 'BNTY')).toThrow(/Not enough BNTY/);
+    expect(() => buyCosmetic(w, 'plinth_founders', 'GREEN')).toThrow(/Not enough GREEN/);
     expect(balanceOf(w)).toBe(10);
     expect(ownedCosmetics(w)).toHaveLength(0);
     expect(counter('burned')).toBe(0);
@@ -108,7 +108,7 @@ describe('buying with BNTY', () => {
   test('skips the debit when the purchase already settled on-chain', () => {
     const w = wallet(3);
     fund(w, 100_000);
-    buyCosmetic(w, 'desk_brushed_steel', 'BNTY', { settledOnChain: true });
+    buyCosmetic(w, 'desk_brushed_steel', 'GREEN', { settledOnChain: true });
     // Paid in real tokens already; debiting the mirrored balance would charge twice.
     expect(balanceOf(w)).toBe(100_000);
     expect(ownedCosmetics(w)).toContain('desk_brushed_steel');
@@ -117,16 +117,16 @@ describe('buying with BNTY', () => {
   test('will not sell the same cosmetic twice', () => {
     const w = wallet(4);
     fund(w, 100_000);
-    buyCosmetic(w, 'avatar_house_jacket', 'BNTY');
+    buyCosmetic(w, 'avatar_house_jacket', 'GREEN');
     const after = balanceOf(w);
-    expect(() => buyCosmetic(w, 'avatar_house_jacket', 'BNTY')).toThrow(/already own/);
+    expect(() => buyCosmetic(w, 'avatar_house_jacket', 'GREEN')).toThrow(/already own/);
     expect(balanceOf(w)).toBe(after);
     expect(ownedCosmetics(w)).toHaveLength(1);
   });
 });
 
 describe('buying with ETH', () => {
-  test('leaves the BNTY balance alone and earmarks the fee rather than burning supply', () => {
+  test('leaves the GREEN balance alone and earmarks the fee rather than burning supply', () => {
     const w = wallet(5);
     const def = cosmeticDef('desk_neon_trim');
     fund(w, 50_000);
@@ -137,7 +137,7 @@ describe('buying with ETH', () => {
     expect(counter('solRevenue')).toBeCloseTo(def.eth, 12);
     expect(counter('ethBurnFund')).toBeCloseTo(result.fee / 2, 12);
     expect(counter('ethRewardFund')).toBeCloseTo(result.fee / 2, 12);
-    // No BNTY was destroyed, so the burn counter must not move.
+    // No GREEN was destroyed, so the burn counter must not move.
     expect(counter('burned')).toBe(0);
   });
 });
@@ -152,8 +152,8 @@ describe('wearing cosmetics', () => {
   test('one cosmetic per slot — equipping replaces what was worn', () => {
     const w = wallet(7);
     fund(w, 500_000);
-    buyCosmetic(w, 'plinth_marble', 'BNTY');
-    buyCosmetic(w, 'plinth_founders', 'BNTY');
+    buyCosmetic(w, 'plinth_marble', 'GREEN');
+    buyCosmetic(w, 'plinth_founders', 'GREEN');
 
     equipCosmetic(w, 'plinth_marble');
     expect(equippedCosmetics(w).plinth).toBe('plinth_marble');
@@ -170,8 +170,8 @@ describe('wearing cosmetics', () => {
   test('slots are independent', () => {
     const w = wallet(8);
     fund(w, 500_000);
-    buyCosmetic(w, 'avatar_house_jacket', 'BNTY');
-    buyCosmetic(w, 'desk_neon_trim', 'BNTY');
+    buyCosmetic(w, 'avatar_house_jacket', 'GREEN');
+    buyCosmetic(w, 'desk_neon_trim', 'GREEN');
     equipCosmetic(w, 'avatar_house_jacket');
     equipCosmetic(w, 'desk_neon_trim');
     const worn = equippedCosmetics(w);
@@ -183,7 +183,7 @@ describe('wearing cosmetics', () => {
 describe('the upgrade track', () => {
   const owned = (w: string, key = 'desk_brushed_steel') => {
     fund(w, 5_000_000);
-    buyCosmetic(w, key, 'BNTY');
+    buyCosmetic(w, key, 'GREEN');
     return cosmeticDef(key);
   };
 
@@ -203,7 +203,7 @@ describe('the upgrade track', () => {
     const burnedBefore = counter('burned');
     const reserveBefore = counter('reserve');
 
-    const price = cosmeticUpgradeCost(def.bnty, 0);
+    const price = cosmeticUpgradeCost(def.green, 0);
     const result = upgradeCosmetic(w, def.key);
 
     expect(result.price).toBe(price);
@@ -237,10 +237,10 @@ describe('the upgrade track', () => {
   test('refuses a purchase the balance cannot cover, and charges nothing', () => {
     const w = wallet(14);
     fund(w, 500_000);
-    buyCosmetic(w, 'plinth_founders', 'BNTY');
+    buyCosmetic(w, 'plinth_founders', 'GREEN');
     getDb().prepare('UPDATE users SET osr_balance = 1 WHERE wallet = ?').run(w);
 
-    expect(() => upgradeCosmetic(w, 'plinth_founders')).toThrow(/Not enough BNTY/);
+    expect(() => upgradeCosmetic(w, 'plinth_founders')).toThrow(/Not enough GREEN/);
     expect(balanceOf(w)).toBe(1);
     expect(cosmeticLevels(w).plinth_founders).toBe(0);
   });
@@ -283,7 +283,7 @@ describe('the upgrade track', () => {
   test('the level a wallet is wearing travels with the equipped item', () => {
     const w = wallet(18);
     fund(w, 5_000_000);
-    buyCosmetic(w, 'avatar_market_maker', 'BNTY');
+    buyCosmetic(w, 'avatar_market_maker', 'GREEN');
     equipCosmetic(w, 'avatar_market_maker');
     upgradeCosmetic(w, 'avatar_market_maker');
     upgradeCosmetic(w, 'avatar_market_maker');
@@ -296,7 +296,7 @@ describe('the shop', () => {
   test('marks what the wallet owns and wears', () => {
     const w = wallet(9);
     fund(w, 500_000);
-    buyCosmetic(w, 'avatar_market_maker', 'BNTY');
+    buyCosmetic(w, 'avatar_market_maker', 'GREEN');
     equipCosmetic(w, 'avatar_market_maker');
 
     const shop = cosmeticsCatalog(w);
@@ -313,10 +313,10 @@ describe('the shop', () => {
   });
 
   test('every cosmetic is priced in both currencies', () => {
-    // A BNTY-only cosmetic would be unreachable for a new player, and an
+    // A GREEN-only cosmetic would be unreachable for a new player, and an
     // ETH-only one would remove the token sink that justifies the sink at all.
     for (const item of cosmeticsCatalog(null).items) {
-      expect(item.bnty).toBeGreaterThan(0);
+      expect(item.green).toBeGreaterThan(0);
       expect(item.eth).toBeGreaterThan(0);
     }
   });

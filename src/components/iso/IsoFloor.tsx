@@ -96,7 +96,7 @@ export default function IsoFloor({
    *
    * All three slots matter in this room, not just the jacket: desk and plinth
    * liveries are sold as applying to "every desk on your floor", and this is the
-   * floor. A cosmetic that takes BNTY and then renders nowhere is the worst
+   * floor. A cosmetic that takes GREEN and then renders nowhere is the worst
    * possible version of a cosmetic.
    */
   useEffect(() => {
@@ -276,7 +276,7 @@ export default function IsoFloor({
    * Click-to-build was the obvious first attempt and it is wrong: a click with
    * nothing in hand already means "walk there", so overloading it would turn
    * every step across the room into a decision about whether you meant to move
-   * or to spend a thousand BNTY. Walking to the spot and building there is also
+   * or to spend a thousand GREEN. Walking to the spot and building there is also
    * simply the more truthful version of the interaction — it is how the doors in
    * the Grounds work, and it is the reason to have a room at all.
    */
@@ -492,7 +492,7 @@ export default function IsoFloor({
         exclusive — you are either next to a desk or on bare floor, never both.
       */}
       {nearbyDesk && !buildAt && (
-        <div className={`desk-here${nearbyDesk.node.pendingBnty > 0 ? ' is-ready' : ''}`}>
+        <div className={`desk-here${nearbyDesk.node.pendingGreen > 0 ? ' is-ready' : ''}`}>
           <span className="desk-here-head">
             <b>{nearbyDesk.node.type === 'oil' ? 'Equity Desk' : 'Treasury Desk'}</b>
             <em>L{nearbyDesk.node.level}</em>
@@ -510,13 +510,13 @@ export default function IsoFloor({
           <span className="desk-here-bar">
             <i
               style={{
-                width: `${Math.min(100, (nearbyDesk.node.pendingBnty / Math.max(1, nearbyDesk.node.storageCap)) * 100)}%`,
+                width: `${Math.min(100, (nearbyDesk.node.pendingGreen / Math.max(1, nearbyDesk.node.storageCap)) * 100)}%`,
               }}
             />
           </span>
           <span className="desk-here-amount">
-            {nearbyDesk.node.pendingBnty.toFixed(2)}
-            <small> / {Math.round(nearbyDesk.node.storageCap)} BNTY</small>
+            {nearbyDesk.node.pendingGreen.toFixed(2)}
+            <small> / {Math.round(nearbyDesk.node.storageCap)} GREEN</small>
           </span>
 
           {routeError && <em className="desk-here-error">{routeError}</em>}
@@ -524,12 +524,12 @@ export default function IsoFloor({
           <button
             className="desk-here-go"
             onClick={() => void routeYield()}
-            disabled={routing || nearbyDesk.node.pendingBnty <= 0}
+            disabled={routing || nearbyDesk.node.pendingGreen <= 0}
           >
             {routing
               ? 'Routing…'
-              : nearbyDesk.node.pendingBnty > 0
-                ? `Route ${nearbyDesk.node.pendingBnty.toFixed(2)} BNTY`
+              : nearbyDesk.node.pendingGreen > 0
+                ? `Route ${nearbyDesk.node.pendingGreen.toFixed(2)} GREEN`
                 : 'Nothing to route yet'}
           </button>
 
@@ -541,11 +541,11 @@ export default function IsoFloor({
             <button
               className="desk-here-up"
               onClick={() => void upgradeHere()}
-              disabled={upgrading || (op?.bntyBalance ?? 0) < nearbyDesk.node.nextLevelCost}
+              disabled={upgrading || (op?.greenBalance ?? 0) < nearbyDesk.node.nextLevelCost}
             >
               {upgrading
                 ? 'Building…'
-                : `Level up → L${nearbyDesk.node.level + 1} · ${Math.round(nearbyDesk.node.nextLevelCost).toLocaleString()} BNTY`}
+                : `Level up → L${nearbyDesk.node.level + 1} · ${Math.round(nearbyDesk.node.nextLevelCost).toLocaleString()} GREEN`}
             </button>
           )}
         </div>
@@ -574,7 +574,7 @@ export default function IsoFloor({
 
       <BuildPrompt
         cell={buildAt}
-        balance={op?.bntyBalance ?? 0}
+        balance={op?.greenBalance ?? 0}
         busy={building}
         error={buildError}
         onBuild={build}
@@ -612,7 +612,7 @@ export default function IsoFloor({
                 <b>
                   {machine.label}
                   {machine.cost != null && (
-                    <em className="eg-build-cost">{Math.round(machine.cost).toLocaleString()} BNTY</em>
+                    <em className="eg-build-cost">{Math.round(machine.cost).toLocaleString()} GREEN</em>
                   )}
                 </b>
                 {machine.detail && <small className="eg-build-detail">{machine.detail}</small>}

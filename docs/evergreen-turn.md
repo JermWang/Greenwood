@@ -11,7 +11,7 @@ implemented yet.
 ## 1. The premise
 
 Evergreen presents as a Real-World-Asset yield game. You run a fund, your desks
-produce BNTY, you upgrade them, you compete on a leaderboard. Nothing in the
+produce GREEN, you upgrade them, you compete on a leaderboard. Nothing in the
 first hour suggests otherwise, and nothing in the first hour is a lie.
 
 The turn is that **the yield is power, and the desks are generators.** Evergreen
@@ -120,7 +120,7 @@ zero-risk ganker. Requiring a purchased pack at the door removes them. A hunter
 is now a player betting a pack that they can take yours, which is a fight worth
 having.
 
-Priced in Scrip rather than BNTY on purpose. `spendScrip` already spends **bound**
+Priced in Scrip rather than GREEN on purpose. `spendScrip` already spends **bound**
 Scrip before **bearer**, so a player who earns their Scrip through quests and
 streaks can supply themselves indefinitely without ever touching the token, while
 a player in a hurry can buy in. The risk dial is entirely server-side.
@@ -198,7 +198,7 @@ because it is safe by category, but because it was never in the zone.
   "protected"; they are simply not carryable, so they cannot be in the zone. If a
   player wants to move a fitted instrument they must unfit it first, at which
   point carrying it into the Deep Forest is a choice they made.
-- BNTY balance, open Notes, XP and levels
+- GREEN balance, open Notes, XP and levels
 
 That last distinction is what keeps the rule to one sentence. There is no schedule
 of protected item classes to memorise and no argument about edge cases — if it is

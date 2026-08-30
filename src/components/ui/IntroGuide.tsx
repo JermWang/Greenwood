@@ -69,7 +69,7 @@ export default function IntroGuide() {
    */
   const nodeCount = op?.nodes.length ?? 0;
   const produced = op?.totalProduced ?? 0;
-  const balance = op?.bntyBalance ?? 0;
+  const balance = op?.greenBalance ?? 0;
   useEffect(() => { load(); }, [pathname, nodeCount, produced, balance, load]);
 
   // And when the tab comes back, since a step can be finished in another one.

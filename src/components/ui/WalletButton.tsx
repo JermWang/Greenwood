@@ -31,8 +31,8 @@ export default function WalletButton() {
     address,
     chainId,
     nativeBalance,
-    bntyBalance,
-    bntySymbol,
+    greenBalance,
+    greenSymbol,
     connecting,
     initialized,
     error,
@@ -187,7 +187,7 @@ export default function WalletButton() {
               <div className="mt-1.5 flex items-center justify-between text-xs">
                 <span className="text-steel-400">Token balance</span>
                 <span className="font-mono text-white">
-                  {TOKEN_LIVE ? `${displayBalance(bntyBalance, 3)} ${bntySymbol}` : 'Not live yet'}
+                  {TOKEN_LIVE ? `${displayBalance(greenBalance, 3)} ${greenSymbol}` : 'Not live yet'}
                 </span>
               </div>
             </div>

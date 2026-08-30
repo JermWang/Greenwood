@@ -3,8 +3,8 @@
 //
 // Two things make this different from the other sinks:
 //
-//   1. It can be paid in BNTY or in ETH. A player who has not yet earned much
-//      BNTY can still buy in, and a player sitting on BNTY has somewhere to
+//   1. It can be paid in GREEN or in ETH. A player who has not yet earned much
+//      GREEN can still buy in, and a player sitting on GREEN has somewhere to
 //      spend it that is not another multiplier.
 //   2. The house cut is 2%, split half burned and half returned to the emission
 //      reserve. The treasury keeps none of it.
@@ -34,8 +34,8 @@ export interface CosmeticDef {
   name: string;
   slot: CosmeticSlot;
   description: string;
-  /** Price in BNTY. */
-  bnty: number;
+  /** Price in GREEN. */
+  green: number;
   /** Equivalent price in ETH, for players buying in before they have earned. */
   eth: number;
   /**
@@ -64,7 +64,7 @@ export const COSMETICS: CosmeticDef[] = [
     name: 'House Jacket',
     slot: 'avatar',
     description: 'Standard-issue floor jacket in Robin Neon trim.',
-    bnty: 2_500,
+    green: 2_500,
     eth: 0.002,
     tier: 'standard',
   },
@@ -73,7 +73,7 @@ export const COSMETICS: CosmeticDef[] = [
     name: 'Market Maker',
     slot: 'avatar',
     description: 'Worn by funds that quote both sides. Neon piping, dark shell.',
-    bnty: 12_000,
+    green: 12_000,
     eth: 0.008,
     tier: 'rare',
   },
@@ -82,7 +82,7 @@ export const COSMETICS: CosmeticDef[] = [
     name: 'Brushed Steel Livery',
     slot: 'desk',
     description: 'Replaces painted panels with brushed steel across every desk.',
-    bnty: 6_000,
+    green: 6_000,
     eth: 0.004,
     tier: 'standard',
   },
@@ -91,7 +91,7 @@ export const COSMETICS: CosmeticDef[] = [
     name: 'Neon Trim',
     slot: 'desk',
     description: 'Runs a lit Robin Neon strip along every desk on your floor.',
-    bnty: 18_000,
+    green: 18_000,
     eth: 0.012,
     tier: 'rare',
   },
@@ -100,7 +100,7 @@ export const COSMETICS: CosmeticDef[] = [
     name: 'Marble Plinths',
     slot: 'plinth',
     description: 'Swaps steel plinths for polished marble.',
-    bnty: 9_000,
+    green: 9_000,
     eth: 0.006,
     tier: 'standard',
   },
@@ -109,7 +109,7 @@ export const COSMETICS: CosmeticDef[] = [
     name: "Founder's Plate",
     slot: 'plinth',
     description: 'An engraved plate under every desk. Signature tier.',
-    bnty: 40_000,
+    green: 40_000,
     eth: 0.025,
     tier: 'signature',
   },
@@ -132,7 +132,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'avatar',
     description: 'The uniform. Nobody has ever been fired wearing one.',
     scrip: 1_800,
-    bnty: 3_000,
+    green: 3_000,
     eth: 0.002,
     tier: 'standard',
   },
@@ -142,7 +142,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'avatar',
     description: 'Site issue. The one piece of Robin Neon you are allowed to wear head to toe.',
     scrip: 2_400,
-    bnty: 4_000,
+    green: 4_000,
     eth: 0.003,
     tier: 'standard',
   },
@@ -152,7 +152,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'avatar',
     description: 'Required past the fence. Nobody remembers writing that rule.',
     scrip: 3_200,
-    bnty: 5_000,
+    green: 5_000,
     eth: 0.003,
     tier: 'standard',
   },
@@ -162,7 +162,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'avatar',
     description: 'Gloves that catch the light. Worn by people who did not sell.',
     scrip: 9_000,
-    bnty: 14_000,
+    green: 14_000,
     eth: 0.009,
     tier: 'rare',
   },
@@ -172,7 +172,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'avatar',
     description: 'Somebody has to be on the other side of the trade. Worn ironically. Mostly.',
     scrip: 2_000,
-    bnty: 3_500,
+    green: 3_500,
     eth: 0.002,
     tier: 'standard',
   },
@@ -182,7 +182,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'avatar',
     description: 'A commitment device. Cannot be worn quietly.',
     scrip: 26_000,
-    bnty: 30_000,
+    green: 30_000,
     eth: 0.018,
     tier: 'rare',
   },
@@ -192,7 +192,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'avatar',
     description: 'A pack you did not need, worn with the strap across the chest. Deeply unserious.',
     scrip: 5_500,
-    bnty: 8_000,
+    green: 8_000,
     eth: 0.005,
     tier: 'standard',
   },
@@ -202,7 +202,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'avatar',
     description: 'Charcoal shell, reflective seams. For funds that run when the floor is empty.',
     scrip: 14_000,
-    bnty: 20_000,
+    green: 20_000,
     eth: 0.012,
     tier: 'rare',
   },
@@ -212,7 +212,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'avatar',
     description: 'Plain coat, no markings, one small pin. If you know, you know.',
     scrip: 60_000,
-    bnty: 75_000,
+    green: 75_000,
     eth: 0.045,
     tier: 'signature',
   },
@@ -223,7 +223,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'desk',
     description: 'A live crawl around the base of every desk. Says nothing useful, constantly.',
     scrip: 7_000,
-    bnty: 11_000,
+    green: 11_000,
     eth: 0.007,
     tier: 'standard',
   },
@@ -233,7 +233,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'desk',
     description: 'Lit bars stepping up the desk housing. They only ever go up. That is the joke.',
     scrip: 12_000,
-    bnty: 17_000,
+    green: 17_000,
     eth: 0.011,
     tier: 'rare',
   },
@@ -243,7 +243,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'desk',
     description: 'Mismatched panels, taped conduit, a part number in marker. Honest work.',
     scrip: 4_500,
-    bnty: 7_000,
+    green: 7_000,
     eth: 0.004,
     tier: 'standard',
   },
@@ -253,7 +253,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'desk',
     description: 'Two letters, lit, on the side of every desk. Nobody has explained it to the auditors.',
     scrip: 8_500,
-    bnty: 13_000,
+    green: 13_000,
     eth: 0.008,
     tier: 'standard',
   },
@@ -264,7 +264,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'plinth',
     description: 'Plastic grass under industrial machinery. Somebody in facilities was very proud.',
     scrip: 3_000,
-    bnty: 5_000,
+    green: 5_000,
     eth: 0.003,
     tier: 'standard',
   },
@@ -274,7 +274,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'plinth',
     description: 'It was going to be temporary.',
     scrip: 2_200,
-    bnty: 4_000,
+    green: 4_000,
     eth: 0.002,
     tier: 'standard',
   },
@@ -284,7 +284,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'plinth',
     description: 'Yellow-and-black chevrons around every base. Reads as caution. Is decoration.',
     scrip: 6_500,
-    bnty: 10_000,
+    green: 10_000,
     eth: 0.006,
     tier: 'standard',
   },
@@ -294,7 +294,7 @@ export const COSMETICS: CosmeticDef[] = [
     slot: 'plinth',
     description: 'Poured concrete, cable trench, a warning plate nobody reads. Signature tier.',
     scrip: 45_000,
-    bnty: 55_000,
+    green: 55_000,
     eth: 0.032,
     tier: 'signature',
   },
@@ -316,12 +316,12 @@ export function priceOf(def: CosmeticDef, currency: CosmeticCurrency): number {
     }
     return def.scrip;
   }
-  return def.bnty;
+  return def.green;
 }
 
 /** Currencies this piece is actually sold for, for the shop's buttons. */
 export function currenciesFor(def: CosmeticDef): CosmeticCurrency[] {
-  return def.scrip == null ? ['BNTY', 'ETH'] : ['SCRIP', 'BNTY', 'ETH'];
+  return def.scrip == null ? ['GREEN', 'ETH'] : ['SCRIP', 'GREEN', 'ETH'];
 }
 
 /**
@@ -358,7 +358,7 @@ export function ownedCosmetics(wallet: string): string[] {
  *
  * A listed item is frozen: it cannot be worn and it cannot be refined. Wearing
  * it would leave the seller dressed in something that is about to belong to
- * somebody else, and refining it would spend BNTY improving an item at a price
+ * somebody else, and refining it would spend GREEN improving an item at a price
  * that was already agreed.
  */
 function listingIdFor(wallet: string, key: string): number | null {
@@ -440,7 +440,7 @@ export function cosmeticsCatalog(wallet: string | null) {
     maxLevel: COSMETIC_MAX_LEVEL,
     ranks: UPGRADE_RANKS,
     /**
-     * Whether an ETH checkout can actually complete right now. The BNTY price
+     * Whether an ETH checkout can actually complete right now. The GREEN price
      * settles through the same rail as every other spend; native ETH does not
      * have one yet, so the shop hides that button rather than offering a
      * purchase that fails after the player has committed to it.
@@ -470,11 +470,11 @@ export function cosmeticsCatalog(wallet: string | null) {
         ownedId: row?.id ?? null,
         /** On sale right now, so it can be neither worn nor refined. */
         listed: row?.listed ?? false,
-        ladder: cosmeticUpgradeLadder(def.bnty),
+        ladder: cosmeticUpgradeLadder(def.green),
         /** Null once the item is at the cap, or while it is not owned. */
         nextUpgrade:
           row && level < COSMETIC_MAX_LEVEL
-            ? { level: level + 1, bnty: cosmeticUpgradeCost(def.bnty, level), rank: rankName(level + 1) }
+            ? { level: level + 1, green: cosmeticUpgradeCost(def.green, level), rank: rankName(level + 1) }
             : null,
       };
     }),
@@ -489,7 +489,7 @@ export function cosmeticsCatalog(wallet: string | null) {
  * sale there is no seller to pay. A future player-to-player resale would keep
  * this same fee and send the remainder to the seller instead.
  *
- * ETH purchases cannot burn BNTY directly, so the two halves are recorded as
+ * ETH purchases cannot burn GREEN directly, so the two halves are recorded as
  * earmarked ETH rather than pretending supply moved. Calling it burned when no
  * token was destroyed would put a number on the protocol page that the token
  * contract disagrees with.
@@ -520,27 +520,27 @@ export function buyCosmetic(
     // here — Scrip never entered token supply, so there is nothing to take out
     // of it, and the sink is the spend itself.
     spendScrip(wallet, price, `cosmetic:${key}`);
-  } else if (currency === 'BNTY') {
+  } else if (currency === 'GREEN') {
     // Skipped when the operator already paid on-chain, exactly as every other
     // spend does — otherwise a settled purchase is charged twice.
     if (!opts?.settledOnChain) {
       if (user.osr_balance < price) {
         throw new GameError(
-          `Not enough BNTY: need ${price.toLocaleString()} BNTY (you have ${Math.floor(user.osr_balance).toLocaleString()}).`
+          `Not enough GREEN: need ${price.toLocaleString()} GREEN (you have ${Math.floor(user.osr_balance).toLocaleString()}).`
         );
       }
       const charged = db
         .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
         .run(price, wallet, price);
       if (Number(charged.changes) === 0) {
-        throw new GameError('Not enough BNTY for that cosmetic.');
+        throw new GameError('Not enough GREEN for that cosmetic.');
       }
     }
     bumpProtocolCounter('burned', split.burn);
     bumpProtocolCounter('reserve', split.reserve);
     bumpProtocolCounter('treasury', split.net);
   } else {
-    // ETH revenue, with the two halves earmarked rather than applied to BNTY
+    // ETH revenue, with the two halves earmarked rather than applied to GREEN
     // supply. Converting them is an operational step, not a state transition.
     bumpProtocolCounter('solRevenue', price);
     bumpProtocolCounter('ethBurnFund', split.burn);
@@ -552,7 +552,7 @@ export function buyCosmetic(
      VALUES (?,?,?,?,?)`
   ).run(wallet, key, currency, price, now);
 
-  addLedger(wallet, 'cosmetic_buy', currency === 'BNTY' ? -price : 0, {
+  addLedger(wallet, 'cosmetic_buy', currency === 'GREEN' ? -price : 0, {
     key,
     currency,
     price,
@@ -573,7 +573,7 @@ export function buyCosmetic(
  *
  * Two rules keep it from becoming pay-to-win:
  *
- *   1. BNTY only. The upgrade path exists to remove BNTY from circulation, and
+ *   1. GREEN only. The upgrade path exists to remove GREEN from circulation, and
  *      an ETH route would leave the sink unused by the players with the most of
  *      it. Buying in with ETH stays available; refining does not.
  *   2. No yield effect, at any level. What a level buys is the visible finish
@@ -614,19 +614,19 @@ export function upgradeCosmetic(
     throw new GameError('That cosmetic changed level — request a fresh quote', 409);
   }
 
-  const price = cosmeticUpgradeCost(def.bnty, level);
+  const price = cosmeticUpgradeCost(def.green, level);
   const split = cosmeticFeeSplit(price);
 
   if (!opts?.settledOnChain) {
     if (user.osr_balance < price) {
       throw new GameError(
-        `Not enough BNTY: ${rankName(level + 1)} costs ${price.toLocaleString()} BNTY (you have ${Math.floor(user.osr_balance).toLocaleString()}).`
+        `Not enough GREEN: ${rankName(level + 1)} costs ${price.toLocaleString()} GREEN (you have ${Math.floor(user.osr_balance).toLocaleString()}).`
       );
     }
     const charged = db
       .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
       .run(price, wallet, price);
-    if (Number(charged.changes) === 0) throw new GameError('Not enough BNTY for that upgrade.');
+    if (Number(charged.changes) === 0) throw new GameError('Not enough GREEN for that upgrade.');
   }
 
   // Conditional on the level we priced, so two requests arriving together cannot
@@ -674,7 +674,7 @@ export function upgradeCosmetic(
       level + 1 < COSMETIC_MAX_LEVEL
         ? {
             level: level + 2,
-            bnty: cosmeticUpgradeCost(def.bnty, level + 1),
+            green: cosmeticUpgradeCost(def.green, level + 1),
             rank: rankName(level + 2),
           }
         : null,

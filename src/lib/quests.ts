@@ -6,7 +6,7 @@
 // and it cannot be rerolled by wiping local state or replaying the endpoint.
 //
 // Rewards are XP, not tokens. Quests exist to give a session a shape — three
-// concrete things to go and do — and paying them in BNTY would turn a retention
+// concrete things to go and do — and paying them in GREEN would turn a retention
 // device into an emission tap that the halving schedule never budgeted for.
 
 import { getDb } from './db';
@@ -83,9 +83,9 @@ const BY_KEY = new Map(QUEST_POOL.map((q) => [q.key, q]));
  * curve is one number to tune. At 1:1 the three dailies come to roughly 500
  * Scrip a day, which puts a standard cosmetic about five days of play away —
  * close enough to feel reachable in the first session, far enough that buying
- * Scrip with BNTY is still worth something.
+ * Scrip with GREEN is still worth something.
  *
- * Paid in Scrip and never in BNTY, for the same reason as always: a daily that
+ * Paid in Scrip and never in GREEN, for the same reason as always: a daily that
  * pays the token is an emission tap the halving schedule never budgeted for.
  */
 export const SCRIP_PER_QUEST_XP = 1;

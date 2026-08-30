@@ -31,7 +31,7 @@ const KINDS: Array<{ key: MarketItemKind | 'all'; label: string }> = [
   { key: 'cosmetic', label: 'Wardrobe' },
 ];
 
-const fmtBnty = (n: number) => Math.round(n).toLocaleString();
+const fmtGreen = (n: number) => Math.round(n).toLocaleString();
 
 export default function MarketPage() {
   const { wallet, op, refresh } = useOperation();
@@ -234,7 +234,7 @@ export default function MarketPage() {
                             {s.item_kind}
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-white">
-                            {fmtBnty(s.sold_price_osr)} BNTY
+                            {fmtGreen(s.sold_price_osr)} GREEN
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-[11px] text-steel-500">
                             {new Date(s.sold_at).toLocaleDateString()}
@@ -277,12 +277,12 @@ export default function MarketPage() {
               <StatCard label="Total Nodes" value={String(overview.totalNodes)} />
               <StatCard label="Equity Desks" value={String(overview.totalEquityDesks)} />
               <StatCard label="Treasury Desks" value={String(overview.totalTreasuryDesks)} />
-              <StatCard label="Total BNTY Burned" value={fmtBnty(overview.totalBntyBurned)} />
+              <StatCard label="Total GREEN Burned" value={fmtGreen(overview.totalGreenBurned)} />
               <StatCard
                 label="Protocol ETH Revenue"
                 value={`${overview.totalCreatorRewardsProcessed.toFixed(4)} ETH`}
               />
-              <StatCard label="BNTY Reserve" value={fmtBnty(overview.bntyReserveBalance)} />
+              <StatCard label="GREEN Reserve" value={fmtGreen(overview.greenReserveBalance)} />
             </div>
           </section>
         )}
@@ -312,7 +312,7 @@ function ListingCard({
       : rarity
         ? rarityHex(rarity)
         : '#f5a623';
-  const net = listing.priceBnty - Math.floor((listing.priceBnty * feeBps) / 10_000);
+  const net = listing.priceGreen - Math.floor((listing.priceGreen * feeBps) / 10_000);
 
   return (
     <article className="exchange-lot" style={{ '--lot-accent': accent } as CSSProperties}>
@@ -340,9 +340,9 @@ function ListingCard({
 
       <div className="mt-auto flex items-baseline justify-between">
         <span className="font-mono text-sm font-bold text-amber-400">
-          {fmtBnty(listing.priceBnty)} <small>BNTY</small>
+          {fmtGreen(listing.priceGreen)} <small>GREEN</small>
         </span>
-        <span className="font-mono text-[10px] text-steel-500">seller nets {fmtBnty(net)}</span>
+        <span className="font-mono text-[10px] text-steel-500">seller nets {fmtGreen(net)}</span>
       </div>
       <button
         className={action === 'buy' ? 'btn-primary text-xs' : 'btn-secondary text-xs'}
@@ -533,7 +533,7 @@ function SellPanel({
 
       <section className="panel space-y-2 p-4">
         <label className="stat-label" htmlFor="market-price">
-          Ask price (BNTY)
+          Ask price (GREEN)
         </label>
         <input
           id="market-price"
@@ -549,7 +549,7 @@ function SellPanel({
           {valid && (
             <>
               {' '}
-              You would receive <span className="font-mono text-amber-400">{fmtBnty(net)} BNTY</span>.
+              You would receive <span className="font-mono text-amber-400">{fmtGreen(net)} GREEN</span>.
             </>
           )}
         </p>

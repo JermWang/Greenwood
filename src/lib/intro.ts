@@ -24,7 +24,7 @@
 // chain was written to reach.
 //
 // That is not hypothetical here. Since the token went live the starter grant is
-// zero (starterGrantFor in lib/game), so a real new fund holds no BNTY at all
+// zero (starterGrantFor in lib/game), so a real new fund holds no GREEN at all
 // and the wall arrives at step THREE of ten.
 //
 // So a step whose gate is shut is DEFERRED, not blocking: it keeps its place in
@@ -56,13 +56,13 @@ export interface IntroContext {
   heldAllocations?: number;
   /** Instruments in the Portfolio not currently fitted to a desk. */
   unfittedInstruments?: number;
-  /** Spendable BNTY. */
-  bntyBalance?: number;
-  /** What opening one allocation currently costs, in BNTY. */
+  /** Spendable GREEN. */
+  greenBalance?: number;
+  /** What opening one allocation currently costs, in GREEN. */
   allocationCost?: number;
-  /** The cheapest desk level-up available, in BNTY. */
+  /** The cheapest desk level-up available, in GREEN. */
   deskUpgradeCost?: number;
-  /** The smallest Note the treasury will write, in BNTY. */
+  /** The smallest Note the treasury will write, in GREEN. */
   noteMinimum?: number;
   /** Listings by OTHER players that this player could actually pay for. */
   affordableListings?: number;
@@ -177,7 +177,7 @@ export const INTRO_STEPS: IntroStep[] = [
      * Two conditions, and the player directly controls neither. An allocation
      * has to be FOUND — desks turn them up as they run, and the whole protocol
      * only finds CRATES_FOUND_PER_DAY of them a day — and opening one costs
-     * CRATE_OPEN_BNTY, which is ten times what the starter grant used to be and
+     * CRATE_OPEN_GREEN, which is ten times what the starter grant used to be and
      * infinitely more than the zero it is now.
      *
      * This is the step that made parking necessary. Ordered third of ten, it
@@ -186,9 +186,9 @@ export const INTRO_STEPS: IntroStep[] = [
      */
     canAct: (ctx) =>
       (ctx.heldAllocations ?? 1) > 0 &&
-      (ctx.bntyBalance ?? Infinity) >= (ctx.allocationCost ?? 0),
+      (ctx.greenBalance ?? Infinity) >= (ctx.allocationCost ?? 0),
     waiting:
-      'No allocation to open yet — either none found, or not enough BNTY to cover one. Desks find them while they run, so keep yours producing and this comes back on its own.',
+      'No allocation to open yet — either none found, or not enough GREEN to cover one. Desks find them while they run, so keep yours producing and this comes back on its own.',
   },
   {
     key: 'intro_equip',
@@ -233,23 +233,23 @@ export const INTRO_STEPS: IntroStep[] = [
     // Gated on the CHEAPEST level-up on the floor, not the dearest: the step
     // only asks for one desk to reach level 2, so pricing it off the most
     // expensive desk would park it while an affordable upgrade sat right there.
-    canAct: (ctx) => (ctx.bntyBalance ?? Infinity) >= (ctx.deskUpgradeCost ?? 0),
+    canAct: (ctx) => (ctx.greenBalance ?? Infinity) >= (ctx.deskUpgradeCost ?? 0),
     waiting:
-      'Not enough BNTY for a level-up yet. Your desk is earning it while you read this — route the yield when it builds and this comes straight back.',
+      'Not enough GREEN for a level-up yet. Your desk is earning it while you read this — route the yield when it builds and this comes straight back.',
   },
   {
     key: 'intro_note',
     label: 'Open a Fixed Income Note',
-    why: 'A Note locks BNTY for a fixed term at a published rate. The long end pays more than six times the short one, because the point is taking float out of circulation.',
+    why: 'A Note locks GREEN for a fixed term at a published rate. The long end pays more than six times the short one, because the point is taking float out of circulation.',
     action: 'open_note',
     target: 1,
     track: 'treasury',
     xp: 300,
     scrip: 400,
     href: '/app/stake',
-    canAct: (ctx) => (ctx.bntyBalance ?? Infinity) >= (ctx.noteMinimum ?? 0),
+    canAct: (ctx) => (ctx.greenBalance ?? Infinity) >= (ctx.noteMinimum ?? 0),
     waiting:
-      'A Note needs at least the treasury minimum in BNTY and you are short of it. Keep the desk running and route what it makes — this returns as soon as you can cover it.',
+      'A Note needs at least the treasury minimum in GREEN and you are short of it. Keep the desk running and route what it makes — this returns as soon as you can cover it.',
   },
   {
     key: 'intro_market',

@@ -22,7 +22,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/app/ops': 'Analytics',
   '/app/market': 'Exchange',
   '/app/vault': 'The Vault',
-  '/app/tokenomics': 'BNTY Model',
+  '/app/tokenomics': 'GREEN Model',
   '/app/leaderboard': 'Leaderboard',
   '/app/profile': 'Fund Profile',
   '/app/docs': 'Handbook',
@@ -34,17 +34,17 @@ function routeTitle(pathname: string) {
   return Object.entries(ROUTE_TITLES).find(([path]) => path !== '/app' && pathname.startsWith(path))?.[1] ?? 'Evergreen';
 }
 
-function BntyBalanceModule() {
-  const bntyBalance = useEvmWallet((state) => state.bntyBalance);
-  const symbol = useEvmWallet((state) => state.bntySymbol);
+function GreenBalanceModule() {
+  const greenBalance = useEvmWallet((state) => state.greenBalance);
+  const symbol = useEvmWallet((state) => state.greenSymbol);
   return (
     <div className="eg-balance-module">
       <span className="eg-balance-glyph"><Lightning size={14} weight="fill" /></span>
       <span className="hidden sm:block">
-        <span className="block font-mono text-[8px] uppercase tracking-[.18em] text-emerald-100/45">Bounty reserve</span>
+        <span className="block font-mono text-[8px] uppercase tracking-[.18em] text-emerald-100/45">Green reserve</span>
         <span className="mt-0.5 block font-mono text-[12px] font-bold text-white">
-          {TOKEN_LIVE && bntyBalance != null ? Number(bntyBalance).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}{' '}
-          <span className="text-lime-300">{TOKEN_LIVE ? symbol : 'BNTY'}</span>
+          {TOKEN_LIVE && greenBalance != null ? Number(greenBalance).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}{' '}
+          <span className="text-lime-300">{TOKEN_LIVE ? symbol : 'GREEN'}</span>
         </span>
       </span>
     </div>
@@ -84,7 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 standing between a curious person and this game IS the connect
                 step, so the alternative belongs in the same place. */}
             <DemoBanner />
-            <BntyBalanceModule />
+            <GreenBalanceModule />
             <SoundToggle />
             <DemoButton />
             <WalletButton />

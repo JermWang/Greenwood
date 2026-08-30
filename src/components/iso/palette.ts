@@ -104,7 +104,7 @@ export interface IsoMachine {
    * know what either was worth, without leaving and going to look it up.
    */
   blurb?: string;
-  /** BNTY to deploy or take to the next level. Undefined when it is maxed. */
+  /** GREEN to deploy or take to the next level. Undefined when it is maxed. */
   cost?: number;
   /** Current standing — level, rate, multiplier. Whatever ranks it. */
   detail?: string;

@@ -22,7 +22,7 @@ import { AURA_BANDS, auraRange } from '@/lib/aura';
 import {
   COMPOUND_FEE_ETH,
   CRATE_FEE_ETH,
-  CRATE_OPEN_BNTY,
+  CRATE_OPEN_GREEN,
   EXPEDITE_FEE_ETH,
   MINT_FEE_ETH,
   RARITY_MULT,
@@ -72,16 +72,16 @@ const WOOD_LADDER: Array<{ name: string; tier: number; where: string }> = [
 // Milestones are computed from the halving period rather than written out, so
 // retuning the schedule cannot leave the guide quoting the old curve.
 const emittedByDay = (day: number) => 1 - Math.pow(0.5, day / HALVING_PERIOD_DAYS);
-const EMISSION_CURVE = `E(t) = ${GENESIS_RATE_PER_SEC.toFixed(1)} BNTY/sec × 0.5 ^ (t / ${HALVING_PERIOD_DAYS}d)
+const EMISSION_CURVE = `E(t) = ${GENESIS_RATE_PER_SEC.toFixed(1)} GREEN/sec × 0.5 ^ (t / ${HALVING_PERIOD_DAYS}d)
 
-Day ${String(0).padStart(3)}  : ${DAY_ONE_EMISSION_LABEL} BNTY emitted
+Day ${String(0).padStart(3)}  : ${DAY_ONE_EMISSION_LABEL} GREEN emitted
 ${[1, 2, 4].
   map((c) => {
     const day = Math.round(c * HALVING_PERIOD_DAYS);
     return `Day ${String(day).padStart(3)}  : ${Math.round(emittedByDay(day) * 100)}% of lifetime emitted`;
   })
   .join('\n')}
-Lifetime total: ${LIFETIME_EMISSION_LABEL} BNTY — the whole Emission Reserve,
+Lifetime total: ${LIFETIME_EMISSION_LABEL} GREEN — the whole Emission Reserve,
 ${RESERVE_PCT_LABEL} of the ${SUPPLY_LABEL} fixed supply`;
 
 const USER_RATE = `user_rate = min(your_gp / network_gp, 30%) × E(t) × welcome_boost
@@ -94,11 +94,11 @@ Two key mechanics:
 
 const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   {
-    q: 'Is BNTY a financial product or investment?',
+    q: 'Is GREEN a financial product or investment?',
     a: (
       <p>
         No. Evergreen is an on-chain game. Rewards are not guaranteed — they depend on the halving
-        emission schedule, reserve health, and the BNTY token&rsquo;s market value. Nothing here is
+        emission schedule, reserve health, and the GREEN token&rsquo;s market value. Nothing here is
         investment advice; treat any token interaction as risk capital.
       </p>
     ),
@@ -128,13 +128,13 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     q: 'Where does the reward money come from?',
     a: (
       <p>
-        BNTY launches on Flap: the full <strong className="text-white">{SUPPLY_LABEL}</strong> supply
-        is minted to the bonding curve and the contract has no mint function, so no new BNTY can ever
-        be created. Of that, <strong className="text-white">{EMISSION_RESERVE_LABEL} BNTY</strong> (
+        GREEN launches on Flap: the full <strong className="text-white">{SUPPLY_LABEL}</strong> supply
+        is minted to the bonding curve and the contract has no mint function, so no new GREEN can ever
+        be created. Of that, <strong className="text-white">{EMISSION_RESERVE_LABEL} GREEN</strong> (
         {RESERVE_PCT_LABEL}) is acquired at genesis and held as the Emission Reserve, which funds
         every reward the protocol will ever pay. The other {PUBLIC_FLOAT_LABEL} ({FLOAT_PCT_LABEL})
-        is public float. Each second, the halving curve determines how much BNTY flows out to users
-        proportional to their yield power share, and the reserve split on in-game spends recycles BNTY
+        is public float. Each second, the halving curve determines how much GREEN flows out to users
+        proportional to their yield power share, and the reserve split on in-game spends recycles GREEN
         back into the pool. Protocol ETH revenue (ERC-20 transfer tax (2%)
         + DEX LP fees (2%)) goes to a separate treasury and funds infrastructure/ops, not user
         rewards. The{' '}
@@ -202,28 +202,28 @@ export default function DocsPage() {
           </ul>
         </nav>
 
-        {/* 1. What is BNTY? */}
+        {/* 1. What is GREEN? */}
         <Section id="overview" title="1. What is Evergreen?">
           <p>
             <strong className="text-white">Evergreen — Real-World Yield</strong> is a gamified,
             virtual real-world-asset (RWA) yield game on Robinhood Chain — an EVM L2 settling on Ethereum. You
             burn{' '}
-            <strong className="text-white">$BNTY</strong> tokens to open virtual{' '}
+            <strong className="text-white">$GREEN</strong> tokens to open virtual{' '}
             <strong className="text-white">Equity Desks</strong> and{' '}
             <strong className="text-white">Treasury Desks</strong> on a Machine Room floor you walk
             around. Those desks earn rewards over time, paid out from a {EMISSION_RESERVE_LABEL}{' '}
-            $BNTY Emission Reserve released via a Bitcoin-style halving curve. Beyond the floor
+            $GREEN Emission Reserve released via a Bitcoin-style halving curve. Beyond the floor
             there is a settlement, and beyond that a treeline.
           </p>
           <p>
             Think of it like an incremental game where every action is on-chain: your Equity and
-            Treasury Desks are real state, your burns reduce the $BNTY supply, and your rewards settle to
+            Treasury Desks are real state, your burns reduce the $GREEN supply, and your rewards settle to
             your wallet.
           </p>
           <p>
             Both <strong className="text-white">Equity Desks</strong> and{' '}
             <strong className="text-white">Treasury Desks</strong> accrue{' '}
-            <strong className="text-white">$BNTY</strong> per second. Progression is wallet-wide: you
+            <strong className="text-white">$GREEN</strong> per second. Progression is wallet-wide: you
             raise your <strong className="text-white">Portfolio Level</strong> to unlock more desk
             slots, more daily allocations, and higher rarity pools. Treasury Desks earn bonus slots
             at higher levels; Equity Desks are claim-only in v1.
@@ -244,7 +244,7 @@ export default function DocsPage() {
             </Step>
             <Step n={2} title="Open your first desk">
               Tap <strong className="text-white">Deploy</strong>. Pick an Equity or Treasury Desk,
-              burn the required $BNTY + small ETH fee, and it appears in your portfolio.
+              burn the required $GREEN + small ETH fee, and it appears in your portfolio.
             </Step>
             <Step n={3} title="Let it earn">
               Desks accrue rewards every second based on your instruments&rsquo; yield power and your
@@ -273,9 +273,9 @@ export default function DocsPage() {
               tagline="The higher-yielding desk family, and the one most instrument sets are built around."
               bullets={[
                 <>
-                  Earns <strong className="text-white">$BNTY</strong> via the halving emission
+                  Earns <strong className="text-white">$GREEN</strong> via the halving emission
                 </>,
-                <>Funded by the {EMISSION_RESERVE_LABEL} BNTY Emission Reserve</>,
+                <>Funded by the {EMISSION_RESERVE_LABEL} GREEN Emission Reserve</>,
                 <>
                   <strong className="text-white">Claim-only</strong> in v1 — direct reinvesting is a
                   Treasury Desk feature
@@ -289,9 +289,9 @@ export default function DocsPage() {
               tagline="Tokenized Treasuries and bonds — steady, reinvestable fixed-income yield."
               bullets={[
                 <>
-                  Earns <strong className="text-white">$BNTY</strong>
+                  Earns <strong className="text-white">$GREEN</strong>
                 </>,
-                <>Funded by the BNTY reserve wallet</>,
+                <>Funded by the GREEN reserve wallet</>,
                 <>
                   <strong className="text-white">Bonus desk slots</strong> at Portfolio L5/L7/L9
                   (+2/+3/+4 Treasury Desks)
@@ -349,7 +349,7 @@ export default function DocsPage() {
           <p>
             Each desk has <strong className="text-white">4 instrument slots</strong>. Instruments are
             earned by opening <strong className="text-white">Allocations</strong> —{' '}
-            <strong className="text-white">{CRATE_OPEN_BNTY.toLocaleString()} $BNTY</strong> each (split
+            <strong className="text-white">{CRATE_OPEN_GREEN.toLocaleString()} $GREEN</strong> each (split
             burn / reserve / treasury), plus a flat{' '}
             {CRATE_FEE_ETH} ETH protocol fee. Your daily allocation limit scales with Portfolio Level — from 3/day
             at L1 up to 20/day at L10, per desk type. Every drop has a rarity tier that multiplies
@@ -507,9 +507,9 @@ export default function DocsPage() {
         <Section id="compounding" title="7. Portfolio Levels">
           <p>
             Your <strong className="text-white">Portfolio Level</strong> (L1 → L10) is your
-            wallet-wide progression track. Each upgrade costs $BNTY — from{' '}
-            <strong className="text-white">1,000 BNTY</strong> for L2 up to{' '}
-            <strong className="text-white">120,000 BNTY</strong> for L10, split 50/30/20 burn /
+            wallet-wide progression track. Each upgrade costs $GREEN — from{' '}
+            <strong className="text-white">1,000 GREEN</strong> for L2 up to{' '}
+            <strong className="text-white">120,000 GREEN</strong> for L10, split 50/30/20 burn /
             reserve / treasury — plus a flat {COMPOUND_FEE_ETH} ETH fee. Each level unlocks:
           </p>
           <ul className="list-disc space-y-1 pl-5">
@@ -534,7 +534,7 @@ export default function DocsPage() {
           <p>
             See the full level table on the{' '}
             <Link href="/app/tokenomics" className="text-lime-300 hover:underline">
-              BNTY Model
+              GREEN Model
             </Link>{' '}
             page.
           </p>
@@ -621,7 +621,7 @@ export default function DocsPage() {
           <p className="text-xs text-steel-500">
             The bench makes axes, crossbows, bolts, and{' '}
             <strong className="text-white">Desk Frames</strong>. From desk level 5 an upgrade needs
-            frames as well as BNTY — one per four levels, rounded up — so it is worth cutting timber
+            frames as well as GREEN — one per four levels, rounded up — so it is worth cutting timber
             before you need it rather than after.
           </p>
         </Section>
@@ -629,13 +629,13 @@ export default function DocsPage() {
         {/* 10. Fees */}
         <Section id="fees" title="10. Fees">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <FeeCard label="Mint burn" value="70%" caption="of BNTY cost to burn wallet" />
-            <FeeCard label="Mint treasury" value="30%" caption="of BNTY cost to treasury" />
+            <FeeCard label="Mint burn" value="70%" caption="of GREEN cost to burn wallet" />
+            <FeeCard label="Mint treasury" value="30%" caption="of GREEN cost to treasury" />
             <FeeCard label="Mint ETH fee" value={`${MINT_FEE_ETH} ETH`} caption="flat, per mint" />
             <FeeCard label="Claim fee" value="2%" caption="retained in reserve · 1h cooldown" />
             <FeeCard
               label="Portfolio upgrade"
-              value="1k → 120k BNTY"
+              value="1k → 120k GREEN"
               caption={`L2→L10 · +${COMPOUND_FEE_ETH} ETH · 12h cooldown`}
             />
             <FeeCard
@@ -645,7 +645,7 @@ export default function DocsPage() {
             />
             <FeeCard
               label="Allocation cost"
-              value={`${CRATE_OPEN_BNTY.toLocaleString()} BNTY`}
+              value={`${CRATE_OPEN_GREEN.toLocaleString()} GREEN`}
               caption={`flat, per allocation · +${CRATE_FEE_ETH} ETH fee`}
             />
             <FeeCard
@@ -655,10 +655,10 @@ export default function DocsPage() {
             />
           </div>
           <p className="text-xs text-steel-500">
-            Mints split 70/30 burn/treasury on the BNTY leg; portfolio upgrades and allocations split
+            Mints split 70/30 burn/treasury on the GREEN leg; portfolio upgrades and allocations split
             50/30/20 burn/reserve/treasury. See{' '}
             <Link href="/app/tokenomics" className="text-lime-300 hover:underline">
-              BNTY Model
+              GREEN Model
             </Link>{' '}
             for the live numbers straight from the backend.
           </p>
@@ -667,9 +667,9 @@ export default function DocsPage() {
         {/* 11. Emission */}
         <Section id="emission" title="11. How emission works">
           <p>
-            Evergreen uses a <strong className="text-white">halving emission curve</strong>. Global BNTY
+            Evergreen uses a <strong className="text-white">halving emission curve</strong>. Global GREEN
             issuance starts at{' '}
-            <strong className="text-white">{GENESIS_RATE_PER_SEC.toFixed(1)} BNTY/sec</strong> at
+            <strong className="text-white">{GENESIS_RATE_PER_SEC.toFixed(1)} GREEN/sec</strong> at
             genesis and halves every <strong className="text-white">{HALVING_PERIOD_LABEL}</strong>{' '}
             until the
             Emission Reserve is fully paid out.
@@ -690,7 +690,7 @@ export default function DocsPage() {
           <p>
             <strong className="text-white">Why does emission halve?</strong> To front-load
             excitement during the first 2 weeks while still leaving meaningful yields for
-            latecomers. By day 14, 75% of lifetime BNTY has been distributed — but latecomers with
+            latecomers. By day 14, 75% of lifetime GREEN has been distributed — but latecomers with
             the welcome boost still earn well for their first 72 hours.
           </p>
           <p>
@@ -723,7 +723,7 @@ export default function DocsPage() {
           <p>
             <strong className="text-steel-300">Continue through the Evergreen terminal:</strong>{' '}
             <Link href="/app/tokenomics" className="text-lime-300 hover:underline">
-              BNTY Network Model
+              GREEN Network Model
             </Link>{' '}
             has live numbers and formulas,{' '}
             <Link href="/app/vault" className="text-lime-300 hover:underline">

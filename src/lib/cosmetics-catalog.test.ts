@@ -23,20 +23,20 @@ describe('the catalogue is internally consistent', () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it('prices every piece in BNTY and ETH', () => {
+  it('prices every piece in GREEN and ETH', () => {
     for (const def of COSMETICS) {
-      expect(def.bnty, def.key).toBeGreaterThan(0);
+      expect(def.green, def.key).toBeGreaterThan(0);
       expect(def.eth, def.key).toBeGreaterThan(0);
     }
   });
 
   it('never sells a piece for less Scrip than it is worth in effort', () => {
-    // Scrip is earned, BNTY is bought. A Scrip price above the BNTY price would
+    // Scrip is earned, GREEN is bought. A Scrip price above the GREEN price would
     // make the earned route strictly worse than the paid one, which inverts the
     // reason the Scrip wardrobe exists.
     for (const def of COSMETICS) {
       if (def.scrip == null) continue;
-      expect(def.scrip, `${def.key} costs more Scrip than BNTY`).toBeLessThanOrEqual(def.bnty);
+      expect(def.scrip, `${def.key} costs more Scrip than GREEN`).toBeLessThanOrEqual(def.green);
     }
   });
 

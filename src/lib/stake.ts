@@ -1,11 +1,11 @@
-// Fixed income notes — the BNTY staking vault.
+// Fixed income notes — the GREEN staking vault.
 //
-// An operator locks BNTY for a fixed term and is paid a rate published at the
+// An operator locks GREEN for a fixed term and is paid a rate published at the
 // moment they commit. The interest comes out of the emission reserve, the same
 // pool that funds production rewards, which is what makes solvency the central
 // concern of this module rather than an afterthought.
 //
-// The rule that shapes everything here: the protocol never promises BNTY it does
+// The rule that shapes everything here: the protocol never promises GREEN it does
 // not already hold. A contract's full term interest is reserved when it opens,
 // not when it closes, and a new contract is refused if the reserve cannot cover
 // it alongside everything already committed. A vault that accepts deposits it
@@ -20,7 +20,7 @@ import {
   TOTAL_SUPPLY,
   STAKE_EARLY_EXIT_PENALTY_BPS,
   STAKE_MAX_OPEN,
-  STAKE_MIN_BNTY,
+  STAKE_MIN_GREEN,
   STAKE_TERMS,
   stakeTermInterest,
   type StakeTerm,
@@ -75,7 +75,7 @@ export function committedInterest(): number {
 }
 
 /**
- * BNTY in the emission reserve right now.
+ * GREEN in the emission reserve right now.
  *
  * Mirrors protocolOverview's figure exactly: the reserve is what was pre-minted
  * for rewards, less everything emitted, plus the reserve share of in-game
@@ -177,7 +177,7 @@ export function stakeTerms() {
        * interest on it has to be reservable at the moment of opening.
        *
        * Clamped to total supply: at a short term and a low rate the reserve can
-       * arithmetically back interest on several times more BNTY than will ever
+       * arithmetically back interest on several times more GREEN than will ever
        * exist, and quoting that as available capacity would be a number nobody
        * could act on.
        */
@@ -186,7 +186,7 @@ export function stakeTerms() {
         Math.floor(available / ((term.aprBps / 10_000) * (term.days / 365)))
       ),
     })),
-    minPrincipal: STAKE_MIN_BNTY,
+    minPrincipal: STAKE_MIN_GREEN,
     maxOpen: STAKE_MAX_OPEN,
     earlyExitPenaltyBps: STAKE_EARLY_EXIT_PENALTY_BPS,
     reserveBalance: reserveBalance(),
@@ -204,14 +204,14 @@ export function stakeTerms() {
  */
 export function openStake(
   wallet: string,
-  amountBnty: number,
+  amountGreen: number,
   termDays: number,
   opts: { settledOnChain?: boolean } = {}
 ) {
   const term = findTerm(termDays);
-  const principal = Math.floor(amountBnty);
-  if (!Number.isFinite(principal) || principal < STAKE_MIN_BNTY) {
-    throw new GameError(`minimum Note is ${STAKE_MIN_BNTY.toLocaleString()} BNTY`, 400);
+  const principal = Math.floor(amountGreen);
+  if (!Number.isFinite(principal) || principal < STAKE_MIN_GREEN) {
+    throw new GameError(`minimum Note is ${STAKE_MIN_GREEN.toLocaleString()} GREEN`, 400);
   }
 
   const db = getDb();
@@ -226,7 +226,7 @@ export function openStake(
 
   if (!opts.settledOnChain && user.osr_balance < principal) {
     throw new GameError(
-      `Not enough BNTY: need ${principal.toLocaleString()} (you have ${Math.floor(user.osr_balance).toLocaleString()}).`,
+      `Not enough GREEN: need ${principal.toLocaleString()} (you have ${Math.floor(user.osr_balance).toLocaleString()}).`,
       400
     );
   }
@@ -251,7 +251,7 @@ export function openStake(
       const debited = db
         .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
         .run(principal, wallet, principal);
-      if (debited.changes === 0) throw new GameError('Not enough BNTY to open that Note.', 400);
+      if (debited.changes === 0) throw new GameError('Not enough GREEN to open that Note.', 400);
     }
     const inserted = db
       .prepare(

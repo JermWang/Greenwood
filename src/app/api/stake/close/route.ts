@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { GameError } from '@/lib/game';
-import { settlesOnChain, payoutBnty, recordPayout } from '@/lib/settlement';
+import { settlesOnChain, payoutGreen, recordPayout } from '@/lib/settlement';
 import { closeStake, stakePositions } from '@/lib/stake';
 import { requireNoActiveDeploy } from '@/lib/deploy-guard';
 
@@ -40,29 +40,29 @@ export async function POST(request: Request) {
 
     const result = closeStake(wallet, stakeId, { settledOnChain: true });
 
-    let payout: Awaited<ReturnType<typeof payoutBnty>>;
+    let payout: Awaited<ReturnType<typeof payoutGreen>>;
     try {
-      payout = await payoutBnty(wallet, result.payout);
+      payout = await payoutGreen(wallet, result.payout);
     } catch (payoutError) {
       // Every failure past closeStake owes the operator: the contract is already
       // closed and the principal already left their position. That includes the
-      // 400 payoutBnty raises when gas has grown to swallow the payout, which
+      // 400 payoutGreen raises when gas has grown to swallow the payout, which
       // used to rethrow untouched and leave no record of the debt at all.
       recordPayout(wallet, result.payout, null, { stakeId, error: String(payoutError), result });
       console.error('[stake/close] payout failed after the contract was closed', payoutError);
       throw new GameError(
-        `The Note closed but the transfer did not go through. ${Math.round(result.payout).toLocaleString()} BNTY is recorded as owed to you.`,
+        `The Note closed but the transfer did not go through. ${Math.round(result.payout).toLocaleString()} GREEN is recorded as owed to you.`,
         502
       );
     }
 
-    recordPayout(wallet, payout.sentBnty, payout.hash, { stakeId, ...result });
+    recordPayout(wallet, payout.sentGreen, payout.hash, { stakeId, ...result });
     return NextResponse.json({
       settled: true,
       result,
       txHash: payout.hash,
-      net: payout.sentBnty,
-      gasBnty: payout.gasBnty,
+      net: payout.sentGreen,
+      gasGreen: payout.gasGreen,
       ...stakePositions(wallet),
     });
   } catch (e) {

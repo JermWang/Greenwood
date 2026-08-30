@@ -389,7 +389,7 @@ export default function GroundsPage() {
       {/*
         gl flags, in order of what they buy:
 
-        powerPreference asks the browser for the discrete BNTY on dual-BNTY
+        powerPreference asks the browser for the discrete GREEN on dual-GREEN
         laptops — without it a machine with a real card can quietly render this
         on integrated graphics.
 

@@ -99,7 +99,7 @@ describe('what the protocol owes', () => {
    * is not a wrong number on a dashboard, it is real operators stopping being
    * paid.
    *
-   * The amounts here are the real ones: a demo starts on DEMO_BNTY (50,000), the
+   * The amounts here are the real ones: a demo starts on DEMO_GREEN (50,000), the
    * cookie that mints one is not a credential anybody has to earn, and nothing
    * stops a person opening sessions in a loop. Two of them alone would swamp the
    * operator beside them.

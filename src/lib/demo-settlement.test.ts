@@ -10,12 +10,12 @@
 //
 //   SPENDS   every priced action returned payment instructions to an account
 //            with no wallet behind it. A demo player walked to the Machine Room
-//            and was asked to send 1,000 BNTY to open their first desk, which
+//            and was asked to send 1,000 GREEN to open their first desk, which
 //            they cannot do and never could. The demo — the whole no-wallet
 //            funnel, and the button on the landing page — became a dead end.
 //
 //   PAYOUTS  quieter and more expensive. `claim` consumed the accrual and then
-//            sent real BNTY from the treasury to `0xfacade00…`, an address
+//            sent real GREEN from the treasury to `0xfacade00…`, an address
 //            nobody controls and nobody can ever spend from. An empty treasury
 //            merely fails; a funded one loses the tokens, once per claim, for
 //            as long as nobody looks.

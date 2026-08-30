@@ -14,7 +14,7 @@ const payment = (overrides: Partial<PaymentRequest> = {}): PaymentRequest => ({
   token: TOKEN,
   to: TREASURY,
   amount: '1250000',
-  bntyAmount: 1.25,
+  greenAmount: 1.25,
   decimals: 6,
   nonce: '00112233445566778899aabbccddeeff',
   deadline: NOW + 900,
@@ -41,7 +41,7 @@ describe('payment quote safety', () => {
   });
 
   test('rejects a display amount that does not match calldata base units', () => {
-    expect(() => validatePaymentRequest(payment({ bntyAmount: 12.5 }), NOW, TOKEN, TREASURY)).toThrow(/base units/i);
+    expect(() => validatePaymentRequest(payment({ greenAmount: 12.5 }), NOW, TOKEN, TREASURY)).toThrow(/base units/i);
   });
 });
 

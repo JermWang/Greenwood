@@ -23,11 +23,11 @@
 // This is NOT sybil defence. One wallet is limited; a thousand wallets are a
 // thousand limits.
 //
-// The obvious sybil worry — 1,000 free BNTY per address against a desk costing
+// The obvious sybil worry — 1,000 free GREEN per address against a desk costing
 // exactly 1,000 — turned out not to be one, and the reasoning is worth keeping
 // because it is not obvious. Once the token is live, spends are real ERC-20
 // transfers and claims pay out real tokens, so the mirrored osr_balance is
-// neither debited nor credited: free BNTY buys nothing and withdraws nothing.
+// neither debited nor credited: free GREEN buys nothing and withdraws nothing.
 // starterGrantFor in lib/game now scopes the grant to the demo and the
 // pre-token period, which is where it was always meant to apply.
 //

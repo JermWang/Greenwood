@@ -4,7 +4,7 @@ import { GameError, getOrCreateUser, inventory, userOperation } from '@/lib/game
 import { introState, type IntroContext } from '@/lib/intro';
 import { progressionOf } from '@/lib/progression';
 import { unopenedCrates } from '@/lib/crates';
-import { crateCostBnty, STAKE_MIN_BNTY } from '@/lib/economy';
+import { crateCostGreen, STAKE_MIN_GREEN } from '@/lib/economy';
 import { nodeUpgradeCost } from '@/lib/capital';
 import { getOsrUsdPrice } from '@/lib/price';
 import { openListings } from '@/lib/market';
@@ -38,18 +38,18 @@ function introContextFor(wallet: string): IntroContext {
     // osr_balance, not a renamed field: the column kept its name through the
     // rebrand on purpose (CLAUDE.md), because it is what real payouts compute
     // from and it gets renamed after backups exist, not before.
-    bntyBalance: balance,
-    allocationCost: crateCostBnty(getOsrUsdPrice().usdPerBnty),
+    greenBalance: balance,
+    allocationCost: crateCostGreen(getOsrUsdPrice().usdPerGreen),
     // The CHEAPEST level-up on the floor. The step only asks for one desk to
     // reach level 2, so quoting the dearest would park it while an affordable
     // upgrade was sitting right there. No desks yet means nothing to pay for,
     // and the step is unreachable for other reasons anyway.
     deskUpgradeCost: upgrades.length ? Math.min(...upgrades) : 0,
-    noteMinimum: STAKE_MIN_BNTY,
+    noteMinimum: STAKE_MIN_GREEN,
     // Excludes the player's own listings. Buying from yourself is not a trade,
     // and a market containing nothing but your own shelf should read as empty.
     affordableListings: openListings().filter(
-      (listing) => listing.seller !== wallet && listing.priceBnty <= balance
+      (listing) => listing.seller !== wallet && listing.priceGreen <= balance
     ).length,
   };
 }

@@ -25,6 +25,10 @@
 // anything urgent still wins. What changed is what "nothing urgent" leads to.
 
 import type { UserOperation, InventoryItem, RegionView } from './api-client';
+import { NODE_FAMILIES } from './economy';
+
+/** The cheapest desk on offer, so the opening line quotes a price that exists. */
+const cheapestDesk = Math.min(...NODE_FAMILIES.map((f) => f.burnCostGreen));
 
 /** The cheapest desk (a Treasury Desk) — the floor for "can I afford another desk". */
 const NODE_MIN_COST = 750;
@@ -46,7 +50,7 @@ export interface NextStepView {
   action?: NextAction;
 }
 
-function bnty(n: number): string {
+function green(n: number): string {
   if (!Number.isFinite(n)) return '—';
   if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
@@ -143,7 +147,7 @@ export function decideNextStep(
   regions?: RegionView[]
 ): NextStepView {
   const nodes = op.nodes ?? [];
-  const balance = op.bntyBalance ?? 0;
+  const balance = op.greenBalance ?? 0;
   const pending = Object.values(op.pending ?? {}).reduce((a, b) => a + b, 0);
   const families = new Set(nodes.map((n) => n.type));
 
@@ -154,8 +158,18 @@ export function decideNextStep(
       id: 'mint-first',
       tag: 'Step 1 · Open',
       title: 'Open your first desk',
-      body:
-        'Your 1,000 BNTY starter grant covers one desk. Opening it also starts a 72-hour 8× yield boost that only ever runs once — the sooner you build, the more you earn.',
+      // Says what a desk COSTS, not what the player was given.
+      //
+      // It used to promise a 1,000 GREEN starter grant, and that grant is only
+      // paid before the token is live: starterGrantFor returns 0 once a real
+      // contract is configured, because players are expected to acquire GREEN
+      // themselves. So on every live account the first thing the game said was
+      // a number the player could check and find missing, which is the worst
+      // possible sentence to open a token game with.
+      //
+      // Derived from NODE_FAMILIES rather than typed out, so it cannot drift
+      // away from the price actually charged.
+      body: `A desk costs from ${cheapestDesk.toLocaleString()} GREEN. Opening your first one also starts a 72-hour 8× yield boost that only ever runs once — the sooner you build, the more you earn.`,
       tone: 'act',
       action: { kind: 'mint', label: 'Open a desk' },
     };
@@ -166,11 +180,11 @@ export function decideNextStep(
     return {
       id: 'claim',
       tag: 'Step 2 · Route yield',
-      title: `Route your ${bnty(pending)} BNTY`,
+      title: `Route your ${green(pending)} GREEN`,
       body:
-        'Your desks have produced BNTY. Route it to your balance so you can spend it — and so your desks, which stop earning once full, keep producing.',
+        'Your desks have produced GREEN. Route it to your balance so you can spend it — and so your desks, which stop earning once full, keep producing.',
       tone: 'act',
-      action: { kind: 'claim', label: `Route ${bnty(pending)} BNTY` },
+      action: { kind: 'claim', label: `Route ${green(pending)} GREEN` },
     };
   }
 
@@ -196,7 +210,7 @@ export function decideNextStep(
       id: 'open-pod',
       tag: 'Step 4 · Open an allocation',
       title: unseen > 0 ? 'Open your new allocation' : 'Open an allocation',
-      body: `You have a sealed allocation. Opening it (${bnty(op.compound.crateCost)} BNTY) yields a random instrument you can fit to a desk for more output.`,
+      body: `You have a sealed allocation. Opening it (${green(op.compound.crateCost)} GREEN) yields a random instrument you can fit to a desk for more output.`,
       tone: 'act',
       action: { kind: 'openPod', label: 'Open an allocation' },
     };
@@ -204,12 +218,12 @@ export function decideNextStep(
 
   // 5) Warehouse upgrade affordable and off cooldown — more lines, better pods.
   const up = op.compound.nextUpgradeCost;
-  if (up && balance >= up.totalBnty && op.compound.cooldownRemainingMs <= 0) {
+  if (up && balance >= up.totalGreen && op.compound.cooldownRemainingMs <= 0) {
     return {
       id: 'upgrade',
       tag: 'Step 5 · Upgrade',
       title: `Upgrade your portfolio to Tier ${up.targetLevel}`,
-      body: `You can afford the upgrade (${bnty(up.totalBnty)} BNTY). It raises your desk capacity, daily allocation finds, and the rarity of instruments you can recover.`,
+      body: `You can afford the upgrade (${green(up.totalGreen)} GREEN). It raises your desk capacity, daily allocation finds, and the rarity of instruments you can recover.`,
       tone: 'act',
       action: { kind: 'scroll', label: 'Upgrade portfolio', scrollTo: 'compound-panel' },
     };
@@ -226,7 +240,7 @@ export function decideNextStep(
       id: 'expand',
       tag: 'Step 6 · Expand',
       title: 'Add another desk',
-      body: 'You have the BNTY and the capacity for another desk. More desks mean a bigger share of the emission network.',
+      body: 'You have the GREEN and the capacity for another desk. More desks mean a bigger share of the emission network.',
       tone: 'act',
       action: { kind: 'mint', label: 'Open a desk' },
     };
@@ -241,7 +255,7 @@ export function decideNextStep(
       id: 'level-up',
       tag: 'Step 7 · Level up',
       title: 'Level up a desk',
-      body: `You can afford to level up a desk (${bnty(affordableLevel.nextLevelCost)} BNTY). Higher levels produce more BNTY per second.`,
+      body: `You can afford to level up a desk (${green(affordableLevel.nextLevelCost)} GREEN). Higher levels produce more GREEN per second.`,
       tone: 'act',
       action: { kind: 'scroll', label: 'Inspect desks', scrollTo: 'production-lines' },
     };
@@ -254,14 +268,14 @@ export function decideNextStep(
   const outdoors = regions ? decideOutdoors(regions) : null;
   if (outdoors?.tone === 'act') return outdoors;
 
-  // 9) Nothing to act on — lines are producing. Point idle BNTY at the vault.
+  // 9) Nothing to act on — lines are producing. Point idle GREEN at the vault.
   if (pending > 0 && op.claimCooldownRemainingMs > 0) {
     const mins = Math.ceil(op.claimCooldownRemainingMs / 60000);
     return {
       id: 'cooldown',
       tag: 'Producing',
       title: `Yield unlocks in ${mins}m`,
-      body: 'Your desks are producing. Routing is on a short cooldown after each claim — come back when it clears, or put idle BNTY to work below.',
+      body: 'Your desks are producing. Routing is on a short cooldown after each claim — come back when it clears, or put idle GREEN to work below.',
       tone: 'wait',
       action: { kind: 'link', label: 'Explore Fixed Income', href: '/app/stake' },
     };
@@ -273,8 +287,8 @@ export function decideNextStep(
   return {
     id: 'producing',
     tag: 'Producing',
-    title: 'Your fund is earning BNTY',
-    body: 'Nothing needs your attention right now — desks earn while you are away. Check back to route yield, or lock idle BNTY in a Fixed-Income Note for a fixed return.',
+    title: 'Your fund is earning GREEN',
+    body: 'Nothing needs your attention right now — desks earn while you are away. Check back to route yield, or lock idle GREEN in a Fixed-Income Note for a fixed return.',
     tone: 'wait',
     action: { kind: 'link', label: 'Explore Fixed Income', href: '/app/stake' },
   };

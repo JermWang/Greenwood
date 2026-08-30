@@ -26,7 +26,7 @@ export interface NodeInfo {
   layoutSeed: number;
   components: Array<{ slot: string; rarity: string; durability?: number }>;
   componentMultiplier: number;
-  pendingBnty: number;
+  pendingGreen: number;
   storageCap: number;
   nextLevelCost: number;
 }
@@ -40,11 +40,11 @@ export interface CompoundInfo {
   cooldownRemainingMs: number;
   nextUpgradeCost: null | {
     targetLevel: number;
-    totalBnty: number;
+    totalGreen: number;
     feeEth: number;
-    burnBnty: number;
-    reserveBnty: number;
-    treasuryBnty: number;
+    burnGreen: number;
+    reserveGreen: number;
+    treasuryGreen: number;
   };
 }
 
@@ -57,7 +57,7 @@ export interface UserOperation {
   networkGrowPower: number;
   joinedAtMs: number | null;
   welcomeBoostFactor: number;
-  bntyBalance: number;
+  greenBalance: number;
   totalProduced: number;
   totals: Record<string, number>;
   pending: Record<string, number>;
@@ -88,9 +88,9 @@ export interface ProtocolOverview {
   totalEquityDesks: number;
   totalTreasuryDesks: number;
   totalSupply: number;
-  totalBntyBurned: number;
+  totalGreenBurned: number;
   totalCreatorRewardsProcessed: number;
-  bntyReserveBalance: number;
+  greenReserveBalance: number;
   treasury: number;
   genesisMs: number;
   halving: {
@@ -334,8 +334,8 @@ export interface CosmeticItem {
   name: string;
   slot: CosmeticSlot;
   description: string;
-  /** Price in BNTY. */
-  bnty: number;
+  /** Price in GREEN. */
+  green: number;
   /** Equivalent price in ETH, for players buying in before they have earned. */
   eth: number;
   /**
@@ -359,10 +359,10 @@ export interface CosmeticItem {
   ownedId: number | null;
   /** Listed for sale right now — frozen, so it cannot be worn or refined. */
   listed: boolean;
-  /** BNTY price of every step, so the whole ladder can be shown up front. */
+  /** GREEN price of every step, so the whole ladder can be shown up front. */
   ladder: number[];
   /** Null at the cap, and while the item is not owned. */
-  nextUpgrade: { level: number; bnty: number; rank: string } | null;
+  nextUpgrade: { level: number; green: number; rank: string } | null;
 }
 
 export interface CosmeticsResponse {
@@ -370,7 +370,7 @@ export interface CosmeticsResponse {
   feeBps: number;
   maxLevel: number;
   ranks: string[];
-  /** False once BNTY settlement is live: ETH has no payment rail yet. */
+  /** False once GREEN settlement is live: ETH has no payment rail yet. */
   ethCheckout: boolean;
   /** The wallet's spendable Scrip, bound and bearer combined. */
   scrip: number;
@@ -396,12 +396,12 @@ export interface CosmeticUpgrade {
   fee: number;
   burn: number;
   reserve: number;
-  nextUpgrade: { level: number; bnty: number; rank: string } | null;
+  nextUpgrade: { level: number; green: number; rank: string } | null;
   catalog: CosmeticsResponse;
 }
 
 /** Mirrors the server's CosmeticCurrency in lib/economy. Keep the two in step. */
-export type CosmeticCurrency = 'BNTY' | 'ETH' | 'SCRIP';
+export type CosmeticCurrency = 'GREEN' | 'ETH' | 'SCRIP';
 
 export type MarketItemKind = 'crate' | 'component' | 'node' | 'cosmetic';
 
@@ -410,7 +410,7 @@ export interface MarketListing {
   seller: string;
   itemKind: MarketItemKind;
   itemId: number;
-  priceBnty: number;
+  priceGreen: number;
   createdAt: number;
   item: Record<string, unknown> | null;
 }
@@ -689,7 +689,7 @@ export const api = {
       `/protocol/treasury-events?limit=${limit}`
     ),
   families: () =>
-    request<Array<{ key: string; name: string; description: string; family: 'oil' | 'mine'; burnCostBnty: number; burnShareBps: number; treasuryShareBps: number; mintFeeEth: number }>>(
+    request<Array<{ key: string; name: string; description: string; family: 'oil' | 'mine'; burnCostGreen: number; burnShareBps: number; treasuryShareBps: number; mintFeeEth: number }>>(
       '/nodes/families'
     ),
   crateOdds: (wallet?: string) =>
@@ -703,7 +703,7 @@ export const api = {
     request<{ positions: StakePosition[]; totals: StakeTotals; rates: StakeRates }>(
       `/stake/${wallet}`
     ),
-  // Opening locks BNTY away, so it is a spend and goes through the same
+  // Opening locks GREEN away, so it is a spend and goes through the same
   // quote/pay/settle lifecycle as every other priced action.
   openStake: (wallet: string, amount: number, termDays: number, onStep?: StepHandler) =>
     runAction<{ position: StakePosition; positions: StakePosition[]; totals: StakeTotals }>(
@@ -837,14 +837,14 @@ export const api = {
     }),
 
   /**
-   * Buy a cosmetic. BNTY rides the settlement rail like any other spend; ETH is
+   * Buy a cosmetic. GREEN rides the settlement rail like any other spend; ETH is
    * applied server-side in one call, and the shop only offers it while the
    * catalogue reports `ethCheckout`.
    */
   buyCosmetic: (wallet: string, key: string, currency: CosmeticCurrency, onStep?: StepHandler) =>
     runAction<CosmeticPurchase>('/cosmetics/buy', wallet, { key, currency }, onStep),
 
-  /** Take an owned cosmetic one step up its track. BNTY only, by design. */
+  /** Take an owned cosmetic one step up its track. GREEN only, by design. */
   upgradeCosmetic: (wallet: string, key: string, onStep?: StepHandler) =>
     runAction<CosmeticUpgrade>('/cosmetics/upgrade', wallet, { key }, onStep),
 
@@ -875,7 +875,7 @@ export const api = {
 
   /**
    * The protocol pays the operator, so there is nothing for them to sign — one
-   * request, and the server transfers BNTY from the protocol wallet.
+   * request, and the server transfers GREEN from the protocol wallet.
    */
   claim: async (
     wallet: string,
@@ -891,14 +891,14 @@ export const api = {
       settled: boolean;
       result: Claims;
       txHash?: string;
-      /** BNTY withheld to cover the gas of the payout transaction. */
-      gasBnty?: number;
+      /** GREEN withheld to cover the gas of the payout transaction. */
+      gasGreen?: number;
     }>('/rewards/claim', {
       wallet,
       nodeId: nodeId == null ? undefined : Number(nodeId),
       mode,
     });
-    return { ...res.result, txHash: res.txHash, gasBnty: res.gasBnty ?? 0 };
+    return { ...res.result, txHash: res.txHash, gasGreen: res.gasGreen ?? 0 };
   },
 
 
@@ -909,8 +909,8 @@ export const api = {
       kind ? `/market/listings?kind=${kind}` : '/market/listings'
     ),
 
-  marketList: (wallet: string, itemKind: MarketItemKind, itemId: number, priceBnty: number) =>
-    post<{ listing: MarketListing }>('/market/list', { wallet, itemKind, itemId, priceBnty }),
+  marketList: (wallet: string, itemKind: MarketItemKind, itemId: number, priceGreen: number) =>
+    post<{ listing: MarketListing }>('/market/list', { wallet, itemKind, itemId, priceGreen }),
 
   marketCancel: (wallet: string, listingId: number) =>
     post<{ ok: true }>('/market/cancel', { wallet, listingId }),

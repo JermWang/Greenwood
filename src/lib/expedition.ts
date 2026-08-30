@@ -683,7 +683,7 @@ export interface DeathResult {
  * reversed, a failure between the two would delete a player's cargo without
  * leaving anything on the ground for the person who earned it.
  *
- * Only the pack spills. Desks, fitted instruments, BNTY, Notes and cosmetics are
+ * Only the pack spills. Desks, fitted instruments, GREEN, Notes and cosmetics are
  * not carriable, so they are not here to lose; that is the whole safety model,
  * and it holds because `CARRIABLE` is an allowlist rather than a filter applied
  * at this call site.

@@ -1,4 +1,4 @@
-// Who gets free BNTY, and who must not.
+// Who gets free GREEN, and who must not.
 //
 // The grant exists so a fresh operator can afford their first desk out of the
 // MIRRORED balance, which is only how the game works while spends settle
@@ -6,7 +6,7 @@
 //
 // Once the token is live a spend is a real ERC-20 transfer and the route passes
 // settledOnChain, so osr_balance is neither debited by spends nor credited by
-// claims. Free BNTY there is a number on the screen that cannot buy anything
+// claims. Free GREEN there is a number on the screen that cannot buy anything
 // and cannot be withdrawn.
 //
 // TOKEN_LIVE is read at module load from the environment, so each case needs
@@ -18,7 +18,7 @@ import os from 'os';
 import path from 'path';
 // Safe to import statically: lib/demo reads no environment, so it is the same
 // module whether the engine around it was loaded with the token live or not.
-import { DEMO_BNTY } from './demo';
+import { DEMO_GREEN } from './demo';
 
 const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'osr-grant-test-'));
 process.env.OSR_DATA_DIR = DATA_DIR;
@@ -71,13 +71,13 @@ describe('before the token exists', () => {
   test('a real wallet is granted its first desk', async () => {
     const { game, economy } = await engineWith(false);
     const user = game.getOrCreateUser(fresh(REAL));
-    expect(user.osr_balance).toBe(economy.STARTER_BNTY_GRANT);
+    expect(user.osr_balance).toBe(economy.STARTER_GREEN_GRANT);
   });
 
   test('the grant covers a desk, which is the only reason it exists', async () => {
     const { economy } = await engineWith(false);
-    const cheapest = Math.min(...economy.NODE_FAMILIES.map((f) => f.burnCostBnty));
-    expect(economy.STARTER_BNTY_GRANT).toBeGreaterThanOrEqual(cheapest);
+    const cheapest = Math.min(...economy.NODE_FAMILIES.map((f) => f.burnCostGreen));
+    expect(economy.STARTER_GREEN_GRANT).toBeGreaterThanOrEqual(cheapest);
   });
 });
 
@@ -118,7 +118,7 @@ describe('once the token is live', () => {
   test('a demo wallet is still granted, because it can never settle on-chain', async () => {
     const { game } = await engineWith(true);
     const user = game.getOrCreateUser(fresh(DEMO));
-    expect(user.osr_balance).toBe(DEMO_BNTY);
+    expect(user.osr_balance).toBe(DEMO_GREEN);
   });
 });
 
@@ -129,7 +129,7 @@ describe('once the token is live', () => {
  * demo has ten minutes and no way to earn anything, so it is granted enough to
  * SEE. These assert the second one actually reaches the mechanics the
  * introduction walks a player through, because the previous grant did not: at
- * 1,000 BNTY the chain died on step three, where opening an allocation costs
+ * 1,000 GREEN the chain died on step three, where opening an allocation costs
  * ten times the entire grant.
  */
 describe('the demo grant', () => {
@@ -138,20 +138,20 @@ describe('the demo grant', () => {
     // Levelling is priced in lib/capital, not lib/economy — the cost curve
     // belongs with the shared-capital rule it exists to express.
     const capital = await import('./capital');
-    const firstDesk = Math.min(...economy.NODE_FAMILIES.map((f) => f.burnCostBnty));
+    const firstDesk = Math.min(...economy.NODE_FAMILIES.map((f) => f.burnCostGreen));
     const walkthrough =
       firstDesk +
-      economy.CRATE_OPEN_BNTY + // open an allocation
+      economy.CRATE_OPEN_GREEN + // open an allocation
       capital.nodeUpgradeCost(1) + // take a desk to L2
-      economy.STAKE_MIN_BNTY; // open a Fixed Income Note
-    expect(DEMO_BNTY).toBeGreaterThan(walkthrough);
+      economy.STAKE_MIN_GREEN; // open a Fixed Income Note
+    expect(DEMO_GREEN).toBeGreaterThan(walkthrough);
   });
 
   test('leaves room to do it more than once, which is what makes it a demo', async () => {
     const { economy } = await engineWith(false);
     // Three allocations is the floor for understanding where instruments come
     // from: one is an event, three is a mechanic.
-    expect(DEMO_BNTY).toBeGreaterThanOrEqual(economy.CRATE_OPEN_BNTY * 3);
+    expect(DEMO_GREEN).toBeGreaterThanOrEqual(economy.CRATE_OPEN_GREEN * 3);
   });
 
   /**
@@ -174,8 +174,8 @@ describe('the demo grant', () => {
     const after = game.readUser(w);
     expect(after.osr_balance).toBeGreaterThan(0);
     // And still enough left for the step that used to be the wall.
-    const { CRATE_OPEN_BNTY } = await import('./economy');
-    expect(after.osr_balance).toBeGreaterThan(CRATE_OPEN_BNTY);
+    const { CRATE_OPEN_GREEN } = await import('./economy');
+    expect(after.osr_balance).toBeGreaterThan(CRATE_OPEN_GREEN);
   });
 
   test('is still small enough that currency does not read as free', async () => {
@@ -183,10 +183,10 @@ describe('the demo grant', () => {
     // Well under the cost of maxing the portfolio, so the demo shows the game
     // rather than skipping it.
     const maxedPortfolio = Object.values(economy.COMPOUND_LEVELS).reduce(
-      (sum, level) => sum + level.bntyUpgradeCost,
+      (sum, level) => sum + level.greenUpgradeCost,
       0
     );
-    expect(DEMO_BNTY).toBeLessThan(maxedPortfolio);
+    expect(DEMO_GREEN).toBeLessThan(maxedPortfolio);
   });
 });
 
@@ -196,7 +196,7 @@ describe('regardless of network', () => {
     const w = fresh(REAL);
     game.getOrCreateUser(w);
     const second = game.getOrCreateUser(w);
-    expect(second.osr_balance).toBe(economy.STARTER_BNTY_GRANT);
+    expect(second.osr_balance).toBe(economy.STARTER_GREEN_GRANT);
   });
 
   /**

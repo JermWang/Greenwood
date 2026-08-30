@@ -11,7 +11,7 @@ import {
   getAddress,
   type Address,
 } from 'viem';
-import { CHAIN, BNTY_TOKEN_ADDRESS, isConfiguredAddress } from './config';
+import { CHAIN, GREEN_TOKEN_ADDRESS, isConfiguredAddress } from './config';
 import { carryOverLocal } from './legacy-keys';
 
 /** Which wallet to reconnect to without asking. See lib/legacy-keys. */
@@ -59,8 +59,8 @@ interface EvmState {
   address: Address | null;
   chainId: number | null;
   nativeBalance: string | null;
-  bntyBalance: string | null;
-  bntySymbol: string;
+  greenBalance: string | null;
+  greenSymbol: string;
   connecting: boolean;
   initialized: boolean;
   error: string | null;
@@ -122,19 +122,25 @@ async function ensureRobinhoodChain(provider: Eip1193Provider): Promise<void> {
 async function balances(provider: Eip1193Provider, address: Address) {
   const client = createPublicClient({ chain: robinhoodChain, transport: custom(provider) });
   const native = await client.getBalance({ address });
-  let bntyBalance: string | null = null;
-  let bntySymbol = 'BNTY';
-  if (isConfiguredAddress(BNTY_TOKEN_ADDRESS)) {
-    const token = getAddress(BNTY_TOKEN_ADDRESS);
+  let greenBalance: string | null = null;
+  // The brand ticker, as a PLACEHOLDER for the unconfigured case below. When a
+  // token is configured this is overwritten by the contract's own symbol(),
+  // because a wallet balance has to agree with the chain rather than with us --
+  // and today that means a connected wallet reads BNTY here while the rest of
+  // the game says GREEN. That is the deployed token being older than the name;
+  // it resolves when a GREEN contract is deployed, not in this file.
+  let greenSymbol = 'GREEN';
+  if (isConfiguredAddress(GREEN_TOKEN_ADDRESS)) {
+    const token = getAddress(GREEN_TOKEN_ADDRESS);
     const [amount, decimals, symbol] = await Promise.all([
       client.readContract({ address: token, abi: erc20Abi, functionName: 'balanceOf', args: [address] }),
       client.readContract({ address: token, abi: erc20Abi, functionName: 'decimals' }),
       client.readContract({ address: token, abi: erc20Abi, functionName: 'symbol' }),
     ]);
-    bntyBalance = formatUnits(amount, decimals);
-    bntySymbol = symbol;
+    greenBalance = formatUnits(amount, decimals);
+    greenSymbol = symbol;
   }
-  return { nativeBalance: formatEther(native), bntyBalance, bntySymbol };
+  return { nativeBalance: formatEther(native), greenBalance, greenSymbol };
 }
 
 function unbindProvider() {
@@ -192,7 +198,7 @@ function bindProvider(provider: Eip1193Provider) {
   };
   activeChainChanged = (...args: unknown[]) => {
     const chainId = Number.parseInt(args[0] as string, 16);
-    useEvmWallet.setState({ chainId, nativeBalance: null, bntyBalance: null });
+    useEvmWallet.setState({ chainId, nativeBalance: null, greenBalance: null });
     if (chainId === CHAIN.id) void useEvmWallet.getState().refreshBalances();
   };
   activeDisconnect = () => useEvmWallet.getState().disconnect();
@@ -207,8 +213,8 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
   address: null,
   chainId: null,
   nativeBalance: null,
-  bntyBalance: null,
-  bntySymbol: 'BNTY',
+  greenBalance: null,
+  greenSymbol: 'GREEN',
   connecting: false,
   initialized: false,
   error: null,
@@ -324,7 +330,7 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
       chainId: null,
       selectedWalletUuid: null,
       nativeBalance: null,
-      bntyBalance: null,
+      greenBalance: null,
       connecting: false,
       error: null,
     });

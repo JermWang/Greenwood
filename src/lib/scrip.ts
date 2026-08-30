@@ -1,7 +1,7 @@
 // Scrip — the soft currency, in two kinds.
 //
 // The problem Scrip solves: every reward in this game was previously a claim on
-// BNTY emission, which halves and is capped. That makes it impossible to be
+// GREEN emission, which halves and is capped. That makes it impossible to be
 // generous in a player's first session, which is precisely the session where
 // generosity buys you a player. Scrip is earned from ACTIVITY and has no supply
 // schedule to protect, so quests and streaks can pay properly without the
@@ -11,25 +11,25 @@
 // Why two kinds
 // ---------------------------------------------------------------------------
 //
-// A single Scrip that could be both earned from quests AND sold for BNTY would
+// A single Scrip that could be both earned from quests AND sold for GREEN would
 // be an emission tap with an extra hop: farm the dailies, dump the Scrip, take
-// the BNTY. It is the exact dynamic the quest module refuses to allow directly,
+// the GREEN. It is the exact dynamic the quest module refuses to allow directly,
 // and it is farmable at scale by anyone willing to script it.
 //
 // So Scrip comes in two kinds that spend identically and move differently:
 //
 //   BOUND   earned from quests, streaks and work orders. Spends on anything.
-//           Cannot be traded, cannot be sold, never becomes BNTY. This is the
+//           Cannot be traded, cannot be sold, never becomes GREEN. This is the
 //           faucet, and it is a closed one.
 //
-//   BEARER  bought from the protocol with BNTY, and tradeable between players.
-//           This is the market side: BNTY flows to the protocol to mint it, and
+//   BEARER  bought from the protocol with GREEN, and tradeable between players.
+//           This is the market side: GREEN flows to the protocol to mint it, and
 //           players trade it among themselves afterwards.
 //
 // The rule that makes the whole thing safe is that THE PROTOCOL NEVER BUYS
 // SCRIP BACK. There is deliberately no sellScripToProtocol() below. A player
 // with surplus Scrip sells it to another player on the Exchange, which moves
-// BNTY between two wallets rather than creating any — so the market has a real
+// GREEN between two wallets rather than creating any — so the market has a real
 // bid and a real ask without the faucet ever draining into the token.
 //
 // Spending always burns BOUND first. A player who has both should keep the kind
@@ -40,16 +40,16 @@ import { GameError } from './errors';
 import { addLedger, bumpProtocolCounter, getOrCreateUser, type SpendOpts } from './game';
 import { cosmeticFeeSplit } from './economy';
 
-/** Scrip minted per whole BNTY at the protocol window. */
-export const SCRIP_PER_BNTY = 1;
+/** Scrip minted per whole GREEN at the protocol window. */
+export const SCRIP_PER_GREEN = 1;
 
 /**
- * Smallest purchase, in BNTY.
+ * Smallest purchase, in GREEN.
  *
  * A floor rather than a fee: it keeps the ledger from filling with dust rows
  * that cost more to store than the amount they record.
  */
-export const MIN_SCRIP_PURCHASE_BNTY = 100;
+export const MIN_SCRIP_PURCHASE_GREEN = 100;
 
 export interface ScripBalances {
   /** Earned. Spendable, never tradeable. */
@@ -94,10 +94,10 @@ export function grantScrip(wallet: string, amount: number, reason: string): numb
 }
 
 /**
- * Buy Scrip from the protocol with BNTY.
+ * Buy Scrip from the protocol with GREEN.
  *
  * This is the buy-side pressure: the only way to get Scrip faster than playing
- * for it is to spend the token. The BNTY paid takes the same 2% house cut as
+ * for it is to spend the token. The GREEN paid takes the same 2% house cut as
  * every other transaction — half burned, half back into the rewards reserve —
  * and the remainder is protocol revenue, because the protocol is the seller.
  *
@@ -105,10 +105,10 @@ export function grantScrip(wallet: string, amount: number, reason: string): numb
  * every other spend does; debiting the mirrored balance as well would take the
  * price twice.
  */
-export function buyScrip(wallet: string, bntyAmount: number, opts?: SpendOpts) {
-  if (!Number.isFinite(bntyAmount) || bntyAmount < MIN_SCRIP_PURCHASE_BNTY) {
+export function buyScrip(wallet: string, greenAmount: number, opts?: SpendOpts) {
+  if (!Number.isFinite(greenAmount) || greenAmount < MIN_SCRIP_PURCHASE_GREEN) {
     throw new GameError(
-      `Minimum purchase is ${MIN_SCRIP_PURCHASE_BNTY.toLocaleString()} BNTY`,
+      `Minimum purchase is ${MIN_SCRIP_PURCHASE_GREEN.toLocaleString()} GREEN`,
       400
     );
   }
@@ -116,33 +116,33 @@ export function buyScrip(wallet: string, bntyAmount: number, opts?: SpendOpts) {
   const user = getOrCreateUser(wallet);
 
   if (!opts?.settledOnChain) {
-    if (user.osr_balance < bntyAmount) {
+    if (user.osr_balance < greenAmount) {
       throw new GameError(
-        `Not enough BNTY: need ${bntyAmount.toLocaleString()} (you have ${Math.floor(user.osr_balance).toLocaleString()}).`
+        `Not enough GREEN: need ${greenAmount.toLocaleString()} (you have ${Math.floor(user.osr_balance).toLocaleString()}).`
       );
     }
     const charged = db
       .prepare('UPDATE users SET osr_balance = osr_balance - ? WHERE wallet = ? AND osr_balance >= ?')
-      .run(bntyAmount, wallet, bntyAmount);
-    if (Number(charged.changes) === 0) throw new GameError('Not enough BNTY for that purchase.');
+      .run(greenAmount, wallet, greenAmount);
+    if (Number(charged.changes) === 0) throw new GameError('Not enough GREEN for that purchase.');
   }
 
-  const split = cosmeticFeeSplit(bntyAmount);
+  const split = cosmeticFeeSplit(greenAmount);
   bumpProtocolCounter('burned', split.burn);
   bumpProtocolCounter('reserve', split.reserve);
   bumpProtocolCounter('treasury', split.net);
 
-  const scrip = bntyAmount * SCRIP_PER_BNTY;
+  const scrip = greenAmount * SCRIP_PER_GREEN;
   db.prepare('UPDATE users SET scrip_bearer = scrip_bearer + ? WHERE wallet = ?').run(scrip, wallet);
-  addLedger(wallet, 'scrip_buy', -bntyAmount, {
+  addLedger(wallet, 'scrip_buy', -greenAmount, {
     scrip,
-    bnty: bntyAmount,
+    green: greenAmount,
     fee: split.fee,
     burn: split.burn,
     reserve: split.reserve,
   });
 
-  return { scrip, bnty: bntyAmount, fee: split.fee, burn: split.burn, reserve: split.reserve };
+  return { scrip, green: greenAmount, fee: split.fee, burn: split.burn, reserve: split.reserve };
 }
 
 /**
@@ -207,7 +207,7 @@ export function transferBearerScrip(from: string, to: string, amount: number) {
 
 // Deliberately absent: sellScripToProtocol().
 //
-// A protocol bid for Scrip would complete the path quests -> Scrip -> BNTY and
+// A protocol bid for Scrip would complete the path quests -> Scrip -> GREEN and
 // turn every daily into an emission tap the halving schedule never budgeted
-// for. Selling happens player-to-player on the Exchange, where the BNTY comes
+// for. Selling happens player-to-player on the Exchange, where the GREEN comes
 // out of another player's wallet rather than out of the reserve.

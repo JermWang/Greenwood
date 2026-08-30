@@ -26,7 +26,7 @@ export interface DeskFamily {
   name: string;
   description: string;
   family: 'oil' | 'mine';
-  burnCostBnty: number;
+  burnCostGreen: number;
 }
 
 /**
@@ -58,7 +58,7 @@ export default function BuildPrompt({
 }: {
   /** The tile that was clicked. Null closes the prompt. */
   cell: { x: number; z: number } | null;
-  /** Spendable BNTY, so a desk you cannot afford says so before you press it. */
+  /** Spendable GREEN, so a desk you cannot afford says so before you press it. */
   balance: number;
   busy: boolean;
   error: string | null;
@@ -98,7 +98,7 @@ export default function BuildPrompt({
   }, [cell, onClose]);
 
   const cheapest = useMemo(
-    () => (families.length ? Math.min(...families.map((f) => f.burnCostBnty)) : 0),
+    () => (families.length ? Math.min(...families.map((f) => f.burnCostGreen)) : 0),
     [families]
   );
 
@@ -125,7 +125,7 @@ export default function BuildPrompt({
       ) : (
         <div className="build-options">
           {families.map((f) => {
-            const affordable = balance >= f.burnCostBnty;
+            const affordable = balance >= f.burnCostGreen;
             return (
               <button
                 key={f.key}
@@ -135,7 +135,7 @@ export default function BuildPrompt({
               >
                 <b>{f.name}</b>
                 <span>{f.description}</span>
-                <em>{f.burnCostBnty.toLocaleString()} BNTY</em>
+                <em>{f.burnCostGreen.toLocaleString()} GREEN</em>
               </button>
             );
           })}
@@ -148,7 +148,7 @@ export default function BuildPrompt({
         // with no reason attached is the most common way an idle game loses
         // somebody in their first ten minutes.
         <p className="build-error">
-          You have {Math.floor(balance).toLocaleString()} BNTY. The cheapest desk is{' '}
+          You have {Math.floor(balance).toLocaleString()} GREEN. The cheapest desk is{' '}
           {cheapest.toLocaleString()} — route some yield first.
         </p>
       )}

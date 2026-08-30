@@ -18,7 +18,7 @@ export default function manifest(): MetadataRoute.Manifest {
     // truncated to about eight characters by every launcher.
     short_name: 'Evergreen',
     description:
-      'An idle yield game on Robinhood Chain. Open desks, fit instruments, compound BNTY, ' +
+      'An idle yield game on Robinhood Chain. Open desks, fit instruments, compound GREEN, ' +
       'and take what you earn out past the fence.',
     start_url: '/',
     display: 'standalone',

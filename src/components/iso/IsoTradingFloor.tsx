@@ -81,7 +81,7 @@ const STALLS: Stall[] = [
   { key: 'instruments', label: 'Instruments', blurb: 'Enhancement parts', href: '/app/market', x: -7, z: -7, accent: ISO.bright },
   { key: 'allocations', label: 'Allocations', blurb: 'Sealed deal flow', href: '/app/market', x: 7, z: -7, accent: ISO.mint },
   { key: 'desks', label: 'Desks', blurb: 'Upgraded machines', href: '/app/market', x: -7, z: 7, accent: ISO.accent },
-  { key: 'notes', label: 'Fixed Income', blurb: 'Lock BNTY for yield', href: '/app/stake', x: 7, z: 7, accent: ISO.amber },
+  { key: 'notes', label: 'Fixed Income', blurb: 'Lock GREEN for yield', href: '/app/stake', x: 7, z: 7, accent: ISO.amber },
   { key: 'outfitter', label: 'Outfitter', blurb: 'Looks and refinements', href: null, x: 0, z: -9, accent: ISO.deep },
 ];
 

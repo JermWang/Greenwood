@@ -1,7 +1,7 @@
 # Evergreen
 
 An idle DeFi yield game on Robinhood Chain — an EVM L2 settling on Ethereum
-(chain ID 4663, gas token ETH). Token: **BNTY**.
+(chain ID 4663, gas token ETH). Token: **GREEN**.
 
 The front is a Real-World-Asset fund. You open desks, they produce yield, you
 route it, upgrade them, arrange your floor for the layout bonus, and compete on
@@ -38,7 +38,7 @@ between the player and the treasury, which keeps the audit surface at roughly
 zero and puts the entire burden on the server verifying correctly.
 
 A spend runs quote → pay → settle: the server prices the action and records a
-nonce, the player sends that many BNTY themselves, and the server reads the
+nonce, the player sends that many GREEN themselves, and the server reads the
 receipt and verifies the token's own `Transfer` event before applying anything.
 A nonce is only redeemable at the action it was priced for, a transaction hash
 can back exactly one settlement, and quotes expire.

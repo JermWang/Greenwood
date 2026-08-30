@@ -90,7 +90,7 @@ export default function TradingFloorPage() {
           <button className="iso-shop-close" onClick={() => setShopOpen(false)} aria-label="Close the Outfitter">
             <X size={16} weight="bold" />
           </button>
-          <CosmeticsShop wallet={wallet} balance={op?.bntyBalance} onChanged={onShopChanged} />
+          <CosmeticsShop wallet={wallet} balance={op?.greenBalance} onChanged={onShopChanged} />
         </div>
       )}
     </div>

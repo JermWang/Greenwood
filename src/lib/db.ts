@@ -169,7 +169,7 @@ function migrate(db: DatabaseSync) {
 
     -- Crates are found by mining, not bought. A row here is an unopened crate
     -- sitting in a wallet's inventory: it exists from the moment it drops, and
-    -- opening it (which costs BNTY) resolves it into a component.
+    -- opening it (which costs GREEN) resolves it into a component.
     CREATE TABLE IF NOT EXISTS crates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       wallet TEXT NOT NULL REFERENCES users(wallet),
@@ -188,7 +188,7 @@ function migrate(db: DatabaseSync) {
     CREATE INDEX IF NOT EXISTS idx_crates_wallet ON crates(wallet, opened_at);
 
     -- Player-to-player marketplace. Custodial: the server is the ledger and
-    -- moves the item, while BNTY settles wallet-to-wallet on-chain. A listing is
+    -- moves the item, while GREEN settles wallet-to-wallet on-chain. A listing is
     -- the seller's offer; ownership only moves when a sale is recorded.
     CREATE TABLE IF NOT EXISTS listings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -204,7 +204,7 @@ function migrate(db: DatabaseSync) {
       sold_price_osr REAL,
       fee_osr REAL
     );
-    -- Fixed income notes: BNTY locked for a fixed term against a rate fixed
+    -- Fixed income notes: GREEN locked for a fixed term against a rate fixed
     -- at open. apr_bps and term_interest are stored per row rather than looked
     -- up from the current schedule, so changing the published terms can never
     -- retroactively alter what an already-open contract is owed.
@@ -387,6 +387,7 @@ function migrate(db: DatabaseSync) {
 
   widenListingKinds(db);
   renameAllocationKinds(db);
+  renameTokenReceipts(db);
   dropColumn(db, 'users', 'xstock_xomx');
   dropColumn(db, 'users', 'xstock_cvxx');
 
@@ -497,6 +498,20 @@ function widenListingKinds(db: DatabaseSync) {
  * Guarded on the constraint text so it runs exactly once, matching
  * widenListingKinds above.
  */
+function renameTokenReceipts(db: DatabaseSync) {
+  // The ticker the game prices in went from BNTY to GREEN, and the currency a
+  // cosmetic was bought with is written into the receipt as that literal.
+  //
+  // Nothing READS this column — it is kept for the receipt, not for the game
+  // (see the schema) — so this cannot break anything, and that is exactly why
+  // it is worth doing now rather than never. A receipts table that answers the
+  // same question two different ways depending on when you asked is a thing
+  // somebody eventually has to reconcile by hand.
+  //
+  // Cheap and idempotent: after the first pass no row matches.
+  db.prepare("UPDATE cosmetics_owned SET paid_currency = 'GREEN' WHERE paid_currency = 'BNTY'").run();
+}
+
 function renameAllocationKinds(db: DatabaseSync) {
   const row = db
     .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'crates'`)

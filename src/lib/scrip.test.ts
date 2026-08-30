@@ -1,5 +1,5 @@
 // Scrip coverage, focused on the one property the whole design rests on:
-// earned Scrip must never become BNTY. Everything else here is bookkeeping;
+// earned Scrip must never become GREEN. Everything else here is bookkeeping;
 // that boundary is the economics.
 import { describe, test, expect, beforeEach } from 'vitest';
 import fs from 'fs';
@@ -16,8 +16,8 @@ const {
   buyScrip,
   spendScrip,
   transferBearerScrip,
-  SCRIP_PER_BNTY,
-  MIN_SCRIP_PURCHASE_BNTY,
+  SCRIP_PER_GREEN,
+  MIN_SCRIP_PURCHASE_GREEN,
 } = await import('./scrip');
 const { getOrCreateUser } = await import('./game');
 const { getDb, setProtocolValue, getProtocolValue } = await import('./db');
@@ -27,7 +27,7 @@ const fund = (w: string, amount: number) => {
   getOrCreateUser(w);
   getDb().prepare('UPDATE users SET osr_balance = ? WHERE wallet = ?').run(amount, w);
 };
-const bnty = (w: string) =>
+const green = (w: string) =>
   (getDb().prepare('SELECT osr_balance AS b FROM users WHERE wallet = ?').get(w) as { b: number }).b;
 const counter = (key: string) => Number(getProtocolValue(key) ?? '0');
 
@@ -63,17 +63,17 @@ describe('the faucet', () => {
 });
 
 describe('buying from the protocol', () => {
-  test('charges BNTY, mints bearer Scrip, and splits the house cut', () => {
+  test('charges GREEN, mints bearer Scrip, and splits the house cut', () => {
     const w = wallet(4);
     fund(w, 50_000);
 
     const result = buyScrip(w, 10_000);
 
-    expect(bnty(w)).toBe(40_000);
+    expect(green(w)).toBe(40_000);
     expect(scripBalances(w)).toEqual({
       bound: 0,
-      bearer: 10_000 * SCRIP_PER_BNTY,
-      total: 10_000 * SCRIP_PER_BNTY,
+      bearer: 10_000 * SCRIP_PER_GREEN,
+      total: 10_000 * SCRIP_PER_GREEN,
     });
     // Same policy as every other transaction: 2%, split in half.
     expect(result.fee).toBeCloseTo(200, 10);
@@ -86,8 +86,8 @@ describe('buying from the protocol', () => {
   test('refuses a purchase the balance cannot cover, and charges nothing', () => {
     const w = wallet(5);
     fund(w, 500);
-    expect(() => buyScrip(w, 10_000)).toThrow(/Not enough BNTY/);
-    expect(bnty(w)).toBe(500);
+    expect(() => buyScrip(w, 10_000)).toThrow(/Not enough GREEN/);
+    expect(green(w)).toBe(500);
     expect(scripBalances(w).total).toBe(0);
     expect(counter('burned')).toBe(0);
   });
@@ -95,16 +95,16 @@ describe('buying from the protocol', () => {
   test('enforces a minimum so the ledger does not fill with dust', () => {
     const w = wallet(6);
     fund(w, 50_000);
-    expect(() => buyScrip(w, MIN_SCRIP_PURCHASE_BNTY - 1)).toThrow(/Minimum purchase/);
-    expect(bnty(w)).toBe(50_000);
+    expect(() => buyScrip(w, MIN_SCRIP_PURCHASE_GREEN - 1)).toThrow(/Minimum purchase/);
+    expect(green(w)).toBe(50_000);
   });
 
   test('skips the debit when the purchase already settled on-chain', () => {
     const w = wallet(7);
     fund(w, 50_000);
     buyScrip(w, 10_000, { settledOnChain: true });
-    expect(bnty(w)).toBe(50_000);
-    expect(scripBalances(w).bearer).toBe(10_000 * SCRIP_PER_BNTY);
+    expect(green(w)).toBe(50_000);
+    expect(scripBalances(w).bearer).toBe(10_000 * SCRIP_PER_GREEN);
   });
 });
 
@@ -171,7 +171,7 @@ describe('the boundary that matters', () => {
     expect(scripBalances(seller).total + scripBalances(buyer).total).toBeCloseTo(before, 10);
   });
 
-  test('the protocol offers no way to sell Scrip back for BNTY', async () => {
+  test('the protocol offers no way to sell Scrip back for GREEN', async () => {
     // Guards the absence, not a behaviour. Adding a redemption endpoint later
     // would silently reopen the faucet, and this is the test that would fail.
     const module = await import('./scrip');

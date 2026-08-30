@@ -145,13 +145,13 @@ export function FundProfileCard({
   quests,
   tier,
   deskCount,
-  bntyBalance,
+  greenBalance,
 }: {
   wallet: string | null;
   quests: QuestsResponse | null;
   tier: number;
   deskCount: number;
-  bntyBalance: number;
+  greenBalance: number;
 }) {
   const [profile, setProfile] = useState<GlobalProfile | null>(null);
 
@@ -203,8 +203,8 @@ export function FundProfileCard({
             <b>{deskCount}</b>
           </div>
           <div>
-            <small>BNTY BALANCE</small>
-            <b>{compact(bntyBalance)}</b>
+            <small>GREEN BALANCE</small>
+            <b>{compact(greenBalance)}</b>
           </div>
         </div>
       </div>
@@ -395,7 +395,7 @@ export function CollectionStrips({ wallet, nodes }: { wallet: string | null; nod
                 <span className="fund-tile-glyph">{item.owned ? initials(item.name) : '·'}</span>
                 <b className="fund-tile-name">{item.name}</b>
                 <small>
-                  {item.equipped ? 'EQUIPPED' : item.owned ? 'OWNED' : `${compact(item.bnty)} BNTY`}
+                  {item.equipped ? 'EQUIPPED' : item.owned ? 'OWNED' : `${compact(item.green)} GREEN`}
                 </small>
               </div>
             ))}
@@ -470,7 +470,7 @@ export function EventsPanel({
       key: 'halving',
       glyph: '½',
       title: 'Next halving',
-      detail: `Emission ${overview.halving.currentRatePerSec.toFixed(4)} → ${overview.halving.nextRatePerSec.toFixed(4)} BNTY/s`,
+      detail: `Emission ${overview.halving.currentRatePerSec.toFixed(4)} → ${overview.halving.nextRatePerSec.toFixed(4)} GREEN/s`,
       deadline: overview.halving.nextHalvingMs,
     });
   }
@@ -542,7 +542,7 @@ const CHANGELOG: Array<{ tag: string; title: string; body: string }> = [
   {
     tag: 'ECONOMY',
     title: 'Cosmetics economy',
-    body: 'Skins buyable in BNTY or ETH with a 2% house cut: half burned, half returned to the rewards reserve. They never touch yield.',
+    body: 'Skins buyable in GREEN or ETH with a 2% house cut: half burned, half returned to the rewards reserve. They never touch yield.',
   },
   {
     tag: 'PROGRESSION',

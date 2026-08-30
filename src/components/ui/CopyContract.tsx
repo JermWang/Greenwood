@@ -15,14 +15,14 @@
 
 import { useCallback, useState } from 'react';
 import { Copy, Check } from '@phosphor-icons/react';
-import { CHAIN, BNTY_TOKEN_ADDRESS, isConfiguredAddress } from '@/lib/config';
+import { CHAIN, GREEN_TOKEN_ADDRESS, isConfiguredAddress } from '@/lib/config';
 
 export default function CopyContract() {
   const [copied, setCopied] = useState(false);
 
   const copy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(BNTY_TOKEN_ADDRESS);
+      await navigator.clipboard.writeText(GREEN_TOKEN_ADDRESS);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -43,13 +43,13 @@ export default function CopyContract() {
    * A visitor cannot tell those apart and should not have to: both mean "not
    * yet", so both say so.
    */
-  const published = isConfiguredAddress(BNTY_TOKEN_ADDRESS) && process.env.NEXT_PUBLIC_SHOW_CA === '1';
+  const published = isConfiguredAddress(GREEN_TOKEN_ADDRESS) && process.env.NEXT_PUBLIC_SHOW_CA === '1';
 
   if (!published) {
     return (
       <span
         className="eg-topbar-ca eg-topbar-ca-soon glass-control pointer-events-auto flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em]"
-        title={`The BNTY contract address will be published here at launch on ${CHAIN.name}`}
+        title={`The GREEN contract address will be published here at launch on ${CHAIN.name}`}
       >
         <span className="eg-topbar-ca-label">CA</span>
         <span>Coming soon</span>
@@ -57,14 +57,14 @@ export default function CopyContract() {
     );
   }
 
-  const short = `${BNTY_TOKEN_ADDRESS.slice(0, 6)}…${BNTY_TOKEN_ADDRESS.slice(-4)}`;
+  const short = `${GREEN_TOKEN_ADDRESS.slice(0, 6)}…${GREEN_TOKEN_ADDRESS.slice(-4)}`;
 
   return (
     <button
       type="button"
       onClick={copy}
-      title={`Copy the BNTY contract address on ${CHAIN.name}`}
-      aria-label={`Copy BNTY contract address ${BNTY_TOKEN_ADDRESS}`}
+      title={`Copy the GREEN contract address on ${CHAIN.name}`}
+      aria-label={`Copy GREEN contract address ${GREEN_TOKEN_ADDRESS}`}
       className="eg-topbar-ca glass-control pointer-events-auto flex items-center gap-2 rounded-full border-amber-400/30 px-4 py-2 font-mono text-[11px] uppercase tracking-[.14em] text-amber-100/80 transition hover:border-amber-400/60 hover:text-amber-200"
     >
       <span className="text-amber-100/55">CA</span>

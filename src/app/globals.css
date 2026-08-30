@@ -678,7 +678,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* --- The Outfitter: cosmetics shop and upgrade track --------------------- */
 /* Brand green is load-bearing here rather than decorative: it marks the one
-   action that spends BNTY. Everything else stays neutral so the buy and the
+   action that spends GREEN. Everything else stays neutral so the buy and the
    refine are the two things the eye lands on. */
 .shop{display:grid;gap:12px}
 .shop-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}

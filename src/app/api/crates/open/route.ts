@@ -1,6 +1,6 @@
 import { handleSettlementRoute } from '@/lib/settle-route';
 import { GameError, openCrate } from '@/lib/game';
-import { CRATE_FEE_ETH, SPLIT_BURN_BPS, SPLIT_RESERVE_BPS, crateCostBnty } from '@/lib/economy';
+import { CRATE_FEE_ETH, SPLIT_BURN_BPS, SPLIT_RESERVE_BPS, crateCostGreen } from '@/lib/economy';
 import { getOsrUsdPrice } from '@/lib/price';
 
 export const dynamic = 'force-dynamic';
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       };
     },
     price: () => ({
-      bntyAmount: crateCostBnty(getOsrUsdPrice().usdPerBnty),
+      greenAmount: crateCostGreen(getOsrUsdPrice().usdPerGreen),
       burnBps: SPLIT_BURN_BPS,
       treasuryBps: TREASURY_BPS,
       feeEth: CRATE_FEE_ETH,

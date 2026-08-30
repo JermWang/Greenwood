@@ -251,7 +251,7 @@ describe('the introduction defers steps it cannot act on', () => {
   const SHUT = {
     heldAllocations: 0,
     unfittedInstruments: 0,
-    bntyBalance: 0,
+    greenBalance: 0,
     allocationCost: 10_000,
     deskUpgradeCost: 250,
     noteMinimum: 100,
@@ -275,7 +275,7 @@ describe('the introduction defers steps it cannot act on', () => {
     expect(allocation.current).toBe(false);
 
     // The whole point: the chain moves to the first step that CAN be acted on.
-    // Before parking, a real new fund stopped dead here — it holds no BNTY at
+    // Before parking, a real new fund stopped dead here — it holds no GREEN at
     // all since the token went live — and both outdoor steps sit behind it.
     expect(state.currentKey).toBe('intro_place');
     expect(state.finished).toBe(false);
@@ -283,7 +283,7 @@ describe('the introduction defers steps it cannot act on', () => {
 
   test('a deferred step comes back the moment its gate opens', () => {
     claimThrough(2);
-    const found = { ...SHUT, heldAllocations: 1, bntyBalance: 10_000 };
+    const found = { ...SHUT, heldAllocations: 1, greenBalance: 10_000 };
     const state = introState(W, found);
     expect(state.steps.find((s) => s.key === 'intro_allocation')!.parked).toBe(false);
     expect(state.currentKey).toBe('intro_allocation');

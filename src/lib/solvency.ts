@@ -66,7 +66,7 @@ export interface Solvency {
   pending: number;
   /** Everything the protocol would owe if every operator claimed right now. */
   liability: number;
-  /** BNTY already sent out, per the settlements table. */
+  /** GREEN already sent out, per the settlements table. */
   paidOut: number;
   /** Recorded as owed after a payout failed, and never settled. */
   owed: number;
@@ -82,7 +82,7 @@ export interface Solvency {
    * Without this the report is easy to misread. Before settlement is
    * configured the game runs entirely on mirrored balances and nothing backs
    * them, so `insolvent` is true and completely expected — and in that state
-   * `liability` is not an alarm, it is the amount of BNTY the treasury has to
+   * `liability` is not an alarm, it is the amount of GREEN the treasury has to
    * be funded with before settlement is switched on. After launch the same
    * flag being true means something is wrong. Same number, opposite meaning,
    * so the report has to say which world it is in.
@@ -120,7 +120,7 @@ export async function solvency(
    * dashboard, it stops real operators being paid.
    *
    * That matters more than it used to. The demo cookie is not a credential
-   * anybody has to earn, and a demo now starts with 50,000 fake BNTY (DEMO_BNTY)
+   * anybody has to earn, and a demo now starts with 50,000 fake GREEN (DEMO_GREEN)
    * rather than 1,000 — so without this, opening demo sessions in a loop is a
    * way for anyone to trip the brake from a browser.
    *

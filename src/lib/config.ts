@@ -90,14 +90,28 @@ export function networkEntry(name: NetworkName) {
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 /**
- * The BNTY token, once it exists on Flap, and the protocol treasury wallet that
+ * The GREEN token, once it exists on Flap, and the protocol treasury wallet that
  * receives spends and pays out claims. There are no application contracts —
  * every action is an ordinary ERC-20 transfer between these two, so these are
  * the only two addresses the app needs.
  */
-export const BNTY_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_OSR_TOKEN ?? ZERO_ADDRESS;
-export const BNTY_TREASURY_ADDRESS = process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET ?? ZERO_ADDRESS;
-/** On-chain identity required before any browser wallet prompt is allowed. */
+export const GREEN_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_OSR_TOKEN ?? ZERO_ADDRESS;
+export const GREEN_TREASURY_ADDRESS = process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET ?? ZERO_ADDRESS;
+/**
+ * On-chain identity required before any browser wallet prompt is allowed.
+ *
+ * STILL 'BNTY', AND THAT IS NOT A MISSED RENAME. The ticker the game shows is
+ * GREEN, but this value is not branding — settlement-client reads symbol() off
+ * the deployed contract and refuses to build a transfer if the two disagree.
+ * The token at NEXT_PUBLIC_OSR_TOKEN reports symbol "BNTY" and name
+ * "Greenwood", both immutable, so pointing this at GREEN would not rename
+ * anything: it would block every on-chain transaction in the game.
+ *
+ * It moves when a new token is deployed, in lockstep with the address, and not
+ * before. Same reasoning that keeps the OSR_* env vars and osr_* columns where
+ * they are (CLAUDE.md) — a name that something outside this codebase already
+ * agreed to is not ours to change unilaterally.
+ */
 export const EXPECTED_TOKEN_SYMBOL = process.env.NEXT_PUBLIC_GPU_TOKEN_SYMBOL ?? 'BNTY';
 
 export function isConfiguredAddress(value: string): value is `0x${string}` {
@@ -106,12 +120,12 @@ export function isConfiguredAddress(value: string): value is `0x${string}` {
 
 /**
  * Whether the token is live. Gates on-chain UI: balances, explorer links, and
- * the "paid in BNTY" framing. Before the token exists the game still plays in
+ * the "paid in GREEN" framing. Before the token exists the game still plays in
  * full against the mirrored balance — this only decides what the UI claims.
  *
  * Deliberately mirrors the server's SETTLEMENT_CONFIGURED so the two cannot
  * disagree about whether transactions are real.
  */
 export const TOKEN_LIVE =
-  isConfiguredAddress(BNTY_TOKEN_ADDRESS) && isConfiguredAddress(BNTY_TREASURY_ADDRESS);
+  isConfiguredAddress(GREEN_TOKEN_ADDRESS) && isConfiguredAddress(GREEN_TREASURY_ADDRESS);
 

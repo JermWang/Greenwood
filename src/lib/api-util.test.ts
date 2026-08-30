@@ -14,7 +14,7 @@ describe('API financial guards', () => {
   });
 
   it('keeps on-chain settlement locked until the token and wallet are set', () => {
-    // The BNTY token address is unset in this environment, so the gate must hold
+    // The GREEN token address is unset in this environment, so the gate must hold
     // — and must name the missing piece rather than failing opaquely.
     const blocker = settlementBlocker();
     expect(blocker).not.toBeNull();

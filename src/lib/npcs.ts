@@ -189,7 +189,7 @@ export const NPCS: Npc[] = [
       {
         kind: 'tip',
         minLevel: 4,
-        text: 'Bigger packs are Scrip, not BNTY. Fifteen slots, thirty, fifty. Do not buy the fifty until you are reliably coming back — a bigger bag is a bigger thing to hand somebody.',
+        text: 'Bigger packs are Scrip, not GREEN. Fifteen slots, thirty, fifty. Do not buy the fifty until you are reliably coming back — a bigger bag is a bigger thing to hand somebody.',
       },
       {
         kind: 'trade',
@@ -295,7 +295,7 @@ export const NPCS: Npc[] = [
       {
         kind: 'trade',
         minLevel: 0,
-        text: 'Fixed Income Notes lock BNTY for a term at a published rate. The long end pays over six times the short one. That gap is not generosity — it is what taking float out of circulation is worth to us.',
+        text: 'Fixed Income Notes lock GREEN for a term at a published rate. The long end pays over six times the short one. That gap is not generosity — it is what taking float out of circulation is worth to us.',
       },
       {
         kind: 'hint',
@@ -564,7 +564,7 @@ export const NPCS: Npc[] = [
       {
         kind: 'tip',
         minLevel: 0,
-        text: 'A Fixed Income Note locks your BNTY for a term and pays you for the inconvenience. Locked is locked — do not put your axe money in one and then find you cannot buy the axe.',
+        text: 'A Fixed Income Note locks your GREEN for a term and pays you for the inconvenience. Locked is locked — do not put your axe money in one and then find you cannot buy the axe.',
       },
       {
         kind: 'trade',

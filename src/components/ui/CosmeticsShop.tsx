@@ -36,7 +36,7 @@ const STEP_LABEL: Record<SettlementStep, string> = {
   settling: 'Settling…',
 };
 
-const bnty = (n: number) => Math.round(n).toLocaleString();
+const green = (n: number) => Math.round(n).toLocaleString();
 
 /** Filled pips up to `level`, hollow to the cap — the whole track at a glance. */
 function RankPips({ level, max }: { level: number; max: number }) {
@@ -68,7 +68,7 @@ function Card({
   scrip: number;
   busy: boolean;
   step: SettlementStep | null;
-  onBuy: (currency: 'BNTY' | 'ETH' | 'SCRIP') => void;
+  onBuy: (currency: 'GREEN' | 'ETH' | 'SCRIP') => void;
   onEquip: () => void;
   onUnequip: () => void;
   onUpgrade: () => void;
@@ -94,7 +94,7 @@ function Card({
               ? 'Listed on the Exchange'
               : maxed
                 ? 'Top of the track'
-                : `Next: ${item.nextUpgrade?.rank} · ${bnty(item.nextUpgrade?.bnty ?? 0)} BNTY`}
+                : `Next: ${item.nextUpgrade?.rank} · ${green(item.nextUpgrade?.green ?? 0)} GREEN`}
           </small>
         </div>
       )}
@@ -104,32 +104,32 @@ function Card({
           <>
             {/* Scrip leads wherever a piece offers it. It is the currency the
                 player already has for playing, and putting the token first
-                would make an earnable wardrobe look like a paid one. The BNTY
+                would make an earnable wardrobe look like a paid one. The GREEN
                 price stays visible underneath rather than being hidden, because
-                a player sitting on BNTY should still be able to skip the grind. */}
+                a player sitting on GREEN should still be able to skip the grind. */}
             {item.scrip != null ? (
               <>
                 <button
                   className="shop-buy"
                   onClick={() => onBuy('SCRIP')}
                   disabled={busy || scrip < item.scrip}
-                  title={scrip < item.scrip ? `You need ${bnty(item.scrip - scrip)} more Scrip` : undefined}
+                  title={scrip < item.scrip ? `You need ${green(item.scrip - scrip)} more Scrip` : undefined}
                 >
                   {busy
                     ? step
                       ? STEP_LABEL[step]
                       : '…'
                     : scrip < item.scrip
-                      ? `Need ${bnty(item.scrip)} Scrip`
-                      : `Buy · ${bnty(item.scrip)} Scrip`}
+                      ? `Need ${green(item.scrip)} Scrip`
+                      : `Buy · ${green(item.scrip)} Scrip`}
                 </button>
-                <button className="shop-alt" onClick={() => onBuy('BNTY')} disabled={busy}>
-                  {bnty(item.bnty)} BNTY
+                <button className="shop-alt" onClick={() => onBuy('GREEN')} disabled={busy}>
+                  {green(item.green)} GREEN
                 </button>
               </>
             ) : (
-              <button className="shop-buy" onClick={() => onBuy('BNTY')} disabled={busy}>
-                {busy ? (step ? STEP_LABEL[step] : '…') : `Buy · ${bnty(item.bnty)} BNTY`}
+              <button className="shop-buy" onClick={() => onBuy('GREEN')} disabled={busy}>
+                {busy ? (step ? STEP_LABEL[step] : '…') : `Buy · ${green(item.green)} GREEN`}
               </button>
             )}
             {ethCheckout && (
@@ -159,7 +159,7 @@ function Card({
                   step ? STEP_LABEL[step] : '…'
                 ) : (
                   <>
-                    <Sparkle size={13} weight="fill" /> Refine · {bnty(item.nextUpgrade.bnty)} BNTY
+                    <Sparkle size={13} weight="fill" /> Refine · {green(item.nextUpgrade.green)} GREEN
                   </>
                 )}
               </button>
@@ -174,7 +174,7 @@ function Card({
         {item.ladder.map((cost, i) => (
           <li key={i} className={i < item.level ? 'is-done' : ''}>
             <span>{i + 1}</span>
-            <b>{bnty(cost)}</b>
+            <b>{green(cost)}</b>
           </li>
         ))}
       </ol>
@@ -267,7 +267,7 @@ export default function CosmeticsShop({
         <div>
           <h2>The Outfitter</h2>
           <small>
-            {owned}/{data.items.length} collected · {balance != null ? `${bnty(balance)} BNTY` : 'Trading Floor'}
+            {owned}/{data.items.length} collected · {balance != null ? `${green(balance)} GREEN` : 'Trading Floor'}
           </small>
         </div>
         <nav className="shop-tabs">
@@ -303,11 +303,11 @@ export default function CosmeticsShop({
                 const result = await api.buyCosmetic(wallet, item.key, currency, setStep);
                 return {
                   catalog: result.catalog,
-                  // Only spelled out for BNTY: the ETH halves are earmarked, not
+                  // Only spelled out for GREEN: the ETH halves are earmarked, not
                   // burned, and rounding them to whole tokens would print "0".
                   note:
-                    currency === 'BNTY'
-                      ? `${item.name} is yours — ${bnty(result.burn)} BNTY burned, ${bnty(result.reserve)} back into rewards.`
+                    currency === 'GREEN'
+                      ? `${item.name} is yours — ${green(result.burn)} GREEN burned, ${green(result.reserve)} back into rewards.`
                       : `${item.name} is yours.`,
                 };
               })
@@ -343,7 +343,7 @@ export default function CosmeticsShop({
           keeps none of it.
         </span>
         <span>Cosmetics and their levels have no effect on yield, at any rank.</span>
-        {!data.ethCheckout && <span>ETH checkout is off while BNTY settlement is live.</span>}
+        {!data.ethCheckout && <span>ETH checkout is off while GREEN settlement is live.</span>}
       </footer>
     </section>
   );

@@ -5,7 +5,7 @@
 //   POST { wallet, ...params }       -> 200 { settled:false, payment }  (quote)
 //   POST { wallet, nonce, txHash }   -> 200 { settled:true,  result }   (settle)
 //
-// Between the two the operator sends the quoted BNTY to the treasury wallet as a
+// Between the two the operator sends the quoted GREEN to the treasury wallet as a
 // plain ERC-20 transfer. Critically, the settle phase reads its parameters back
 // out of the stored settlement row's `detail`, never from the request body —
 // the body is attacker-controlled, the stored row is what was actually priced.

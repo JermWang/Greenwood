@@ -113,7 +113,7 @@ describe('an open listing is a lock', () => {
 
   test('a listed cosmetic can be neither worn nor refined', () => {
     const seller = fund(wallet(4));
-    buyCosmetic(seller, 'avatar_house_jacket', 'BNTY');
+    buyCosmetic(seller, 'avatar_house_jacket', 'GREEN');
     const id = (getDb().prepare('SELECT id FROM cosmetics_owned WHERE wallet = ?').get(seller) as { id: number }).id;
     createListing(seller, 'cosmetic', id, 3_000);
 
@@ -208,7 +208,7 @@ describe('a sold machine leaves the seller floor', () => {
 
 describe('cosmetics change hands with their upgrades intact', () => {
   const buyAndList = (seller: string, key: string, price: number) => {
-    buyCosmetic(seller, key, 'BNTY');
+    buyCosmetic(seller, key, 'GREEN');
     const id = (
       getDb()
         .prepare('SELECT id FROM cosmetics_owned WHERE wallet = ? AND cosmetic_key = ?')
@@ -220,7 +220,7 @@ describe('cosmetics change hands with their upgrades intact', () => {
   test('the refinement level travels with the item', () => {
     const seller = fund(wallet(30));
     const buyer = fund(wallet(31));
-    buyCosmetic(seller, 'desk_brushed_steel', 'BNTY');
+    buyCosmetic(seller, 'desk_brushed_steel', 'GREEN');
     upgradeCosmetic(seller, 'desk_brushed_steel');
     upgradeCosmetic(seller, 'desk_brushed_steel');
     const id = (
@@ -242,7 +242,7 @@ describe('cosmetics change hands with their upgrades intact', () => {
 
   test('a worn cosmetic must come off before it is listed', () => {
     const seller = fund(wallet(32));
-    buyCosmetic(seller, 'avatar_market_maker', 'BNTY');
+    buyCosmetic(seller, 'avatar_market_maker', 'GREEN');
     equipCosmetic(seller, 'avatar_market_maker');
     const id = (
       getDb().prepare('SELECT id FROM cosmetics_owned WHERE wallet = ?').get(seller) as { id: number }
@@ -270,7 +270,7 @@ describe('cosmetics change hands with their upgrades intact', () => {
     const seller = fund(wallet(35));
     const buyer = fund(wallet(36));
     const { id, listing } = buyAndList(seller, 'plinth_founders', 50_000);
-    buyCosmetic(buyer, 'plinth_founders', 'BNTY');
+    buyCosmetic(buyer, 'plinth_founders', 'GREEN');
 
     // One copy per wallet is a unique index; without this check the UPDATE would
     // fail mid-transaction and roll back a purchase the buyer already paid for.

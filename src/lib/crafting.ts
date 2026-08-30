@@ -222,7 +222,7 @@ export const RECIPES: Recipe[] = [
    *
    * A desk frame, and NOT a desk.
    *
-   * Desks are the game's BNTY sink — opening one is where the token goes, and
+   * Desks are the game's GREEN sink — opening one is where the token goes, and
    * the halving schedule is written against that. A desk craftable from wood
    * alone would quietly remove the sink and inflate the supply, which is an
    * economic decision and not one to make as a side effect of adding a

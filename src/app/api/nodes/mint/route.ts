@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     price: (_wallet, p) => {
       const fam = NODE_FAMILIES.find((f) => f.key === p.familyKey)!;
       return {
-        bntyAmount: fam.burnCostBnty,
+        greenAmount: fam.burnCostGreen,
         burnBps: fam.burnShareBps,
         treasuryBps: fam.treasuryShareBps,
         feeEth: fam.mintFeeEth,

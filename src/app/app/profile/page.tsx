@@ -230,7 +230,7 @@ export default function ProfilePage() {
             <div className="grid grid-cols-2 gap-px bg-ink-600 sm:grid-cols-4">
               <Stat label="Portfolio tier" value={`L${profile.compoundLevel}`} />
               <Stat label="Desks" value={String(profile.nodeCount)} />
-              <Stat label="BNTY earned" value={`${displayNumber(profile.totalProduced)} BNTY`} />
+              <Stat label="GREEN earned" value={`${displayNumber(profile.totalProduced)} GREEN`} />
               <Stat label="Fund sessions" value={displayNumber(profile.totalSessions, 0)} />
             </div>
             <div className="grid grid-cols-1 gap-3 border-t border-ink-600 p-4 text-xs text-steel-400 sm:grid-cols-2">

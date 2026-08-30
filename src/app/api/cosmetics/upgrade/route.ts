@@ -17,7 +17,7 @@ function currentLevel(wallet: string, key: string): number {
 }
 
 /**
- * Pay BNTY to take an owned cosmetic one step up its track.
+ * Pay GREEN to take an owned cosmetic one step up its track.
  *
  * The level is carried in the settlement detail alongside the key, so a quote
  * opened at level 2 can only ever settle the step from 2 to 3. Without it, a
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       if (level !== p.fromLevel) {
         throw new GameError('That cosmetic changed level — request a fresh quote', 409);
       }
-      return { bntyAmount: cosmeticUpgradeCost(cosmeticDef(p.key).bnty, level) };
+      return { greenAmount: cosmeticUpgradeCost(cosmeticDef(p.key).green, level) };
     },
     apply: (wallet, p, opts) => ({
       ...upgradeCosmetic(wallet, p.key, opts, p.fromLevel),

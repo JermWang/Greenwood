@@ -2,8 +2,8 @@
 //
 // Before this, the only limit on a floor was a desk COUNT (COMPOUND_LEVELS
 // .maxNodes). That is not a constraint, it is an ordering: a new desk cost
-// 1,000 BNTY for 1.00x, while taking one desk L1 -> L10 cost ~28,200 BNTY for
-// 5.00x. Per BNTY, minting beat levelling roughly five to one, so the optimal
+// 1,000 GREEN for 1.00x, while taking one desk L1 -> L10 cost ~28,200 GREEN for
+// 5.00x. Per GREEN, minting beat levelling roughly five to one, so the optimal
 // play was always "fill every slot, then level whatever is left over". Every
 // player converged on the same floor and there was no build to talk about.
 //
@@ -106,7 +106,7 @@ export function upgradeCapital(level: number): number {
 /**
  * Capital budget granted by each portfolio level.
  *
- * A pure function of portfolio level, deliberately. Letting staked BNTY or any
+ * A pure function of portfolio level, deliberately. Letting staked GREEN or any
  * other balance raise the budget would make the ceiling something you buy
  * rather than something you reach, which is the dynamic the welcome boost and
  * the 30% share cap exist to soften — and it would make the balance test
@@ -165,7 +165,7 @@ export function capitalUsage(deskLevels: number[], portfolioLevel: number): Capi
 // ---------------------------------------------------------------------------
 
 /**
- * BNTY to take a desk from `level` to the next one.
+ * GREEN to take a desk from `level` to the next one.
  *
  * Lives here rather than in the engine because it is half of one decision. The
  * capital budget says how DEEP a fund may build; this curve says what that
@@ -180,7 +180,7 @@ export function capitalUsage(deskLevels: number[], portfolioLevel: number): Capi
  * width for the same capital, and the ratio sets by how much.
  *
  * It was 1.6, chosen when desk COUNT was the only constraint. At that steepness
- * taking one desk L1 -> L10 cost ~28,200 BNTY against ~1,000 for a fresh desk —
+ * taking one desk L1 -> L10 cost ~28,200 GREEN against ~1,000 for a fresh desk —
  * a 5.2x money premium on depth on top of nothing at all in return, which is
  * why nobody levelled and every floor looked identical. The value here is set
  * by archetype-balance.test.ts, which fails if it drifts far enough to make any
@@ -193,7 +193,7 @@ export function nodeUpgradeCost(level: number): number {
   return Math.round(UPGRADE_COST_BASE * Math.pow(UPGRADE_COST_RATIO, Math.max(1, level) - 1));
 }
 
-/** Total BNTY sunk into a desk taken from mint to `level`. */
+/** Total GREEN sunk into a desk taken from mint to `level`. */
 export function deskBuildCost(level: number, mintCost: number): number {
   let total = mintCost;
   for (let l = 1; l < level; l += 1) total += nodeUpgradeCost(l);
@@ -239,7 +239,7 @@ export const DESK_MATERIAL = 'desk-frame';
 /**
  * Frames to reach a given desk level from the one below.
  *
- * MATERIALS ARE ON TOP OF THE TOKEN, NEVER INSTEAD OF IT. Desks are the BNTY
+ * MATERIALS ARE ON TOP OF THE TOKEN, NEVER INSTEAD OF IT. Desks are the GREEN
  * sink and the halving schedule is written against them; a desk payable in wood
  * would quietly remove that sink. So this is a second, parallel requirement —
  * you need the capital AND the timber — and the capital curve above is

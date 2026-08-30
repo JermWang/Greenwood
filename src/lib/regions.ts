@@ -63,7 +63,7 @@ export interface Region {
    * single desk rather than as a balance or a total. Levelling one desk is a
    * repeated action against a shared capital budget (see lib/capital), which
    * keeps region access a function of what you have DONE — the same principle
-   * that keeps XP off holdings in lib/progression. Gating on BNTY held would
+   * that keeps XP off holdings in lib/progression. Gating on GREEN held would
    * make the outdoors something you buy.
    *
    * The real payoff is coupling. Without it the idle game and the extraction

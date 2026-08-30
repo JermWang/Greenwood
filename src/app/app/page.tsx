@@ -1,6 +1,6 @@
 'use client';
 
-// The Machine Room — the BNTY floor cockpit, digital twin, and production controls.
+// The Machine Room — the GREEN floor cockpit, digital twin, and production controls.
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -36,7 +36,7 @@ const SETTLEMENT_STEP_LABEL: Record<SettlementStep, string> = {
   quoting: 'Pricing action…',
   preflighting: 'Simulating exact wallet call...',
   reviewing: 'Review the verified transaction details',
-  submitting: 'Confirm the BNTY payment in your wallet',
+  submitting: 'Confirm the GREEN payment in your wallet',
   confirming: 'Waiting for confirmation…',
   settling: 'Finalising…',
 };
@@ -175,7 +175,7 @@ export default function CommandPage() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [cycleCameraFocus]);
   const pendingTotal = Object.values(op?.pending ?? {}).reduce((a, b) => a + b, 0);
-  const dailyBnty = (op?.productionRate ?? 0) * 86400;
+  const dailyGreen = (op?.productionRate ?? 0) * 86400;
   const networkShare =
     op && overview && overview.halving.currentRatePerSec > 0
       ? (op.productionRate / (overview.halving.currentRatePerSec * op.welcomeBoostFactor || 1)) * 100
@@ -185,7 +185,7 @@ export default function CommandPage() {
     async (label: string, fn: (onStep: StepHandler) => Promise<unknown>, success?: string) => {
       if (!wallet) return say('Connect your wallet first');
       // Refuse to start anything while a deploy is rolling out. A spend puts
-      // BNTY on-chain before the server records it, so a cutover landing between
+      // GREEN on-chain before the server records it, so a cutover landing between
       // those two steps costs the player real tokens and leaves us owing a
       // refund. Waiting a couple of minutes is much cheaper than reconciling.
       if (useDeployStatus.getState().deploying) {
@@ -225,7 +225,7 @@ export default function CommandPage() {
       const n = r.claims.length;
       if (n === 0) return say('Nothing to claim');
       // Name the network fee rather than letting the payout quietly arrive short.
-      const gas = r.gasBnty > 0 ? ` — ${r.gasBnty.toFixed(2)} BNTY network fee` : '';
+      const gas = r.gasGreen > 0 ? ` — ${r.gasGreen.toFixed(2)} GREEN network fee` : '';
       say(`Rewards claimed (${n})${gas}`);
     });
 
@@ -248,7 +248,7 @@ export default function CommandPage() {
           <div className="eg-uplink-visual" aria-hidden>
             <span className="eg-uplink-orbit orbit-a" />
             <span className="eg-uplink-orbit orbit-b" />
-            <span className="eg-uplink-chip">BNTY</span>
+            <span className="eg-uplink-chip">GREEN</span>
           </div>
           <div className="relative z-10 max-w-xl">
             <div className="font-mono text-[9px] font-bold uppercase tracking-[.28em] text-lime-300">Fund uplink offline</div>
@@ -291,7 +291,7 @@ export default function CommandPage() {
         quests={quests}
         tier={op.level}
         deskCount={nodes.length}
-        bntyBalance={op.bntyBalance}
+        greenBalance={op.greenBalance}
       />
 
       {/*
@@ -317,17 +317,17 @@ export default function CommandPage() {
             disabled={pendingTotal <= 0 || busy === 'claim' || op.claimCooldownRemainingMs > 0}
             onClick={claimAll}
           >
-            {busy === 'claim' ? 'Routing yield…' : op.claimCooldownRemainingMs > 0 ? `Buffer locked · ${Math.ceil(op.claimCooldownRemainingMs / 60000)}m` : `Route ${fmt(pendingTotal)} BNTY`}
+            {busy === 'claim' ? 'Routing yield…' : op.claimCooldownRemainingMs > 0 ? `Buffer locked · ${Math.ceil(op.claimCooldownRemainingMs / 60000)}m` : `Route ${fmt(pendingTotal)} GREEN`}
           </button>
         </div>
         <div className="eg-command-metrics">
-          <div><span>FLOW</span><strong>{nodes.length ? fmt(dailyBnty, 0) : '0'}</strong><small>BNTY / day</small></div>
+          <div><span>FLOW</span><strong>{nodes.length ? fmt(dailyGreen, 0) : '0'}</strong><small>GREEN / day</small></div>
           <div><span>SHARE</span><strong>{networkShare.toFixed(1)}%</strong><small>Emission grid</small></div>
         </div>
       </section>
 
       <div className="eg-alert-stack">
-        {!TOKEN_LIVE && <div className="eg-system-alert"><span>SIM</span><p>Pre-token simulation is active. Fund activity is tracked now and settles when BNTY goes live.</p></div>}
+        {!TOKEN_LIVE && <div className="eg-system-alert"><span>SIM</span><p>Pre-token simulation is active. Fund activity is tracked now and settles when GREEN goes live.</p></div>}
         {unseen.length > 0 && (
           <button className="eg-system-alert is-reward" onClick={() => { setCrateOpen(true); void api.markCratesSeen(wallet!).then(refresh).catch(() => {}); }}>
             <CrateThumb size={34} rarity="legendary" />
@@ -389,7 +389,7 @@ export default function CommandPage() {
           <section className="eg-console-card is-yield">
             <div className="eg-console-heading"><span>YIELD BUFFER</span><span>{overview ? `HALVING ${overview.halving.cycleIndex + 2}` : 'SYNCING'}</span></div>
             <div className="mt-5 flex items-end justify-between gap-4">
-              <div><strong className="text-[clamp(2.2rem,5vw,4.2rem)] font-semibold leading-none tracking-[-.06em] text-white">{fmt(pendingTotal)}</strong><span className="ml-2 font-mono text-[10px] text-lime-300">BNTY</span></div>
+              <div><strong className="text-[clamp(2.2rem,5vw,4.2rem)] font-semibold leading-none tracking-[-.06em] text-white">{fmt(pendingTotal)}</strong><span className="ml-2 font-mono text-[10px] text-lime-300">GREEN</span></div>
               <span className="font-mono text-[9px] text-emerald-100/42">{fmt(op.productionRate, 4)} / SEC</span>
             </div>
             <div className="eg-flow-track"><span style={{ width: `${Math.max(4, Math.min(100, networkShare))}%` }} /></div>
@@ -404,8 +404,8 @@ export default function CommandPage() {
               {nodes.map((node, index) => (
                 <button key={node.id} onClick={() => { selectNode(node.id); setCameraFocusId(node.id); }} className={`eg-line-row ${node.id === selectedNodeId ? 'is-active' : ''}`}>
                   <span className="eg-line-index">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="min-w-0 text-left"><strong>{node.type === 'oil' ? 'Equity Desk' : 'Treasury Desk'}</strong><small>{auraLabel(node.level)} · {fmt(node.productionRate, 4)} BNTY/s</small></span>
-                  <span className="ml-auto text-right"><strong style={{ color: auraHex(node.level) }}>L{node.level}</strong><small>{fmt(node.pendingBnty)} BNTY</small></span>
+                  <span className="min-w-0 text-left"><strong>{node.type === 'oil' ? 'Equity Desk' : 'Treasury Desk'}</strong><small>{auraLabel(node.level)} · {fmt(node.productionRate, 4)} GREEN/s</small></span>
+                  <span className="ml-auto text-right"><strong style={{ color: auraHex(node.level) }}>L{node.level}</strong><small>{fmt(node.pendingGreen)} GREEN</small></span>
                 </button>
               ))}
             </div>
@@ -478,7 +478,7 @@ function CompoundPanel({
       {next ? (
         <>
           <div className="text-sm text-steel-300">
-            {next.totalBnty.toLocaleString()} BNTY
+            {next.totalGreen.toLocaleString()} GREEN
             <span className="text-[11px] text-steel-500"> · 50/30/20 burn/reserve/treasury · +0.00001 ETH</span>
           </div>
           {cooling && (
@@ -538,7 +538,7 @@ function NodeDetail({
 }) {
   const { wallet } = useOperation();
   const slots = NODE_SLOTS[node.type === 'oil' ? 'oil' : 'mine'];
-  const fill = node.storageCap > 0 ? Math.min(1, node.pendingBnty / node.storageCap) : 0;
+  const fill = node.storageCap > 0 ? Math.min(1, node.pendingGreen / node.storageCap) : 0;
   const fillColor = fill >= 0.999 ? '#dc2626' : fill >= 0.85 ? '#ea580c' : fill >= 0.5 ? '#f59e0b' : '#71717a';
   return (
     <div className="panel p-4">
@@ -568,7 +568,7 @@ function NodeDetail({
           {auraLabel(node.level)}
         </span>
         <span className="ml-auto font-mono text-steel-500">
-          {fmt(node.productionRate)} BNTY/s
+          {fmt(node.productionRate)} GREEN/s
         </span>
       </div>
 
@@ -576,7 +576,7 @@ function NodeDetail({
         <div className="flex justify-between text-[11px] text-steel-400">
           <span>Storage {fill >= 0.999 ? '· FULL' : ''}</span>
           <span className="font-mono">
-            {fmt(node.pendingBnty)} / {fmt(node.storageCap)}
+            {fmt(node.pendingGreen)} / {fmt(node.storageCap)}
           </span>
         </div>
         <div className="mt-1 h-1.5 overflow-hidden rounded bg-ink-700">
@@ -625,10 +625,10 @@ function NodeDetail({
             }, `Desk leveled up!`)
           }
         >
-          Level Up · {node.nextLevelCost.toLocaleString()} BNTY
+          Level Up · {node.nextLevelCost.toLocaleString()} GREEN
         </button>
       </div>
-      {node.type === 'mine' && node.pendingBnty > 0 && (
+      {node.type === 'mine' && node.pendingGreen > 0 && (
         <button
           className="btn-secondary mt-2 w-full text-xs"
           disabled={busy === 'compound'}
@@ -638,7 +638,7 @@ function NodeDetail({
             }, 'Reinvested at 0.75% fee')
           }
         >
-          Reinvest BNTY → Balance (0.75% fee)
+          Reinvest GREEN → Balance (0.75% fee)
         </button>
       )}
     </div>
@@ -706,7 +706,7 @@ function DeployModal({
             <div className="flex items-center gap-2">
               <span className="font-semibold text-white">{f.name}</span>
               <span className="ml-auto font-mono text-sm text-lime-300">
-                {f.burnCostBnty.toLocaleString()} BNTY
+                {f.burnCostGreen.toLocaleString()} GREEN
               </span>
             </div>
             <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-steel-500">
@@ -714,8 +714,8 @@ function DeployModal({
             </div>
             <p className="mt-1 text-xs text-steel-400">{f.description}</p>
             <div className="mt-2 grid grid-cols-3 gap-1 text-[10px] text-steel-500">
-              <span>→ burned {(f.burnCostBnty * f.burnShareBps) / 10000}</span>
-              <span>→ treasury {(f.burnCostBnty * f.treasuryShareBps) / 10000}</span>
+              <span>→ burned {(f.burnCostGreen * f.burnShareBps) / 10000}</span>
+              <span>→ treasury {(f.burnCostGreen * f.treasuryShareBps) / 10000}</span>
               <span>+ {f.mintFeeEth} ETH fee</span>
             </div>
             </button>
@@ -820,7 +820,7 @@ function CratePicker({
                 disabled={busy === 'crate'}
                 onClick={() => onOpen(crate.id)}
               >
-                Open · {cost.toLocaleString()} BNTY
+                Open · {cost.toLocaleString()} GREEN
               </button>
             </div>
           ))}

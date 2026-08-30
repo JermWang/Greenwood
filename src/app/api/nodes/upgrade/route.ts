@@ -30,7 +30,7 @@ export async function POST(request: Request) {
         throw new GameError('node level changed — request a fresh quote', 409);
       }
       return {
-        bntyAmount: nodeUpgradeCost(node.level),
+        greenAmount: nodeUpgradeCost(node.level),
         burnBps: SPLIT_BURN_BPS,
         treasuryBps: TREASURY_BPS,
         feeEth: 0,

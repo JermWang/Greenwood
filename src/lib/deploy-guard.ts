@@ -8,7 +8,7 @@
 // real.
 //
 // The point is to never START something that a cutover could cut in half: a spend
-// puts BNTY on-chain before the server records it, so a process dying between
+// puts GREEN on-chain before the server records it, so a process dying between
 // those two steps costs the operator real tokens. COMPLETING an already-paid
 // action is the opposite — it is what rescues those tokens — so settling an
 // existing payment is deliberately NOT blocked.

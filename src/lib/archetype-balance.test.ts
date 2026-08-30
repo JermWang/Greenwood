@@ -1,7 +1,7 @@
 // The balance test: no build may dominate.
 //
 // This is a simulation, not a unit test. It constructs three complete funds at
-// the same portfolio level, gives each the same BNTY to spend and the same bag
+// the same portfolio level, gives each the same GREEN to spend and the same bag
 // of instruments to fit, lets each pursue a different strategy, and asserts
 // that they finish within TOLERANCE of one another on net yield.
 //
@@ -16,12 +16,12 @@
 // The three strategies are three points on the width/depth continuum, each
 // playing to the advantage its shape actually confers under the real engine:
 //
-//   WIDE  — the capital ceiling spent on desk count at L1. Cheapest in BNTY,
+//   WIDE  — the capital ceiling spent on desk count at L1. Cheapest in GREEN,
 //           but its instruments spread thin across many slots and it has the
 //           hardest geometry problem: fitting every desk on the aisle without
 //           tripping the crowding penalty.
 //   DEEP  — the same ceiling spent on a few very deep desks. Most expensive in
-//           BNTY, trivially easy to arrange, and it concentrates every elite
+//           GREEN, trivially easy to arrange, and it concentrates every elite
 //           instrument onto a handful of slots, which the multiplicative
 //           rarity-boost stack rewards super-linearly.
 //   MID   — mid-depth Treasury desks. Between the two on every axis, and takes
@@ -70,7 +70,7 @@ const TOLERANCE = 0.35;
 const PORTFOLIO_LEVEL = 10;
 
 /**
- * BNTY each fund may spend on desks.
+ * GREEN each fund may spend on desks.
  *
  * Set well above what the widest build needs to reach the capital ceiling, so
  * money is not the binding constraint for anyone. A test where one build simply
@@ -207,7 +207,7 @@ interface Outcome {
   name: string;
   desks: number;
   capitalUsed: number;
-  bntySpent: number;
+  greenSpent: number;
   rawPower: number;
   layoutMultiplier: number;
   spineShare: number;
@@ -233,7 +233,7 @@ function simulate(strategy: Strategy): Outcome {
     name: strategy.name,
     desks,
     capitalUsed: desks * deskCapital(strategy.deskLevel),
-    bntySpent: desks * deskBuildCost(strategy.deskLevel, strategy.mintCost),
+    greenSpent: desks * deskBuildCost(strategy.deskLevel, strategy.mintCost),
     rawPower,
     layoutMultiplier: score.multiplier,
     spineShare,
@@ -248,7 +248,7 @@ describe('archetype balance', () => {
     const rows = outcomes.map(
       (o) =>
         `${o.name.padEnd(26)} desks ${String(o.desks).padStart(3)}  capital ${String(o.capitalUsed).padStart(5)}` +
-        `  BNTY ${o.bntySpent.toLocaleString().padStart(9)}  raw ${o.rawPower.toFixed(1).padStart(9)}` +
+        `  GREEN ${o.greenSpent.toLocaleString().padStart(9)}  raw ${o.rawPower.toFixed(1).padStart(9)}` +
         `  layout ${o.layoutMultiplier.toFixed(3)}  aisle ${(o.spineShare * 100).toFixed(0).padStart(3)}%` +
         `  net ${o.netYield.toFixed(1).padStart(9)}`
     );
@@ -278,12 +278,12 @@ describe('archetype balance', () => {
   });
 
   it('does not let any build reach the ceiling on money alone', () => {
-    // If a build is limited by BNTY rather than by capital, the capital budget
+    // If a build is limited by GREEN rather than by capital, the capital budget
     // is not the binding constraint for it and the comparison above is really
     // measuring who is cheapest. That is worth failing on separately, because
     // the symptom (a tight spread) can look like success.
     for (const outcome of outcomes) {
-      expect(outcome.bntySpent, `${outcome.name.trim()} ran out of money before capital`).toBeLessThan(SPEND);
+      expect(outcome.greenSpent, `${outcome.name.trim()} ran out of money before capital`).toBeLessThan(SPEND);
     }
   });
 });

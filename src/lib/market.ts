@@ -51,16 +51,16 @@ export interface Listing {
   seller: string;
   itemKind: ItemKind;
   itemId: number;
-  priceBnty: number;
+  priceGreen: number;
   createdAt: number;
   /** Human-readable description of what is being sold. */
   item: Record<string, unknown> | null;
 }
 
 /** Fee taken from a sale, and what the seller actually receives. */
-export function splitSale(priceBnty: number): { fee: number; toSeller: number } {
-  const fee = Math.floor((priceBnty * MARKET_FEE_BPS) / 10_000);
-  return { fee, toSeller: priceBnty - fee };
+export function splitSale(priceGreen: number): { fee: number; toSeller: number } {
+  const fee = Math.floor((priceGreen * MARKET_FEE_BPS) / 10_000);
+  return { fee, toSeller: priceGreen - fee };
 }
 
 /**
@@ -124,10 +124,10 @@ export function createListing(
   wallet: string,
   kind: ItemKind,
   itemId: number,
-  priceBnty: number
+  priceGreen: number
 ): Listing {
-  if (!Number.isFinite(priceBnty) || priceBnty <= 0) {
-    throw new GameError('price must be a positive number of BNTY', 400);
+  if (!Number.isFinite(priceGreen) || priceGreen <= 0) {
+    throw new GameError('price must be a positive number of GREEN', 400);
   }
   assertSellable(wallet, kind, itemId);
 
@@ -140,7 +140,7 @@ export function createListing(
         `INSERT INTO listings (seller, item_kind, item_id, price_osr, created_at, status)
          VALUES (?,?,?,?,?, 'open')`
       )
-      .run(wallet, kind, itemId, priceBnty, now);
+      .run(wallet, kind, itemId, priceGreen, now);
     listingId = Number(result.lastInsertRowid);
   } catch (error) {
     // The partial unique index makes double-listing a race-safe failure rather
@@ -165,7 +165,7 @@ export function createListing(
     seller: wallet,
     itemKind: kind,
     itemId,
-    priceBnty,
+    priceGreen,
     createdAt: now,
     item: describeItem(kind, itemId),
   };
@@ -191,7 +191,7 @@ export function cancelListing(wallet: string, listingId: number) {
 /**
  * Move a sold item to its buyer and close the listing.
  *
- * Payment is handled by the caller — the buyer sends BNTY to the seller on-chain
+ * Payment is handled by the caller — the buyer sends GREEN to the seller on-chain
  * and this runs only once that transfer is verified. Ownership transfer and
  * listing closure happen in one transaction so a crash cannot leave an item
  * paid for but undelivered.
@@ -294,7 +294,7 @@ export function transferSoldItem(listingId: number, buyer: string): Listing {
     seller: row.seller,
     itemKind: row.item_kind,
     itemId: row.item_id,
-    priceBnty: row.price_osr,
+    priceGreen: row.price_osr,
     createdAt: row.created_at,
     item: describeItem(row.item_kind, row.item_id),
   };
@@ -410,7 +410,7 @@ export function openListings(kind?: ItemKind, limit = 100): Listing[] {
     seller: row.seller,
     itemKind: row.item_kind,
     itemId: row.item_id,
-    priceBnty: row.price_osr,
+    priceGreen: row.price_osr,
     createdAt: row.created_at,
     item: describeItem(row.item_kind, row.item_id),
   }));

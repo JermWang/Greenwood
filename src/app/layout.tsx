@@ -47,7 +47,7 @@ const SITE_URL =
  * That is the sentence that turns a hint into a spoiler.
  */
 const DESCRIPTION =
-  'An idle yield game on Robinhood Chain. Open desks, fit instruments, compound BNTY, ' +
+  'An idle yield game on Robinhood Chain. Open desks, fit instruments, compound GREEN, ' +
   'and take what you earn out past the fence. The desks run day and night — something has ' +
   'to keep the lights on.';
 
@@ -92,7 +92,7 @@ export const metadata: Metadata = {
   },
   description: DESCRIPTION,
   applicationName: 'Evergreen',
-  keywords: ['Evergreen', 'BNTY', 'Robinhood Chain', 'idle game', 'yield', 'RWA', 'DeFi'],
+  keywords: ['Evergreen', 'GREEN', 'Robinhood Chain', 'idle game', 'yield', 'RWA', 'DeFi'],
   /**
    * Canonical, so the same game shared from two hosts is one page.
    *

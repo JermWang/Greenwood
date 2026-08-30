@@ -1,4 +1,4 @@
-// BNTY instrument rarity — seven tiers, and the multiplier each one is worth.
+// GREEN instrument rarity — seven tiers, and the multiplier each one is worth.
 //
 // Desk GRADES are a separate idea and live in lib/aura: rarity is what an
 // instrument rolled, grade is how far a desk has been levelled. They were

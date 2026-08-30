@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { solvency, setPayoutsPaused } from '@/lib/solvency';
 import { onchainReserves } from '@/lib/onchain';
-import { BNTY_TOKEN_ADDRESS, isConfiguredAddress } from '@/lib/config';
+import { GREEN_TOKEN_ADDRESS, isConfiguredAddress } from '@/lib/config';
 import { SETTLEMENT_CONFIGURED, settlementBlocker } from '@/lib/settlement';
 
 export const dynamic = 'force-dynamic';
@@ -16,16 +16,16 @@ function authorised(request: Request): NextResponse | null {
 }
 
 /**
- * The treasury's BNTY balance, read live off the chain.
+ * The treasury's GREEN balance, read live off the chain.
  *
  * Null when the token is not configured, which is honest rather than
  * convenient: pre-launch there is no treasury to read, and reporting 0 would
  * make a perfectly healthy pre-token install look catastrophically insolvent.
  */
 async function readTreasury(): Promise<number | null> {
-  if (!isConfiguredAddress(BNTY_TOKEN_ADDRESS)) return null;
+  if (!isConfiguredAddress(GREEN_TOKEN_ADDRESS)) return null;
   const holders = await onchainReserves();
-  // onchainReserves reports ETH alongside the token; only the BNTY figure
+  // onchainReserves reports ETH alongside the token; only the GREEN figure
   // is a liability cover. Gas is a separate concern -- see the note there.
   const treasury = holders.find((h) => h.walletLabel === 'Treasury');
   return treasury ? treasury.balanceUi : null;
@@ -35,7 +35,7 @@ async function readTreasury(): Promise<number | null> {
  * What is promised versus what is held.
  *
  * The number to watch is `surplus`. Negative means the ledger has promised more
- * BNTY than the treasury holds, and every claim from that point is drawing down
+ * GREEN than the treasury holds, and every claim from that point is drawing down
  * a reserve that cannot cover the rest — the earlier that is noticed, the more
  * of it is recoverable.
  */

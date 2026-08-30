@@ -1,5 +1,5 @@
 // Capacity contract coverage: the interest math, the reserve solvency rule that
-// stops the vault promising BNTY it does not hold, and the two ways a contract
+// stops the vault promising GREEN it does not hold, and the two ways a contract
 // can end.
 //
 // Each run gets its own SQLite file via OSR_DATA_DIR so tests never touch the
@@ -16,7 +16,7 @@ delete process.env.VERCEL;
 const { openStake, closeStake, stakePositions, stakeTerms, committedInterest } = await import('./stake');
 const { getOrCreateUser } = await import('./game');
 const { getDb, setProtocolValue } = await import('./db');
-const { STAKE_MIN_BNTY, STAKE_MAX_OPEN, STAKE_TERMS, TOTAL_SUPPLY, stakeTermInterest } =
+const { STAKE_MIN_GREEN, STAKE_MAX_OPEN, STAKE_TERMS, TOTAL_SUPPLY, stakeTermInterest } =
   await import('./economy');
 
 const wallet = (n: number) => `0x${String(n).padStart(40, '0')}`;
@@ -63,7 +63,7 @@ describe('opening a contract', () => {
   test('refuses a principal the wallet cannot cover', () => {
     const w = wallet(2);
     fund(w, 100);
-    expect(() => openStake(w, 5_000, TERM.days)).toThrow(/Not enough BNTY/);
+    expect(() => openStake(w, 5_000, TERM.days)).toThrow(/Not enough GREEN/);
   });
 
   test('refuses a term that is not on the published rate card', () => {
@@ -76,7 +76,7 @@ describe('opening a contract', () => {
   test('refuses anything under the minimum', () => {
     const w = wallet(4);
     fund(w, 10_000);
-    expect(() => openStake(w, STAKE_MIN_BNTY - 1, TERM.days)).toThrow(/minimum Note/);
+    expect(() => openStake(w, STAKE_MIN_GREEN - 1, TERM.days)).toThrow(/minimum Note/);
   });
 
   test('caps how many contracts one operator may hold open', () => {

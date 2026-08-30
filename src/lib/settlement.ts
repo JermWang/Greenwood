@@ -3,14 +3,14 @@
 // SPENDS (mint, upgrade, crate, compound, expedite):
 //   1. QUOTE   the server prices the action, records a settlement row, and
 //              returns payment instructions (token, treasury address, amount).
-//   2. PAY     the operator sends that many BNTY to the treasury wallet — an
+//   2. PAY     the operator sends that many GREEN to the treasury wallet — an
 //              ordinary ERC-20 transfer signed in their own wallet.
 //   3. SETTLE  the operator hands back the tx hash. The server reads the
 //              receipt, verifies the token's Transfer event really moved the
 //              quoted amount from them to the treasury, and only then applies
 //              the game-state change.
 //
-// PAYOUTS (claim): the server sends BNTY from the protocol wallet to the player.
+// PAYOUTS (claim): the server sends GREEN from the protocol wallet to the player.
 // That wallet is a Privy server wallet, so signing happens inside Privy via the
 // app secret — no private key is ever stored by this app.
 //
@@ -23,7 +23,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { getDb } from './db';
 import { GameError } from './game';
 import { requirePayoutsEnabled } from './solvency';
-import { CHAIN, BNTY_TOKEN_ADDRESS, isConfiguredAddress } from './config';
+import { CHAIN, GREEN_TOKEN_ADDRESS, isConfiguredAddress } from './config';
 // demo.ts has no imports of its own, by design, so this cannot cycle.
 import { isDemoWallet } from './demo';
 
@@ -54,7 +54,7 @@ const TREASURY = (process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET ?? '').trim();
  * a bad log line, or a server compromise is a drained treasury.
  *
  * Three things stand in front of that, all below: the per-payout cap
- * (MAX_PAYOUT_BNTY) bounds a single bad call, the payout brake
+ * (MAX_PAYOUT_GREEN) bounds a single bad call, the payout brake
  * (requirePayoutsEnabled) stops all of them on command, and the key's address
  * MUST equal the published treasury or the module refuses to consider itself
  * configured — a signer that is not the address spends were paid into would pay
@@ -63,14 +63,14 @@ const TREASURY = (process.env.NEXT_PUBLIC_OSR_TREASURY_WALLET ?? '').trim();
 const TREASURY_PK = (process.env.OSR_TREASURY_PK ?? '').trim();
 
 /**
- * Largest single payout the treasury will sign, in BNTY.
+ * Largest single payout the treasury will sign, in GREEN.
  *
  * A claim is bounded by what a wallet accrued, so a legitimate one is never
  * huge; a request to send far more than that is a bug or an exploit, and the
  * cap turns "drain the treasury" into "lose one capped payout". Zero disables
  * it, which is the pre-token default where no payout can happen anyway.
  */
-const MAX_PAYOUT_BNTY = Number(process.env.OSR_MAX_PAYOUT_BNTY ?? '0');
+const MAX_PAYOUT_GREEN = Number(process.env.OSR_MAX_PAYOUT_GREEN ?? '0');
 
 /** Confirmations required before a spend is credited, or a payout is trusted. */
 export const MIN_CONFIRMATIONS = Number(process.env.OSR_MIN_CONFIRMATIONS ?? 2);
@@ -106,7 +106,7 @@ function treasurySignerAddress(): string | null {
 }
 
 export const SETTLEMENT_CONFIGURED =
-  isConfiguredAddress(BNTY_TOKEN_ADDRESS) &&
+  isConfiguredAddress(GREEN_TOKEN_ADDRESS) &&
   isConfiguredAddress(TREASURY) &&
   treasurySignerAddress() === TREASURY.toLowerCase();
 
@@ -119,12 +119,12 @@ export const SETTLEMENT_CONFIGURED =
  *
  *   SPENDS   every priced action started returning payment instructions to an
  *            account with no wallet behind it. A demo player walked to the
- *            Machine Room and was asked to pay 1,000 BNTY to open their first
+ *            Machine Room and was asked to pay 1,000 GREEN to open their first
  *            desk — the demo simply stopped working, and the "Play demo" button
  *            on the landing page became a dead end.
  *
  *   PAYOUTS  worse, and quietly. `claim` consumed the accrual and then sent
- *            real BNTY from the treasury to `0xfacade00…`, an address nobody
+ *            real GREEN from the treasury to `0xfacade00…`, an address nobody
  *            controls and nobody can ever spend from. With an empty treasury
  *            that only fails; with a funded one it is a permanent loss, once
  *            per claim, for as long as it goes unnoticed.
@@ -146,7 +146,7 @@ export function settlesOnChain(wallet: string): boolean {
 
 /** Why writes are still off-chain. Surfaced verbatim so the reason is the true one. */
 export function settlementBlocker(): string | null {
-  if (!isConfiguredAddress(BNTY_TOKEN_ADDRESS)) return 'BNTY token address is not set yet';
+  if (!isConfiguredAddress(GREEN_TOKEN_ADDRESS)) return 'GREEN token address is not set yet';
   if (!isConfiguredAddress(TREASURY)) return 'protocol treasury wallet is not set';
   if (!PK_SHAPE.test(TREASURY_PK)) return 'treasury signing key is not configured';
   if (treasurySignerAddress() !== TREASURY.toLowerCase()) {
@@ -206,7 +206,7 @@ async function tokenDecimals(): Promise<number> {
   if (decimalsRef != null) return decimalsRef;
   try {
     decimalsRef = await publicClient().readContract({
-      address: BNTY_TOKEN_ADDRESS as Hex,
+      address: GREEN_TOKEN_ADDRESS as Hex,
       abi: erc20Abi,
       functionName: 'decimals',
     });
@@ -240,8 +240,8 @@ function randomNonce(): string {
 export interface Quote {
   action: SettlementAction;
   detail: Hex;
-  /** Whole BNTY (not base units). */
-  bntyAmount: number;
+  /** Whole GREEN (not base units). */
+  greenAmount: number;
 }
 
 export interface PaymentRequest {
@@ -253,7 +253,7 @@ export interface PaymentRequest {
   /** Base units, as a decimal string. */
   amount: string;
   /** Human amount, for the UI. */
-  bntyAmount: number;
+  greenAmount: number;
   decimals: number;
   nonce: string;
   deadline: number;
@@ -267,11 +267,11 @@ export async function quoteSpend(wallet: string, quote: Quote): Promise<PaymentR
   // payment by checking a Transfer to the treasury of at least the owed amount,
   // and every transfer clears an owed of zero — so a zero quote turns the whole
   // verification into a formality that a 0-value transfer satisfies.
-  if (!Number.isFinite(quote.bntyAmount) || quote.bntyAmount <= 0) {
+  if (!Number.isFinite(quote.greenAmount) || quote.greenAmount <= 0) {
     throw new GameError('refusing to quote a non-positive amount', 400);
   }
   const decimals = await tokenDecimals();
-  const amount = toUnits(quote.bntyAmount, decimals);
+  const amount = toUnits(quote.greenAmount, decimals);
   // Guards the same hole from the other side: an amount small enough to round
   // down to zero base units is not payable either.
   if (amount <= 0n) throw new GameError('quoted amount rounds to zero', 400);
@@ -289,10 +289,10 @@ export async function quoteSpend(wallet: string, quote: Quote): Promise<PaymentR
 
   return {
     action: quote.action,
-    token: BNTY_TOKEN_ADDRESS,
+    token: GREEN_TOKEN_ADDRESS,
     to: TREASURY,
     amount: amount.toString(),
-    bntyAmount: quote.bntyAmount,
+    greenAmount: quote.greenAmount,
     decimals,
     nonce,
     deadline,
@@ -355,8 +355,8 @@ export async function settleSpend<T>(
   // A nonce is only redeemable at the action it was priced for. Without this the
   // stored detail — which every route trusts over the request body — gets handed
   // to a different route's decoder, and the payment verified is the one this row
-  // quoted, not the one that route charges. A 250 BNTY node upgrade would settle
-  // a 10,000 BNTY crate, since both are just "a nonce with a paid amount".
+  // quoted, not the one that route charges. A 250 GREEN node upgrade would settle
+  // a 10,000 GREEN crate, since both are just "a nonce with a paid amount".
   if (row.action !== action) throw new GameError('settlement was quoted for a different action', 409);
   if (row.status === 'settled') {
     // Idempotent replay: hand back what was already applied.
@@ -402,8 +402,8 @@ export async function settleSpend<T>(
     throw new GameError(`awaiting confirmations (${confirmations}/${MIN_CONFIRMATIONS})`, 425);
   }
 
-  // Find an BNTY Transfer in this tx that pays the treasury at least the quote.
-  const token = BNTY_TOKEN_ADDRESS.toLowerCase();
+  // Find an GREEN Transfer in this tx that pays the treasury at least the quote.
+  const token = GREEN_TOKEN_ADDRESS.toLowerCase();
   const treasury = TREASURY.toLowerCase();
   let paid = false;
   for (const log of receipt.logs) {
@@ -461,7 +461,7 @@ export async function settleSpend<T>(
       // The action can never succeed, so releasing the claim would strand the
       // payment: every retry fails identically and nothing records that the
       // operator is owed. Two buyers racing one listing is the ordinary case —
-      // both pay, one gets the item, and the loser's BNTY is already in the
+      // both pay, one gets the item, and the loser's GREEN is already in the
       // treasury. Mark the row owed so there is something to reconcile against.
       db.prepare(
         `UPDATE settlements SET status = 'owed', applied_result = ?, settled_at = ?
@@ -516,54 +516,54 @@ function treasuryWallet() {
 }
 
 /**
- * Send `bntyAmount` BNTY from the protocol wallet to an operator, returning the
+ * Send `greenAmount` GREEN from the protocol wallet to an operator, returning the
  * transaction hash. Used for reward claims.
  */
 /**
  * What the claimer is charged for the gas the protocol spends paying them.
  *
  * Operators pay their own gas on spends — they sign those transfers. A payout
- * moves BNTY *out of* the treasury, so only the treasury key can sign it and the
+ * moves GREEN *out of* the treasury, so only the treasury key can sign it and the
  * claimer cannot be the one to pay the gas directly. Reimbursing in ETH would
  * cost the claimer more gas than the payout it reimburses, and a standing
  * allowance they could pull from would let anyone drain the treasury. So the
- * cost is passed on in BNTY instead: the protocol fronts the ETH and deducts the
+ * cost is passed on in GREEN instead: the protocol fronts the ETH and deducts the
  * equivalent from the amount sent.
  *
- * The conversion needs an BNTY/ETH rate, which does not exist until the token
+ * The conversion needs an GREEN/ETH rate, which does not exist until the token
  * trades. While OSR_PER_ETH is unset the protocol absorbs the gas rather than
  * inventing a price — at roughly a cent a claim the 2% claim fee covers it
- * many times over. Set it once BNTY has a market and claimers pay their own way.
+ * many times over. Set it once GREEN has a market and claimers pay their own way.
  */
 const OSR_PER_ETH = Number(process.env.OSR_PER_ETH ?? '0');
 
 export interface PayoutResult {
   hash: string;
-  /** BNTY actually sent, after the gas deduction. */
-  sentBnty: number;
-  /** BNTY withheld to cover gas. Zero when no rate is configured. */
-  gasBnty: number;
+  /** GREEN actually sent, after the gas deduction. */
+  sentGreen: number;
+  /** GREEN withheld to cover gas. Zero when no rate is configured. */
+  gasGreen: number;
 }
 
 /**
- * Estimate what this payout will cost in gas, priced in BNTY.
+ * Estimate what this payout will cost in gas, priced in GREEN.
  *
  * Estimated rather than measured because the amount to send has to be decided
  * before the transaction exists. A plain ERC-20 transfer is predictable, and
  * the estimate is padded so a small gas rise does not leave the protocol short.
  */
-export async function estimatePayoutGasBnty(toWallet: string, bntyAmount: number): Promise<number> {
+export async function estimatePayoutGasGreen(toWallet: string, greenAmount: number): Promise<number> {
   if (!(OSR_PER_ETH > 0)) return 0;
   const decimals = await tokenDecimals();
   const data = encodeFunctionData({
     abi: erc20Abi,
     functionName: 'transfer',
-    args: [toWallet as Hex, toUnits(bntyAmount, decimals)],
+    args: [toWallet as Hex, toUnits(greenAmount, decimals)],
   });
-  return estimateGasBnty(BNTY_TOKEN_ADDRESS as Hex, data);
+  return estimateGasGreen(GREEN_TOKEN_ADDRESS as Hex, data);
 }
 
-async function estimateGasBnty(to: Hex, data: Hex): Promise<number> {
+async function estimateGasGreen(to: Hex, data: Hex): Promise<number> {
   if (!(OSR_PER_ETH > 0)) return 0;
   try {
     const [gas, gasPrice] = await Promise.all([
@@ -580,20 +580,20 @@ async function estimateGasBnty(to: Hex, data: Hex): Promise<number> {
   }
 }
 
-export async function payoutBnty(toWallet: string, bntyAmount: number): Promise<PayoutResult> {
+export async function payoutGreen(toWallet: string, greenAmount: number): Promise<PayoutResult> {
   requireSettlement();
   // The brake, checked at the signer itself rather than only at the callers.
   // Every path that moves tokens out of the treasury — a claim, an admin debt
   // retry, anything added later — passes through here, so this is the one place
   // a pause is guaranteed to be honoured.
   requirePayoutsEnabled();
-  if (!(bntyAmount > 0)) throw new GameError('payout amount must be positive');
+  if (!(greenAmount > 0)) throw new GameError('payout amount must be positive');
 
   // The cap. A legitimate claim is bounded by what a wallet accrued, so a payout
   // larger than the cap is a bug or an exploit — refuse it rather than sign it.
-  if (MAX_PAYOUT_BNTY > 0 && bntyAmount > MAX_PAYOUT_BNTY) {
+  if (MAX_PAYOUT_GREEN > 0 && greenAmount > MAX_PAYOUT_GREEN) {
     throw new GameError(
-      `payout of ${Math.round(bntyAmount).toLocaleString()} BNTY exceeds the per-payout cap; paused for review`,
+      `payout of ${Math.round(greenAmount).toLocaleString()} GREEN exceeds the per-payout cap; paused for review`,
       403
     );
   }
@@ -606,9 +606,9 @@ export async function payoutBnty(toWallet: string, bntyAmount: number): Promise<
       args: [toWallet as Hex, toUnits(value, decimals)],
     });
 
-  const gasBnty = await estimateGasBnty(BNTY_TOKEN_ADDRESS as Hex, encode(bntyAmount));
-  const sentBnty = bntyAmount - gasBnty;
-  if (!(sentBnty > 0)) {
+  const gasGreen = await estimateGasGreen(GREEN_TOKEN_ADDRESS as Hex, encode(greenAmount));
+  const sentGreen = greenAmount - gasGreen;
+  if (!(sentGreen > 0)) {
     throw new GameError(
       'this claim is too small to cover its own network fee — let more rewards accrue first',
       400
@@ -622,8 +622,8 @@ export async function payoutBnty(toWallet: string, bntyAmount: number): Promise<
     hash = await treasuryWallet().sendTransaction({
       account: treasuryWallet().account!,
       chain,
-      to: BNTY_TOKEN_ADDRESS as Hex,
-      data: encode(sentBnty),
+      to: GREEN_TOKEN_ADDRESS as Hex,
+      data: encode(sentGreen),
       value: 0n,
     });
   } catch (error) {
@@ -658,7 +658,7 @@ export async function payoutBnty(toWallet: string, bntyAmount: number): Promise<
     throw new GameError(`payout ${hash} reverted on-chain`, 502);
   }
 
-  return { hash, sentBnty, gasBnty };
+  return { hash, sentGreen, gasGreen };
 }
 
 /**
@@ -671,13 +671,13 @@ export async function payoutBnty(toWallet: string, bntyAmount: number): Promise<
  * NULL`): a literal like 'PENDING' inserts once and then collides on every
  * later failure, which is exactly when the debt most needs recording.
  *
- * Status distinguishes the two: 'settled' means BNTY moved, 'owed' means it did
+ * Status distinguishes the two: 'settled' means GREEN moved, 'owed' means it did
  * not. Both are terminal — nothing retries an owed row automatically, so they
  * are settled by hand.
  */
 export function recordPayout(
   wallet: string,
-  bntyAmount: number,
+  greenAmount: number,
   txHash: string | null,
   result: unknown
 ) {
@@ -692,7 +692,7 @@ export function recordPayout(
     .run(
       randomNonce(),
       wallet,
-      String(bntyAmount),
+      String(greenAmount),
       settled ? 'settled' : 'owed',
       txHash,
       JSON.stringify(result ?? null),

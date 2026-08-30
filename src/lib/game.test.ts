@@ -29,7 +29,7 @@ const {
   compoundInfo,
   crateAllowance,
 } = await import('./game');
-const { SHARE_CAP, STARTER_BNTY_GRANT, GENESIS_RATE_PER_SEC } = await import('./economy');
+const { SHARE_CAP, STARTER_GREEN_GRANT, GENESIS_RATE_PER_SEC } = await import('./economy');
 const { getDb } = await import('./db');
 const { setOsrUsdPrice } = await import('./price');
 
@@ -56,7 +56,7 @@ describe('new wallet bootstrap', () => {
   test('starter grant covers the first Desk Fab', () => {
     const w = wallet(1);
     const user = getOrCreateUser(w);
-    expect(user.osr_balance).toBe(STARTER_BNTY_GRANT);
+    expect(user.osr_balance).toBe(STARTER_GREEN_GRANT);
     // The whole point: a brand-new wallet can reach its first node unaided.
     expect(() => mintNode(w, 'equity_desk')).not.toThrow();
   });
@@ -172,7 +172,7 @@ describe('full game cycle', () => {
 
     advance(w, 3_600_000);
     const settled = settleUser(w);
-    expect(settled.nodes[0].pendingBnty).toBeGreaterThan(0);
+    expect(settled.nodes[0].pendingGreen).toBeGreaterThan(0);
 
     const claimed = claimRewards(w);
     expect(claimed.claims.length).toBeGreaterThan(0);
@@ -215,7 +215,7 @@ describe('full game cycle', () => {
     const w = wallet(50);
     getOrCreateUser(w);
     fund(w, 0);
-    expect(() => mintNode(w, 'equity_desk')).toThrow(/Not enough BNTY/);
+    expect(() => mintNode(w, 'equity_desk')).toThrow(/Not enough GREEN/);
   });
 
   test('claim cooldown is enforced', () => {

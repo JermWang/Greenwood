@@ -10,7 +10,7 @@
 // in it when somebody kills you. Deciding when to extract is the decision the
 // pack exists to create, and every slot you add makes that decision harder.
 //
-// Priced in Scrip rather than BNTY because spendScrip already spends BOUND
+// Priced in Scrip rather than GREEN because spendScrip already spends BOUND
 // balance before BEARER. A player who earns Scrip from quests and streaks can
 // supply and upgrade a pack forever without touching the token, while a player
 // in a hurry can buy in — so the risk dial never becomes a paywall.
@@ -173,7 +173,7 @@ export const NOT_CARRIABLE: Record<string, string> = {
   desk: 'A desk installed on your floor is not something you can carry. Nothing on your floor is ever at risk.',
   fitted_instrument: 'That instrument is fitted to a desk. Unfit it first if you really mean to take it out there.',
   note: 'A Fixed Income Note is a position, not an object.',
-  bnty: 'BNTY stays in your fund. Only Scrip travels.',
+  green: 'GREEN stays in your fund. Only Scrip travels.',
 };
 
 export const isCarriable = (kind: string): kind is CarryClass =>

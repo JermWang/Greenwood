@@ -53,7 +53,7 @@ export default function CompanyFloorPage() {
         accent: node.type === 'oil' ? '#00d26a' : '#3dd6a0',
         blurb: MACHINE_SPECS[kind]?.role,
         cost: node.nextLevelCost > 0 ? node.nextLevelCost : undefined,
-        detail: `L${node.level} · ${node.productionRate.toFixed(3)} BNTY/s · ${node.componentMultiplier.toFixed(2)}×`,
+        detail: `L${node.level} · ${node.productionRate.toFixed(3)} GREEN/s · ${node.componentMultiplier.toFixed(2)}×`,
       };
     }),
     ...inventory.map((item) => {

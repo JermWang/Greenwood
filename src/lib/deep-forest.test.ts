@@ -312,8 +312,8 @@ describe('what may be carried', () => {
     expect(packUsage(1, [rifle]).used).toBe(1);
   });
 
-  it('never lets BNTY or a Note be carried — only Scrip travels', () => {
-    expect(isCarriable('bnty')).toBe(false);
+  it('never lets GREEN or a Note be carried — only Scrip travels', () => {
+    expect(isCarriable('green')).toBe(false);
     expect(isCarriable('note')).toBe(false);
     expect(CARRIABLE).toContain('scrip');
   });

@@ -128,7 +128,7 @@ describe('what makes ironbark matter', () => {
   });
 
   it('does not make a desk out of thin wood', () => {
-    // Desks are the BNTY sink and the halving schedule is written against it.
+    // Desks are the GREEN sink and the halving schedule is written against it.
     // A wood-only desk would remove the sink, which is an economic decision and
     // not one to make as a side effect of a gathering skill.
     expect(RECIPES.some((r) => /desk/i.test(r.name) && r.kind !== 'material')).toBe(false);

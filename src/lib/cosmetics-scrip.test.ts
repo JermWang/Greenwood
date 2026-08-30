@@ -1,6 +1,6 @@
 // Buying a look with Scrip.
 //
-// The Scrip path is deliberately not the BNTY path: it never touches settlement,
+// The Scrip path is deliberately not the GREEN path: it never touches settlement,
 // it takes no fee, and it draws bound balance before bearer. Each of those is a
 // decision that could be quietly undone by a refactor that "unified" the two
 // currencies, so each is asserted here.
@@ -81,8 +81,8 @@ describe('buying with Scrip', () => {
     expect(scripBalances(WALLET).total).toBe(after);
   });
 
-  test('does not touch the BNTY balance', () => {
-    // Scrip never entered token supply, so a Scrip purchase must move no BNTY
+  test('does not touch the GREEN balance', () => {
+    // Scrip never entered token supply, so a Scrip purchase must move no GREEN
     // and burn none of it. If this starts failing, the two paths have been
     // merged and the sink is now taking token out of a player who never spent it.
     grantScrip(WALLET, EARNABLE.scrip!, 'test');

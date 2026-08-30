@@ -77,7 +77,7 @@ export default function MarketHud({ wallet }: { wallet: string | null }) {
         {listings?.map((l) => (
           <li key={l.id}>
             <span>{KIND_LABEL[l.itemKind] ?? l.itemKind}</span>
-            <b>{Math.round(l.priceBnty).toLocaleString()}</b>
+            <b>{Math.round(l.priceGreen).toLocaleString()}</b>
           </li>
         ))}
       </ul>

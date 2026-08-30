@@ -8,12 +8,12 @@ import { settlesOnChain } from '@/lib/settlement';
 export const dynamic = 'force-dynamic';
 
 /**
- * Buy a cosmetic, in Scrip, BNTY or ETH.
+ * Buy a cosmetic, in Scrip, GREEN or ETH.
  *
  * The three currencies take different paths on purpose.
  *
- * A BNTY purchase is an ordinary spend and rides the same quote/pay/settle rail
- * as every other one, so once the token is live the player transfers real BNTY
+ * A GREEN purchase is an ordinary spend and rides the same quote/pay/settle rail
+ * as every other one, so once the token is live the player transfers real GREEN
  * and the server only grants the item against a mined receipt.
  *
  * SCRIP never touches that rail, and must not. Scrip is an off-chain balance the
@@ -33,14 +33,14 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   const body = (await request.clone().json().catch(() => ({}))) as Record<string, unknown>;
   const currency =
-    body.currency === 'ETH' ? 'ETH' : body.currency === 'SCRIP' ? 'SCRIP' : 'BNTY';
+    body.currency === 'ETH' ? 'ETH' : body.currency === 'SCRIP' ? 'SCRIP' : 'GREEN';
 
   if (currency === 'ETH' || currency === 'SCRIP') {
     try {
       const wallet = await requireAuthenticatedWallet(request, body.wallet);
       if (typeof body.key !== 'string') throw new GameError('cosmetic key is required', 400);
       if (currency === 'ETH' && settlesOnChain(wallet)) {
-        throw new GameError('ETH checkout is not live yet — this item can be bought with BNTY', 501);
+        throw new GameError('ETH checkout is not live yet — this item can be bought with GREEN', 501);
       }
       // buyCosmetic resolves the price, and priceOf throws for a piece with no
       // Scrip price — so a client posting SCRIP against a paid-only item is
@@ -70,9 +70,9 @@ export async function POST(request: Request) {
     // The fee split is applied by the engine when the purchase lands, not here:
     // buyCosmetic is the single place that decides where a cosmetic's 2% goes,
     // and duplicating that policy at the quote would let the two drift.
-    price: (_wallet, p) => ({ bntyAmount: cosmeticDef(p.key).bnty }),
+    price: (_wallet, p) => ({ greenAmount: cosmeticDef(p.key).green }),
     apply: (wallet, p, opts) => ({
-      ...buyCosmetic(wallet, p.key, 'BNTY', opts),
+      ...buyCosmetic(wallet, p.key, 'GREEN', opts),
       catalog: cosmeticsCatalog(wallet),
     }),
   });

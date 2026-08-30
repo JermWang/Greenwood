@@ -13,7 +13,7 @@ import {
 } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
 
-const bnty = (value: number, digits = 0) =>
+const green = (value: number, digits = 0) =>
   value.toLocaleString(undefined, { maximumFractionDigits: digits });
 
 const pct = (bps: number) => `${(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)}%`;
@@ -71,7 +71,7 @@ export default function StakePage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const balance = op?.bntyBalance ?? 0;
+  const balance = op?.greenBalance ?? 0;
   const term = useMemo(
     () => rates?.terms.find((candidate) => candidate.days === termDays) ?? null,
     [rates, termDays]
@@ -83,7 +83,7 @@ export default function StakePage() {
   const blocker = (() => {
     if (!term) return 'Pick a term';
     if (!principal) return null;
-    if (rates && principal < rates.minPrincipal) return `Minimum ${bnty(rates.minPrincipal)} BNTY`;
+    if (rates && principal < rates.minPrincipal) return `Minimum ${green(rates.minPrincipal)} GREEN`;
     if (principal > balance) return 'More than your balance';
     if (principal > term.maxPrincipal) return 'Beyond what the reserve can back right now';
     return null;
@@ -100,7 +100,7 @@ export default function StakePage() {
       setPositions(result.positions);
       setTotals(result.totals);
       setAmount('');
-      setNotice(`Locked ${bnty(principal)} BNTY for ${term.days} days.`);
+      setNotice(`Locked ${green(principal)} GREEN for ${term.days} days.`);
       await Promise.all([load(), refresh()]);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not open that Note');
@@ -121,8 +121,8 @@ export default function StakePage() {
       setTotals(result.totals);
       setNotice(
         result.result.matured
-          ? `Note matured. ${bnty(result.result.payout)} BNTY returned, including ${bnty(result.result.interest)} interest.`
-          : `Closed early. ${bnty(result.result.payout)} BNTY returned after a ${bnty(result.result.penalty)} BNTY penalty.`
+          ? `Note matured. ${green(result.result.payout)} GREEN returned, including ${green(result.result.interest)} interest.`
+          : `Closed early. ${green(result.result.payout)} GREEN returned after a ${green(result.result.penalty)} GREEN penalty.`
       );
       await Promise.all([load(), refresh()]);
     } catch (cause) {
@@ -134,7 +134,7 @@ export default function StakePage() {
 
   if (!wallet) {
     return (
-      <PageShell title="Fixed Income" subtitle="Lock BNTY for a fixed term and draw a published rate from the emission reserve.">
+      <PageShell title="Fixed Income" subtitle="Lock GREEN for a fixed term and draw a published rate from the emission reserve.">
         <section className="eg-floor-gate">
           <VaultIcon size={38} weight="duotone" />
           <h1>Link a fund.</h1>
@@ -149,7 +149,7 @@ export default function StakePage() {
   return (
     <PageShell
       title="Fixed Income"
-      subtitle="Lock BNTY for a fixed term and draw a published rate from the emission reserve. Rates are fixed when a Note opens and never move underneath it."
+      subtitle="Lock GREEN for a fixed term and draw a published rate from the emission reserve. Rates are fixed when a Note opens and never move underneath it."
       maxWidth="max-w-[1500px]"
     >
       {error && <div className="eg-system-alert is-error"><span>VAULT</span><p>{error}</p></div>}
@@ -157,7 +157,7 @@ export default function StakePage() {
 
       <div className="stake-layout">
         <section className="stake-open panel">
-          <div className="eg-console-heading"><span>OPEN A NOTE</span><span>{bnty(balance)} BNTY AVAILABLE</span></div>
+          <div className="eg-console-heading"><span>OPEN A NOTE</span><span>{green(balance)} GREEN AVAILABLE</span></div>
 
           <div className="stake-terms">
             {rates?.terms.map((candidate) => (
@@ -180,7 +180,7 @@ export default function StakePage() {
               type="number"
               inputMode="numeric"
               min={rates?.minPrincipal ?? 100}
-              placeholder={`${bnty(rates?.minPrincipal ?? 100)} minimum`}
+              placeholder={`${green(rates?.minPrincipal ?? 100)} minimum`}
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
             />
@@ -189,18 +189,18 @@ export default function StakePage() {
 
           {term && principal > 0 && (
             <dl className="stake-projection">
-              <div><dt>Interest at maturity</dt><dd>{bnty(projectedInterest)} BNTY</dd></div>
-              <div><dt>Returned at maturity</dt><dd>{bnty(principal + projectedInterest)} BNTY</dd></div>
+              <div><dt>Interest at maturity</dt><dd>{green(projectedInterest)} GREEN</dd></div>
+              <div><dt>Returned at maturity</dt><dd>{green(principal + projectedInterest)} GREEN</dd></div>
               <div className="is-warn">
                 <dt>If closed early</dt>
-                <dd>{bnty(principal - principal * ((rates?.earlyExitPenaltyBps ?? 1000) / 10_000))} BNTY</dd>
+                <dd>{green(principal - principal * ((rates?.earlyExitPenaltyBps ?? 1000) / 10_000))} GREEN</dd>
               </div>
             </dl>
           )}
 
           <button type="button" className="btn-primary stake-submit" onClick={() => void open()} disabled={busy === 'open' || !principal || Boolean(blocker)}>
             <Lock size={15} weight="duotone" />
-            {busy === 'open' ? (step ? `${step}…` : 'Opening…') : blocker ?? `Lock ${principal ? bnty(principal) : ''} BNTY`}
+            {busy === 'open' ? (step ? `${step}…` : 'Opening…') : blocker ?? `Lock ${principal ? green(principal) : ''} GREEN`}
           </button>
 
           {rates && (
@@ -215,13 +215,13 @@ export default function StakePage() {
         <section className="stake-positions">
           <div className="eg-console-heading">
             <span>YOUR NOTES</span>
-            <span>{totals?.openContracts ?? 0} OPEN · {bnty(totals?.lockedPrincipal ?? 0)} BNTY LOCKED</span>
+            <span>{totals?.openContracts ?? 0} OPEN · {green(totals?.lockedPrincipal ?? 0)} GREEN LOCKED</span>
           </div>
 
           {loading && positions.length === 0 ? (
             <p className="stake-empty">Reading positions…</p>
           ) : positions.length === 0 ? (
-            <p className="stake-empty">No Notes yet. Lock BNTY on the left to start earning from the reserve.</p>
+            <p className="stake-empty">No Notes yet. Lock GREEN on the left to start earning from the reserve.</p>
           ) : (
             <div className="stake-list">
               {positions.map((position) => {
@@ -229,7 +229,7 @@ export default function StakePage() {
                 return (
                   <article key={position.id} className={`stake-row ${position.status === 'closed' ? 'is-closed' : position.matured ? 'is-matured' : ''}`}>
                     <div className="stake-row-head">
-                      <b>{bnty(position.principal)} <small>BNTY</small></b>
+                      <b>{green(position.principal)} <small>GREEN</small></b>
                       <span>{position.termDays}d · {pct(position.aprBps)} APR</span>
                     </div>
                     <div className="stake-row-meter">
@@ -239,12 +239,12 @@ export default function StakePage() {
                       {position.status === 'closed' ? (
                         <>
                           <span>Closed</span>
-                          <b>{bnty((position.paidPrincipal ?? 0) + (position.paidInterest ?? 0))} BNTY returned</b>
+                          <b>{green((position.paidPrincipal ?? 0) + (position.paidInterest ?? 0))} GREEN returned</b>
                         </>
                       ) : (
                         <>
                           <span>{position.matured ? 'Matured' : remaining(left)}</span>
-                          <b>{bnty(position.accruedInterest, 2)} / {bnty(position.termInterest, 2)} BNTY interest</b>
+                          <b>{green(position.accruedInterest, 2)} / {green(position.termInterest, 2)} GREEN interest</b>
                         </>
                       )}
                     </div>
@@ -254,8 +254,8 @@ export default function StakePage() {
                         {busy === position.id
                           ? 'Closing…'
                           : position.matured
-                            ? `Collect ${bnty(position.closeValueNow)} BNTY`
-                            : `Exit early · −${bnty(position.earlyExitPenalty)} BNTY`}
+                            ? `Collect ${green(position.closeValueNow)} GREEN`
+                            : `Exit early · −${green(position.earlyExitPenalty)} GREEN`}
                       </button>
                     )}
                   </article>
@@ -285,13 +285,13 @@ function RateCard({ rates }: { rates: StakeRates }) {
       <div className="eg-console-heading"><span>RESERVE CAPACITY</span><span>LIVE</span></div>
       <div className="stake-capacity-bar"><i style={{ width: `${Math.min(100, committedShare * 100)}%` }} /></div>
       <dl>
-        <div><dt>Emission reserve</dt><dd>{bnty(rates.reserveBalance)} BNTY</dd></div>
-        <div><dt>Promised to open Notes</dt><dd>{bnty(rates.committedInterest)} BNTY</dd></div>
-        <div><dt>Free to back new Notes</dt><dd>{bnty(rates.uncommittedReserve)} BNTY</dd></div>
+        <div><dt>Emission reserve</dt><dd>{green(rates.reserveBalance)} GREEN</dd></div>
+        <div><dt>Promised to open Notes</dt><dd>{green(rates.committedInterest)} GREEN</dd></div>
+        <div><dt>Free to back new Notes</dt><dd>{green(rates.uncommittedReserve)} GREEN</dd></div>
       </dl>
       <p className="stake-note">
         Every Note&rsquo;s full interest is reserved the moment it opens, so the protocol never promises
-        BNTY it does not already hold.
+        GREEN it does not already hold.
       </p>
     </section>
   );

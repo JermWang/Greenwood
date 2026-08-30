@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { payoutBnty, recordPayout, SETTLEMENT_CONFIGURED } from '@/lib/settlement';
+import { payoutGreen, recordPayout, SETTLEMENT_CONFIGURED } from '@/lib/settlement';
 import { requirePayoutsEnabled } from '@/lib/solvency';
 
 export const dynamic = 'force-dynamic';
@@ -58,11 +58,11 @@ export async function GET(request: Request) {
   const rows = owedRows();
   return NextResponse.json({
     count: rows.length,
-    totalBnty: rows.reduce((sum, r) => sum + Number(r.osr_amount), 0),
+    totalGreen: rows.reduce((sum, r) => sum + Number(r.osr_amount), 0),
     owed: rows.map((r) => ({
       nonce: r.nonce,
       wallet: r.wallet,
-      bnty: Number(r.osr_amount),
+      green: Number(r.osr_amount),
       recordedAt: r.created_at,
       /** Why it failed, as captured at the time. */
       note: r.applied_result,
@@ -124,13 +124,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const payout = await payoutBnty(row.wallet, amount);
+    const payout = await payoutGreen(row.wallet, amount);
     db.prepare(`UPDATE settlements SET status = 'settled', tx_hash = ?, settled_at = ? WHERE nonce = ?`).run(
       payout.hash,
       Date.now(),
       nonce
     );
-    return NextResponse.json({ ok: true, wallet: row.wallet, sent: payout.sentBnty, txHash: payout.hash });
+    return NextResponse.json({ ok: true, wallet: row.wallet, sent: payout.sentGreen, txHash: payout.hash });
   } catch (error) {
     // Put it back, and annotate it in place.
     //

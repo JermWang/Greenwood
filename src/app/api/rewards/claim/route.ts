@@ -3,8 +3,8 @@ import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { GameError, claimRewards, settleUser } from '@/lib/game';
 import {
   settlesOnChain,
-  estimatePayoutGasBnty,
-  payoutBnty,
+  estimatePayoutGasGreen,
+  payoutGreen,
   recordPayout,
 } from '@/lib/settlement';
 import { CLAIM_FEE_BPS, COMPOUND_REINVEST_FEE_BPS } from '@/lib/economy';
@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 /**
  * Claiming runs the opposite way to the priced actions: the protocol pays the
  * operator, so there is nothing for them to send and no two-phase quote. The
- * server settles the accrual and transfers BNTY from the protocol wallet.
+ * server settles the accrual and transfers GREEN from the protocol wallet.
  *
  * Order matters. The accrual is consumed BEFORE the transfer is sent: if it
  * were sent first and the state write then failed, the same rewards could be
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     const eligible = nodes
       .filter((n) => (nodeId == null ? true : n.row.id === nodeId))
       .filter((n) => (mode === 'compound' ? n.row.family === 'mine' : true));
-    const gross = eligible.reduce((sum, n) => sum + n.pendingBnty, 0);
+    const gross = eligible.reduce((sum, n) => sum + n.pendingGreen, 0);
     if (gross <= 0) {
       throw new GameError(
         mode === 'compound' ? 'nothing to compound in this vault yet' : 'nothing to claim yet'
@@ -66,8 +66,8 @@ export async function POST(request: Request) {
     // Check the claim can cover its own gas BEFORE consuming the accrual —
     // rejecting afterwards would burn the operator's rewards for a payout that
     // never went out, and there is no way to hand them back.
-    const gasBnty = await estimatePayoutGasBnty(wallet, estimatedNet);
-    if (estimatedNet - gasBnty <= 0) {
+    const gasGreen = await estimatePayoutGasGreen(wallet, estimatedNet);
+    if (estimatedNet - gasGreen <= 0) {
       throw new GameError(
         'this claim is too small to cover its own network fee — let more rewards accrue first',
         400
@@ -91,25 +91,25 @@ export async function POST(request: Request) {
       throw new GameError('those rewards have already been claimed', 409);
     }
 
-    let payout: Awaited<ReturnType<typeof payoutBnty>>;
+    let payout: Awaited<ReturnType<typeof payoutGreen>>;
     try {
-      payout = await payoutBnty(wallet, payable);
+      payout = await payoutGreen(wallet, payable);
     } catch (payoutError) {
       // Every failure from here owes the operator, because the accrual is
-      // already gone. That includes the 400 payoutBnty raises when gas has risen
+      // already gone. That includes the 400 payoutGreen raises when gas has risen
       // enough to swallow the payout between the estimate above and the send:
       // this used to rethrow it untouched, consuming the rewards and leaving no
       // record that anything was owed.
       recordPayout(wallet, payable, null, { error: String(payoutError), result });
       console.error('[claim] payout failed after accrual was consumed', payoutError);
       throw new GameError(
-        `Rewards were settled but the transfer did not go through. ${Math.round(payable).toLocaleString()} BNTY is recorded as owed to you.`,
+        `Rewards were settled but the transfer did not go through. ${Math.round(payable).toLocaleString()} GREEN is recorded as owed to you.`,
         502
       );
     }
 
     // Record what actually left the treasury, not what was owed before gas.
-    recordPayout(wallet, payout.sentBnty, payout.hash, result);
+    recordPayout(wallet, payout.sentGreen, payout.hash, result);
     // Real tokens just left the treasury and the accrual that backed them is
     // gone from the ledger. Snapshots hang off activity like this because there
     // is no cron here and a timer in a lib is a different timer per route
@@ -121,8 +121,8 @@ export async function POST(request: Request) {
       txHash: payout.hash,
       // Report the claim that actually happened, not the pre-consume read.
       gross: result.claims.reduce((sum, claim) => sum + claim.gross, 0),
-      net: payout.sentBnty,
-      gasBnty: payout.gasBnty,
+      net: payout.sentGreen,
+      gasGreen: payout.gasGreen,
       mode,
     });
   } catch (e) {

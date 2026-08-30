@@ -19,7 +19,7 @@ export default function OutfitterPage() {
       title="The Outfitter"
       subtitle="Buy a look, then refine it. Nothing here changes what your desks pay."
     >
-      <CosmeticsShop wallet={wallet} balance={op?.bntyBalance} />
+      <CosmeticsShop wallet={wallet} balance={op?.greenBalance} />
     </PageShell>
   );
 }

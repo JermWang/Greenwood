@@ -85,7 +85,7 @@ export function newDemoWallet(random: () => number = Math.random): string {
 export const DEMO_SCRIP = 12_000;
 
 /**
- * The starting BNTY. Fake, and enough to actually see the game.
+ * The starting GREEN. Fake, and enough to actually see the game.
  *
  * A demo used to get the ordinary starter grant of 1,000 — sized so a REAL new
  * wallet can afford its first desk and then earn everything after it. For
@@ -94,9 +94,9 @@ export const DEMO_SCRIP = 12_000;
  * step three:
  *
  *   first desk           1,000   (750 for a Treasury Desk)
- *   open an allocation  10,000   ← CRATE_OPEN_BNTY, ten times the whole grant
+ *   open an allocation  10,000   ← CRATE_OPEN_GREEN, ten times the whole grant
  *   take a desk to L2      250
- *   open a Note            100   (STAKE_MIN_BNTY, and it comes back)
+ *   open a Note            100   (STAKE_MIN_GREEN, and it comes back)
  *   buy on the Exchange      ?   whatever is listed
  *
  * So 50,000: four desks, three allocations, a desk taken to L5, a couple of
@@ -112,7 +112,7 @@ export const DEMO_SCRIP = 12_000;
  * sign, cannot settle and cannot withdraw; the tokens do not have to exist. See
  * DEMO_WALLET_LIKE for the half of that which is enforced rather than promised.
  */
-export const DEMO_BNTY = 50_000;
+export const DEMO_GREEN = 50_000;
 
 /**
  * LIKE pattern matching every demo wallet, for queries that must exclude them.

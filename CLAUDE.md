@@ -4,7 +4,7 @@ Read this first. It is short on purpose; the detail is in `docs/`.
 
 ## What this is
 
-An idle DeFi yield game (token **BNTY**, Robinhood Chain) with a hidden layer.
+An idle DeFi yield game (token **GREEN**, Robinhood Chain) with a hidden layer.
 The front is a Real-World-Asset fund: desks produce yield, you upgrade them, you
 compete on a leaderboard. The turn — revealed environmentally between levels 3
 and 10, never in a cutscene — is that **the yield is power and the desks are
@@ -38,7 +38,7 @@ the industrial truth before the game tells them.
 | `rig_crate` / `shaft_crate` | `equity_allocation` / `treasury_allocation` |
 | `euv` / `packaging` machine kinds | `equity` / `settlement` |
 | `wafer`, `cleanroom` | `desk`, `vault` |
-| `osrBalance`, `osrAmount`, … | `bntyBalance`, `bntyAmount`, … |
+| `osrBalance`, `osrAmount`, … | `greenBalance`, `greenAmount`, … |
 | CSS `fab-*`, `gpu-*` | `eg-*` |
 | package `gpu-fab-game` | `evergreen` |
 
@@ -83,6 +83,16 @@ Three things were handled differently, and all three will surprise you:
   player arrived on, and both work without a code change. That is also why a
   domain must never be pointed at the app before it is attached here — a host
   the server does not expect is a host sign-in rejects.
+- **The ticker is GREEN, but the DEPLOYED TOKEN IS NOT.** The contract at
+  `NEXT_PUBLIC_OSR_TOKEN` reports `symbol() = "BNTY"` and `name() = "Greenwood"`,
+  and both are immutable. `EXPECTED_TOKEN_SYMBOL` in `lib/config` therefore
+  still reads BNTY on purpose: `settlement-client` compares it against the
+  contract and REFUSES TO BUILD A TRANSFER when they disagree, so "finishing"
+  that rename would not rename anything — it would block every on-chain
+  transaction in the game. It moves when a GREEN token is deployed, in lockstep
+  with the address. A connected wallet also shows the chain's symbol, so it
+  reads BNTY where the rest of the game reads GREEN; that is the deployed token
+  being older than the name, and it is not a bug to "fix" in the UI.
 - **Browser storage keys were renamed WITH a carry-over** (`lib/legacy-keys`).
   Storage is the third place state lives, after env vars and columns, and the
   argument that froze `OSR_*` applies to it: `gw-wallet-store` holds terms
