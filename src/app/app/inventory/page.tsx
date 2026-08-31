@@ -6,13 +6,12 @@ import ComponentTile from '@/components/ui/ComponentTile';
 import NodePreview from '@/components/three/NodePreview';
 import { api, type InventoryItem, type NodeInfo, type UserOperation } from '@/lib/api-client';
 import { RARITY_MULT } from '@/lib/economy';
-import { NODE_SLOTS, RARITIES, SLOT_LABELS, rarityHex, type Rarity } from '@/lib/rarity';
+import { NODE_SLOTS, RARITIES, SLOT_LABELS, asRarity, rarityHex, type Rarity } from '@/lib/rarity';
 import { useWalletStore } from '@/lib/store';
 
 type View = 'locker' | 'equipped';
 type Sort = 'rarity' | 'slot' | 'newest';
 
-const asRarity = (r: string): Rarity => (RARITIES.includes(r as Rarity) ? (r as Rarity) : 'common');
 const rarityRank = (r: string) => RARITIES.indexOf(asRarity(r));
 const rarityLabel = (r: string) => {
   const x = asRarity(r);

@@ -35,7 +35,7 @@ import { useOperation } from '@/lib/useOperation';
 import { lastRegion } from '@/lib/last-region';
 import type { RegionId } from '@/lib/regions';
 import ComponentTile from '@/components/ui/ComponentTile';
-import { COMPONENT_RARITIES, RARITIES, SLOT_LABELS, type Rarity } from '@/lib/rarity';
+import { COMPONENT_RARITIES, RARITIES, SLOT_LABELS, asRarity } from '@/lib/rarity';
 import { playSfx, startMenuMusic, stopMenuMusic } from '@/lib/sfx';
 
 // ssr: false for the reason every scene in this codebase is: the portrait builds
@@ -55,7 +55,6 @@ const RegionCinematic = dynamic(() => import('@/components/iso/RegionCinematic')
  * Its index IS the order, so there is no second table to drift from the first
  * — which lib/rarity's own header records as having happened three times over.
  */
-const asRarity = (r: string): Rarity => (RARITIES.includes(r as Rarity) ? (r as Rarity) : 'common');
 const rarityRank = (r: string) => RARITIES.indexOf(asRarity(r));
 
 /**

@@ -408,6 +408,14 @@ export type MarketItemKind = 'crate' | 'component' | 'node' | 'cosmetic';
 export interface MarketListing {
   id: number;
   seller: string;
+  /**
+   * The seller's profile name, or null if they have not set one.
+   *
+   * Joined server-side in one batched query (see api/market/listings). Null is
+   * the ordinary case, not a failure — the board falls back to the shortened
+   * address, which it also does when the registry is unreachable.
+   */
+  sellerName?: string | null;
   itemKind: MarketItemKind;
   itemId: number;
   priceGreen: number;

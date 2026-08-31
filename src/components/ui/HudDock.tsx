@@ -42,18 +42,9 @@ import {
   type StepHandler,
 } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
-import { COMPONENT_RARITIES, RARITIES, SLOT_LABELS, rarityHex, type Rarity } from '@/lib/rarity';
-
-const KIND_LABEL: Record<string, string> = {
-  crate: 'Allocation',
-  component: 'Instrument',
-  node: 'Desk',
-  cosmetic: 'Cosmetic',
-};
-
-/** A rarity off the wire is a string; treat anything unknown as the floor. */
-const asRarity = (value: string): Rarity =>
-  (RARITIES as string[]).includes(value) ? (value as Rarity) : 'common';
+import { COMPONENT_RARITIES, RARITIES, SLOT_LABELS, asRarity, rarityHex } from '@/lib/rarity';
+import { listingSubtitle, listingTitle, sellerLabel } from '@/lib/listings';
+import ListingThumb from './ListingThumb';
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
@@ -307,22 +298,31 @@ export default function HudDock({ wallet }: { wallet: string | null }) {
                 <li className="eg-dock-empty">Nothing listed right now.</li>
               )}
               {others.map((listing) => (
-                <li key={listing.id}>
+                <li key={listing.id} className="is-lot">
+                  {/* No `live`: this panel floats over a region that is already
+                      running a WebGL scene, and CrateThumb opens its own
+                      context. See ListingThumb. */}
+                  <ListingThumb listing={listing} size={32} />
                   <span className="eg-dock-what">
-                    {KIND_LABEL[listing.itemKind] ?? listing.itemKind}
-                    <small>{listing.seller.slice(0, 6)}…{listing.seller.slice(-4)}</small>
+                    {listingTitle(listing)}
+                    <small>{listingSubtitle(listing)}</small>
+                    {/* Who is selling. A name where they have set one, the
+                        shortened address where they have not. */}
+                    <em>{sellerLabel(listing)}</em>
                   </span>
-                  <span className="eg-dock-price">
-                    {fmt(listing.priceGreen)}
-                    <i>GREEN</i>
+                  <span className="eg-dock-lot-buy">
+                    <span className="eg-dock-price">
+                      {fmt(listing.priceGreen)}
+                      <i>GREEN</i>
+                    </span>
+                    <button
+                      className="eg-dock-go"
+                      disabled={busy !== null}
+                      onClick={() => void buy(listing)}
+                    >
+                      {busy === listing.id ? '…' : 'Buy'}
+                    </button>
                   </span>
-                  <button
-                    className="eg-dock-go"
-                    disabled={busy !== null}
-                    onClick={() => void buy(listing)}
-                  >
-                    {busy === listing.id ? '…' : 'Buy'}
-                  </button>
                 </li>
               ))}
             </ul>
@@ -345,21 +345,25 @@ export default function HudDock({ wallet }: { wallet: string | null }) {
                     <p className="eg-dock-kicker">On the board</p>
                     <ul className="eg-dock-list">
                       {mine.map((listing) => (
-                        <li key={listing.id}>
+                        <li key={listing.id} className="is-lot">
+                          <ListingThumb listing={listing} size={26} />
                           <span className="eg-dock-what">
-                            {KIND_LABEL[listing.itemKind] ?? listing.itemKind}
+                            {listingTitle(listing)}
+                            <small>{listingSubtitle(listing)}</small>
                           </span>
-                          <span className="eg-dock-price">
-                            {fmt(listing.priceGreen)}
-                            <i>GREEN</i>
+                          <span className="eg-dock-lot-buy">
+                            <span className="eg-dock-price">
+                              {fmt(listing.priceGreen)}
+                              <i>GREEN</i>
+                            </span>
+                            <button
+                              className="eg-dock-go is-quiet"
+                              disabled={busy !== null}
+                              onClick={() => void cancel(listing)}
+                            >
+                              {busy === listing.id ? '…' : 'Cancel'}
+                            </button>
                           </span>
-                          <button
-                            className="eg-dock-go is-quiet"
-                            disabled={busy !== null}
-                            onClick={() => void cancel(listing)}
-                          >
-                            {busy === listing.id ? '…' : 'Cancel'}
-                          </button>
                         </li>
                       ))}
                     </ul>

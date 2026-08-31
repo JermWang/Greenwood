@@ -19,8 +19,16 @@ import {
 } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
 import { COMPONENT_RARITIES, SLOT_LABELS, rarityHex, type Rarity } from '@/lib/rarity';
-import { auraHex, auraLabel } from '@/lib/aura';
+import { listingAccent, listingSubtitle, listingTitle, sellerLabel } from '@/lib/listings';
 
+/*
+ * The thumbnail is shared with the HUD dock, and `live` is what separates the
+ * two: this page has no other 3D on it, so a crate can afford its own canvas.
+ * The dock floats over a running region and gets the drawn tile instead.
+ */
+const ListingThumb = dynamic(() => import('@/components/ui/ListingThumb'), { ssr: false });
+/* Still used directly by the sell picker below, which shows crates you own
+   rather than listings. */
 const CrateThumb = dynamic(() => import('@/components/three/CrateThumb'), { ssr: false });
 
 const KINDS: Array<{ key: MarketItemKind | 'all'; label: string }> = [
@@ -304,36 +312,20 @@ function ListingCard({
   action: 'buy' | 'cancel';
   onAction: () => void;
 }) {
-  const item = (listing.item ?? {}) as Record<string, string | number>;
-  const rarity = (item.rarity as Rarity | undefined) ?? undefined;
-  const accent =
-    listing.itemKind === 'node'
-      ? auraHex(Number(item.level) || 1)
-      : rarity
-        ? rarityHex(rarity)
-        : '#f5a623';
+  const accent = listingAccent(listing);
   const net = listing.priceGreen - Math.floor((listing.priceGreen * feeBps) / 10_000);
 
   return (
     <article className="exchange-lot" style={{ '--lot-accent': accent } as CSSProperties}>
       <span className="exchange-lot-scan" />
       <div className="flex items-center gap-2.5">
-        {listing.itemKind === 'crate' ? (
-          <CrateThumb size={44} rarity="legendary" />
-        ) : listing.itemKind === 'component' && rarity ? (
-          <ComponentTile slot={String(item.slot)} rarity={rarity} size={44} />
-        ) : (
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-xl"
-            style={{ background: `${accent}18`, border: `1px solid ${accent}44` }}
-          >
-            <span className="font-mono text-[9px] font-black tracking-tight">{item.family === 'mine' ? 'TSY' : 'EQD'}</span>
-          </div>
-        )}
+        {/* `live` because this page has no other 3D on it — the crate can
+            afford its own canvas here, and cannot in the HUD dock. */}
+        <ListingThumb listing={listing} size={44} live />
         <div className="min-w-0">
-          <div className="truncate text-xs font-semibold text-white">{title(listing)}</div>
+          <div className="truncate text-xs font-semibold text-white">{listingTitle(listing)}</div>
           <div className="truncate font-mono text-[10px] uppercase" style={{ color: accent }}>
-            {subtitle(listing)}
+            {listingSubtitle(listing)}
           </div>
         </div>
       </div>
@@ -351,38 +343,17 @@ function ListingCard({
       >
         {busy ? 'Routing…' : action === 'buy' ? 'Acquire lot' : 'Withdraw lot'}
       </button>
-      <div className="font-mono text-[9px] text-steel-600">
-        {listing.seller.slice(0, 6)}…{listing.seller.slice(-4)}
-      </div>
+      {/* Who is selling. It printed a truncated address even when the seller
+          had a profile name, which is the one detail a buyer on a
+          player-supplied board actually wants. */}
+      <div className="truncate font-mono text-[9px] text-steel-500">{sellerLabel(listing)}</div>
     </article>
   );
 }
 
-function title(l: MarketListing): string {
-  const item = (l.item ?? {}) as Record<string, string | number>;
-  if (l.itemKind === 'crate') {
-    return item.crate_type === 'treasury_allocation' ? 'Treasury Desk Allocation' : 'Equity Desk Allocation';
-  }
-  if (l.itemKind === 'component') return SLOT_LABELS[String(item.slot)] ?? String(item.slot);
-  if (l.itemKind === 'cosmetic') return String(item.name ?? item.cosmetic_key ?? 'Cosmetic');
-  return item.family === 'mine' ? 'Treasury Desk' : 'Equity Desk';
-}
-
-function subtitle(l: MarketListing): string {
-  const item = (l.item ?? {}) as Record<string, string | number>;
-  if (l.itemKind === 'crate') return 'Unopened';
-  if (l.itemKind === 'component') {
-    const r = item.rarity as Rarity;
-    return `${COMPONENT_RARITIES[r]?.label ?? r} · ${COMPONENT_RARITIES[r]?.multiplier ?? 1}×`;
-  }
-  if (l.itemKind === 'cosmetic') {
-    // The rank is the whole reason one copy is worth more than another, so it
-    // is what the card leads with. Resolved server-side from the catalogue.
-    return `${item.rank ?? 'Stock'} · rank ${Number(item.upgrade_level) || 0}/5`;
-  }
-  const lvl = Number(item.level) || 1;
-  return `L${lvl} · ${auraLabel(lvl)}`;
-}
+// `title` and `subtitle` used to live here. They are lib/listings now, because
+// the HUD dock needed the same four answers and a second copy of "an Epic Order
+// Router is 2.0x" is a second place for that to stop being true.
 
 function SellPanel({
   wallet,

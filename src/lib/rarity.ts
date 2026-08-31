@@ -23,6 +23,24 @@ export const RARITIES: Rarity[] = [
   'divine',
 ];
 
+/**
+ * A rarity off the wire, narrowed — anything unrecognised becomes the floor.
+ *
+ * Lives here because it had been written FOUR times: the inventory page, the
+ * doorway, the HUD dock and the listing thumbnail each had their own copy of
+ * the same one-liner. None of them collided in codebase.test.ts, because that
+ * test can only see EXPORTED names and every copy was a local const — which is
+ * the blind spot worth knowing about, not a reason the duplication was fine.
+ *
+ * Defaulting to 'common' rather than throwing is deliberate: rarity arrives
+ * from a route as a string, and a row with a rarity this build has never heard
+ * of should draw as the plainest thing on the board rather than take the board
+ * down with it.
+ */
+export function asRarity(value: string): Rarity {
+  return (RARITIES as string[]).includes(value) ? (value as Rarity) : 'common';
+}
+
 export interface RarityDef {
   multiplier: number;
   tint: number;

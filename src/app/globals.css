@@ -3256,6 +3256,54 @@ body {
 
 /* min-height:0 is what lets the scroll child actually shrink inside the flex
    column — without it the region grows to its content and the cap does nothing. */
+/*
+ * A LOT row: picture, what it is, who is selling it, price, button.
+ *
+ * Two lines rather than one, because the row now has to answer four questions
+ * and a single line answered one of them. The thumbnail and the buy column are
+ * fixed; the middle takes what is left and truncates, since a player-chosen
+ * name is the one field here with no length anybody controls.
+ */
+.eg-dock-list li.is-lot {
+  align-items: center;
+  gap: 9px;
+  padding: 7px 4px;
+}
+.eg-listing-thumb {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 6px;
+  line-height: 1;
+  user-select: none;
+}
+.eg-dock-list li.is-lot .eg-dock-what { flex: 1 1 auto; overflow: hidden; }
+.eg-dock-list li.is-lot .eg-dock-what > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The seller, quieter than what is being sold — it is the second question a
+   buyer asks, not the first. */
+.eg-dock-what em {
+  margin-top: 1px;
+  font: 600 8.5px var(--font-mono), monospace;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  color: rgba(226, 235, 239, 0.5);
+}
+.eg-dock-lot-buy {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.eg-dock-lot-buy .eg-dock-price { margin-left: 0; }
+
 .eg-dock-sell { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; }
 .eg-dock-kicker {
   margin: 0;

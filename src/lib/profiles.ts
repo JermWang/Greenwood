@@ -204,6 +204,46 @@ export async function getGlobalProfile(wallet: string): Promise<GlobalProfile | 
   return row === UNREACHABLE ? null : row;
 }
 
+/**
+ * Display names for a set of wallets, in ONE query.
+ *
+ * For the market board, which shows who is selling. The naive version is
+ * getGlobalProfile per listing, which is a hundred round trips to draw one
+ * screen and gets slower exactly as the market gets busier — the N+1 that a
+ * leaderboard or a board of listings always invites.
+ *
+ * Wallets are lower-cased on the way in and the map is keyed that way, because
+ * a listing's seller comes out of SQLite and a profile's wallet out of
+ * Postgres, and only one of those has been normalised by the time they meet.
+ *
+ * Returns what it found rather than what was asked for. A wallet with no
+ * profile is simply absent, and callers fall back to the shortened address —
+ * an unnamed seller is the normal case for somebody who has not set a name,
+ * not an error.
+ */
+export async function displayNamesFor(wallets: string[]): Promise<Record<string, string>> {
+  const unique = [...new Set(wallets.map((w) => w.toLowerCase()))].filter(Boolean);
+  if (!unique.length || !publicSupabaseConfigured()) return {};
+  return readRegistry<Record<string, string>>(
+    'seller names',
+    async () => {
+      const { data, error } = await getPublicServerSupabase()
+        .from('profiles')
+        .select('wallet,display_name')
+        .in('wallet', unique);
+      if (error) throw new Error(`Supabase name read failed: ${error.message}`);
+      const out: Record<string, string> = {};
+      for (const row of (data ?? []) as Array<{ wallet: string; display_name: string | null }>) {
+        if (row.display_name) out[row.wallet.toLowerCase()] = row.display_name;
+      }
+      return out;
+    },
+    // The board must render when the registry is unreachable. Losing the names
+    // costs a nicety; failing the request costs the market.
+    {}
+  );
+}
+
 export async function getActivityHistory(wallet: string, limit = 50): Promise<ActivityItem[]> {
   if (!publicSupabaseConfigured()) return [];
   return readRegistry<ActivityItem[]>(
