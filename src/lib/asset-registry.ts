@@ -29,8 +29,10 @@ import { DESK_LIVERIES, PLINTH_LIVERIES } from '../components/iso/desk-liveries'
 // bundle and broke the production build. Same rule as the note above, pointing
 // the other way.
 import { COMPONENT_RARITIES, INSTRUMENT_SLOTS, RARITIES, SLOT_LABELS } from './rarity';
+import { ALL_WEAPONS } from './weapons';
 
 export type AssetCategory =
+  | 'weapon'
   | 'instrument'
   | 'desk'
   | 'character'
@@ -148,6 +150,24 @@ const INSTRUMENT_KINDS = INSTRUMENT_SLOTS.map((slot) => ({
 }));
 
 export const ASSETS: AssetEntry[] = [
+  /*
+   * Weapons, one entry each.
+   *
+   * The only things in the game that can kill a player, and until now the only
+   * ones with no picture anywhere -- an axe was a line in a shop list and a
+   * crossbow was a crafting recipe. Derived from ALL_WEAPONS so the browser
+   * cannot show a set the game does not have.
+   */
+  ...ALL_WEAPONS.map((weapon) => ({
+    id: `weapon-${weapon.id}`,
+    name: weapon.name,
+    category: 'weapon' as const,
+    source: 'components/iso/WeaponModels.tsx',
+    blurb: `${weapon.damage} damage · ${weapon.reach} tile reach${weapon.ammo ? ' · needs bolts' : ''}`,
+    animations: [],
+    variants: [{ id: 'default', label: 'Default', props: { weapon: weapon.id } }],
+    scale: 0.5,
+  })),
   /*
    * Instruments, one entry per slot, with a variant per rarity.
    *
@@ -407,6 +427,7 @@ for (const creature of CREATURES) {
 }
 
 export const CATEGORIES: Array<{ id: AssetCategory; label: string }> = [
+  { id: 'weapon', label: 'Weapons' },
   { id: 'instrument', label: 'Instruments' },
   { id: 'desk', label: 'Desks' },
   { id: 'character', label: 'Characters' },

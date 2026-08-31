@@ -19,6 +19,7 @@ import * as THREE from 'three';
 import { Lighting } from '@/components/iso/IsoScene';
 import Desk from '@/components/iso/DeskModels';
 import Instrument from '@/components/iso/InstrumentModels';
+import WeaponModel from '@/components/iso/WeaponModels';
 import type { Rarity } from '@/lib/rarity';
 import Character, { lookFor } from '@/components/iso/Character';
 import * as Dressing from '@/components/iso/MapDressing';
@@ -49,6 +50,10 @@ function Turntable({ spin, children }: { spin: boolean; children: React.ReactNod
  */
 function Preview({ entry, variant, walking, self, refined }: { entry: AssetEntry; variant: AssetVariant; walking: boolean; self: boolean; refined: boolean }) {
   const props = variant.props;
+
+  if (entry.category === 'weapon') {
+    return <WeaponModel id={props.weapon as string} />;
+  }
 
   if (entry.category === 'instrument') {
     return <Instrument slot={props.slot as string} rarity={props.rarity as Rarity} />;

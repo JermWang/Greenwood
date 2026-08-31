@@ -13,6 +13,7 @@
 
 import { getDb } from './db';
 import { GameError } from './errors';
+import { bestWeapon, type Weapon } from './weapons';
 import { spendScrip } from './scrip';
 import { recordQuestProgress } from './quests';
 import { progressionOf } from './progression';
@@ -61,6 +62,47 @@ export function packStepOf(wallet: string): number {
     .prepare('SELECT pack_step FROM users WHERE wallet = ?')
     .get(wallet) as { pack_step: number } | undefined;
   return row?.pack_step ?? NO_PACK;
+}
+
+/**
+ * The weapon a player is actually holding, and the reach it gives them.
+ *
+ * Resolved server-side on every swing rather than trusted from a request, for
+ * the same reason position is: what you are holding decides how much damage
+ * another player takes, so it is contested state. See CLAUDE.md.
+ *
+ * The axe comes off the users row and the crossbows out of the pack, which is
+ * why this lives here rather than in lib/weapons — that module is deliberately
+ * database-free so the renderer and the market can read the same numbers.
+ */
+export function weaponInHand(wallet: string): Weapon | null {
+  const axe = (
+    getDb().prepare('SELECT axe_id FROM users WHERE wallet = ?').get(wallet) as
+      | { axe_id: string | null }
+      | undefined
+  )?.axe_id;
+  const carried = packContentsOf(wallet);
+  const refs = carried.map((stack) => stack.ref);
+  const hasAmmo = carried.some((stack) => stack.kind === 'ammo' && stack.quantity > 0);
+  return bestWeapon(axe, refs, hasAmmo);
+}
+
+/**
+ * Spend one bolt, and refuse the shot if there is not one.
+ *
+ * Conditional on the quantity in the UPDATE itself rather than checked first:
+ * two swings in flight at once would both read the same count and both fire,
+ * which is the same read-then-write race the market and the rate limiter each
+ * had to close. The row is the only thing that can arbitrate.
+ */
+function spendAmmo(wallet: string, ref: string): boolean {
+  const spent = getDb()
+    .prepare(
+      `UPDATE pack_contents SET quantity = quantity - 1
+        WHERE wallet = ? AND ref = ? AND kind = 'ammo' AND quantity >= 1`
+    )
+    .run(wallet, ref);
+  return Number(spent.changes) > 0;
 }
 
 export function packContentsOf(wallet: string): CarriedStack[] {
@@ -631,16 +673,39 @@ export function attackCreature(wallet: string, spawnId: string, now = Date.now()
 
   const at = positionOf(wallet);
   if (!at) throw new GameError('Take a step first.', 409);
-  if (tilesApart(at.x, at.z, spawn.x, spawn.z) > PLAYER_REACH) {
-    throw new GameError('Too far away.', 403);
-  }
+
+  /*
+   * WHAT YOU ARE HOLDING DECIDES THE FIGHT. Both halves of it.
+   *
+   * Reach first: a crossbow lets you open at four tiles, where a shambler
+   * (reach 1) cannot answer at all. That is the whole reason to carry one, and
+   * gating the range check on the weapon rather than on PLAYER_REACH is what
+   * makes it true rather than flavour text.
+   */
+  const weapon = weaponInHand(wallet);
+  const reach = weapon?.reach ?? PLAYER_REACH;
+  const gap = tilesApart(at.x, at.z, spawn.x, spawn.z);
+  if (gap > reach) throw new GameError('Too far away.', 403);
 
   const shard = whereabouts(wallet).shard;
   const def = CREATURES[spawn.kind];
   const before = creatureHealth(shard, spawn);
   if (before <= 0) throw new GameError('It is already dead.', 400);
 
-  const after = Math.max(0, before - UNARMED_DAMAGE);
+  /*
+   * A ranged weapon eats a bolt, and an empty one is refused BEFORE the hit.
+   *
+   * bestWeapon already declines a crossbow with no ammunition, so reaching
+   * here with one and finding the pack empty means another swing spent the last
+   * bolt between the two reads. Refusing is the honest answer: the alternative
+   * is a free shot every time two attacks race.
+   */
+  if (weapon?.ammo && !spendAmmo(wallet, weapon.ammo)) {
+    throw new GameError('Out of bolts.', 409);
+  }
+
+  const dealt = weapon?.damage ?? UNARMED_DAMAGE;
+  const after = Math.max(0, before - dealt);
   getDb()
     .prepare(
       `INSERT INTO creature_state (shard_id, spawn_id, health) VALUES (?,?,?)
@@ -648,10 +713,17 @@ export function attackCreature(wallet: string, spawnId: string, now = Date.now()
     )
     .run(shard, spawn.id, after);
 
-  // It hits back, unless it is dead or has swung too recently.
+  /*
+   * It hits back — unless it is dead, has swung too recently, or CANNOT REACH.
+   *
+   * The last one is new and it is the payoff for carrying a crossbow. A
+   * shambler reaches one tile; shot from four it swings at air. Without this
+   * check a ranged weapon would let you stand outside its reach and still take
+   * the bite, which is the version of "ranged" that is only a bigger number.
+   */
   let took = 0;
   let died: DeathResult | null = null;
-  if (after > 0) {
+  if (after > 0 && gap <= def.reach) {
     const last = readCreature(shard, spawn.id).swung_at;
     if (now - last >= def.cadence * 1000) {
       getDb()
@@ -667,7 +739,9 @@ export function attackCreature(wallet: string, spawnId: string, now = Date.now()
 
   return {
     creature: { id: spawn.id, health: after, maxHealth: def.maxHealth, dead: after <= 0 },
-    dealt: UNARMED_DAMAGE,
+    dealt,
+    /** What swung, so the client can name it rather than guess. Null is fists. */
+    weapon: weapon ? { id: weapon.id, name: weapon.name, reach: weapon.reach } : null,
     took,
     health: healthOf(wallet),
     /** Named so the client can show what dropped without a second lookup. */
@@ -806,14 +880,31 @@ export function attackPlayer(wallet: string, targetWallet: string, now = Date.no
   const them = positionOf(targetWallet);
   if (!them) throw new GameError('They are not out here.', 404);
   if (healthOf(targetWallet) <= 0) throw new GameError('They are already down.', 400);
-  if (tilesApart(me.x, me.z, them.x, them.z) > PLAYER_REACH) {
+
+  /*
+   * The same weapon rules as a creature, and that symmetry is the point.
+   *
+   * A crossbow that outranged a shambler but not a person would make the
+   * dangerous thing in the zone the only thing you cannot answer at range — and
+   * the Deep Forest is written the other way round: the players ARE the
+   * hazard. One resolver, so a change to reach or damage lands in both fights
+   * at once and they cannot drift.
+   */
+  const weapon = weaponInHand(wallet);
+  const reach = weapon?.reach ?? PLAYER_REACH;
+  if (tilesApart(me.x, me.z, them.x, them.z) > reach) {
     throw new GameError('Too far away.', 403);
   }
+  if (weapon?.ammo && !spendAmmo(wallet, weapon.ammo)) {
+    throw new GameError('Out of bolts.', 409);
+  }
 
-  const result = damage(targetWallet, UNARMED_DAMAGE, now);
+  const dealt = weapon?.damage ?? UNARMED_DAMAGE;
+  const result = damage(targetWallet, dealt, now);
   return {
     target: targetWallet,
-    dealt: UNARMED_DAMAGE,
+    dealt,
+    weapon: weapon ? { id: weapon.id, name: weapon.name, reach: weapon.reach } : null,
     targetHealth: result.health,
     killed: result.died !== null,
     /** What they dropped, so the killer knows a pile is there without polling. */

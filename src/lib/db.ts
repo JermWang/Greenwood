@@ -194,7 +194,7 @@ function migrate(db: DatabaseSync) {
     CREATE TABLE IF NOT EXISTS listings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       seller TEXT NOT NULL REFERENCES users(wallet),
-      item_kind TEXT NOT NULL CHECK (item_kind IN ('crate','component','node','cosmetic')),
+      item_kind TEXT NOT NULL CHECK (item_kind IN ('crate','component','node','cosmetic','weapon')),
       item_id INTEGER NOT NULL,
       price_osr REAL NOT NULL CHECK (price_osr > 0),
       created_at INTEGER NOT NULL,
@@ -389,7 +389,7 @@ function migrate(db: DatabaseSync) {
     -- One live listing per item. Partial index so sold/cancelled rows can pile
     -- up in history without blocking the item being listed again later.
     CREATE UNIQUE INDEX IF NOT EXISTS idx_listings_item_live
-      ON listings(item_kind, item_id) WHERE status = 'open';
+      ON listings(item_kind, item_id) WHERE status = 'open' AND item_kind <> 'weapon';
   `);
 
   // These counters were split after the initial local schema shipped. Keep the
@@ -462,7 +462,18 @@ function widenListingKinds(db: DatabaseSync) {
   const row = db
     .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'listings'`)
     .get() as { sql: string } | undefined;
-  if (!row?.sql || row.sql.includes("'cosmetic'")) return;
+  /*
+   * Guarded on the NEWEST value, not the previous one.
+   *
+   * It tested for 'cosmetic', which was correct while that was the last kind
+   * added — and silently stopped protecting anything the moment 'weapon' was.
+   * An established install would have kept a CHECK without 'weapon' while the
+   * code inserted it, and every weapon listing would fail on a constraint that
+   * is invisible from the source: exactly the failure the allocation-rename
+   * migration below records, for exactly the same reason. Tests cannot catch
+   * it, because a fresh database gets the new schema and is simply correct.
+   */
+  if (!row?.sql || row.sql.includes("'weapon'")) return;
 
   db.exec('PRAGMA foreign_keys = OFF;');
   db.exec('BEGIN IMMEDIATE');
@@ -471,7 +482,7 @@ function widenListingKinds(db: DatabaseSync) {
       CREATE TABLE listings_migrated (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         seller TEXT NOT NULL REFERENCES users(wallet),
-        item_kind TEXT NOT NULL CHECK (item_kind IN ('crate','component','node','cosmetic')),
+        item_kind TEXT NOT NULL CHECK (item_kind IN ('crate','component','node','cosmetic','weapon')),
         item_id INTEGER NOT NULL,
         price_osr REAL NOT NULL CHECK (price_osr > 0),
         created_at INTEGER NOT NULL,
@@ -490,7 +501,7 @@ function widenListingKinds(db: DatabaseSync) {
       CREATE INDEX IF NOT EXISTS idx_listings_open ON listings(status, item_kind, created_at);
       CREATE INDEX IF NOT EXISTS idx_listings_seller ON listings(seller, status);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_listings_item_live
-        ON listings(item_kind, item_id) WHERE status = 'open';
+        ON listings(item_kind, item_id) WHERE status = 'open' AND item_kind <> 'weapon';
     `);
     db.exec('COMMIT');
   } catch (error) {

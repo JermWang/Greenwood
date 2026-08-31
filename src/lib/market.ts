@@ -14,8 +14,34 @@ import { GameError } from './game';
 import { MARKET_FEE_BPS } from './economy';
 import { recordQuestProgress } from './quests';
 import { cosmeticDef, rankName } from './cosmetics';
+import { ALL_WEAPONS, weaponById } from './weapons';
 
-export type ItemKind = 'crate' | 'component' | 'node' | 'cosmetic';
+/**
+ * What can change hands.
+ *
+ * `weapon` is CROSSBOWS ONLY, and the asymmetry is deliberate rather than an
+ * oversight. A crossbow is a crafted object that lives in a pack, can be
+ * dropped on death, and is fungible by type — one Hunting Crossbow is any
+ * other. An AXE is a tier on the users row, bought up a Scrip ladder: there is
+ * no object to hand over, and "selling" one would mean deciding what happens
+ * when the buyer already owns a better one. That is a design question about the
+ * woodcutting ladder, not a market feature, so axes are not listed here.
+ */
+export type ItemKind = 'crate' | 'component' | 'node' | 'cosmetic' | 'weapon';
+
+/**
+ * A weapon's stable numeric id, because `listings.item_id` is an INTEGER.
+ *
+ * Crossbows have no row of their own — pack_contents is keyed by
+ * (wallet, kind, ref) with a quantity — so the listing points at the WEAPON
+ * TYPE and ownership is "does this wallet hold at least one, less whatever they
+ * have already listed". Fungible by type, which is what a stack of identical
+ * crossbows actually is.
+ */
+const TRADEABLE_WEAPONS = ALL_WEAPONS.filter((w) => w.weaponClass === 'crossbow');
+const weaponRefOf = (itemId: number): string | null => TRADEABLE_WEAPONS[itemId]?.id ?? null;
+export const weaponItemId = (ref: string): number =>
+  TRADEABLE_WEAPONS.findIndex((w) => w.id === ref);
 
 /**
  * Is this item promised to a buyer right now?
@@ -88,6 +114,44 @@ function assertSellable(wallet: string, kind: ItemKind, itemId: number) {
     if (!row || row.wallet !== wallet) throw new GameError('component not found in your inventory', 404);
     if (row.equipped_node_id != null) {
       throw new GameError('unequip that component before listing it', 400);
+    }
+    return;
+  }
+  if (kind === 'weapon') {
+    const ref = weaponRefOf(itemId);
+    if (!ref) throw new GameError('that is not a tradeable weapon', 400);
+    const held = (
+      db
+        .prepare(
+          `SELECT COALESCE(SUM(quantity), 0) AS n FROM pack_contents
+            WHERE wallet = ? AND kind = 'weapon' AND ref = ?`
+        )
+        .get(wallet, ref) as { n: number }
+    ).n;
+    /*
+     * COUNTED AGAINST WHAT IS ALREADY LISTED, because weapons are fungible.
+     *
+     * Every other kind here is a unique row, so "already listed" is a flag on
+     * it. A stack of two crossbows is one row with a quantity, and the unique
+     * live-listing index deliberately does not cover weapons (see lib/db) —
+     * without this a seller with one crossbow could list it five times and take
+     * payment five times for one object.
+     */
+    const listed = (
+      db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM listings
+            WHERE seller = ? AND item_kind = 'weapon' AND item_id = ? AND status = 'open'`
+        )
+        .get(wallet, itemId) as { n: number }
+    ).n;
+    if (held <= listed) {
+      throw new GameError(
+        listed > 0
+          ? 'you have already listed every one of those you are carrying'
+          : 'that weapon is not in your pack',
+        400
+      );
     }
     return;
   }
@@ -236,6 +300,32 @@ export function transferSoldItem(listingId: number, buyer: string): Listing {
     } else if (row.item_kind === 'component') {
       db.prepare('UPDATE components SET wallet = ?, equipped_node_id = NULL WHERE id = ?')
         .run(buyer, row.item_id);
+    } else if (row.item_kind === 'weapon') {
+      const weaponRef = weaponRefOf(row.item_id);
+      {
+        if (!weaponRef) throw new GameError('that weapon no longer exists', 409);
+        /*
+         * Take it off the seller CONDITIONALLY, and refuse if it is gone.
+         *
+         * A crossbow can leave a pack between listing and sale in ways a desk
+         * cannot: dropped on death, or spent in a craft. The quantity in the
+         * UPDATE is the only thing that can arbitrate, exactly as it is for
+         * ammunition and for the mirrored balance.
+         */
+        const taken = db
+          .prepare(
+            `UPDATE pack_contents SET quantity = quantity - 1
+              WHERE wallet = ? AND kind = 'weapon' AND ref = ? AND quantity >= 1`
+          )
+          .run(row.seller, weaponRef);
+        if (Number(taken.changes) === 0) {
+          throw new GameError('the seller no longer has that weapon', 409);
+        }
+        db.prepare(
+          `INSERT INTO pack_contents (wallet, kind, ref, quantity) VALUES (?,?,?,1)
+             ON CONFLICT(wallet, kind, ref) DO UPDATE SET quantity = quantity + 1`
+        ).run(buyer, 'weapon', weaponRef);
+      }
     } else if (row.item_kind === 'cosmetic') {
       const item = db
         .prepare('SELECT wallet, cosmetic_key FROM cosmetics_owned WHERE id = ?')
@@ -344,6 +434,20 @@ function describeItem(kind: ItemKind, itemId: number): Record<string, unknown> |
         | Record<string, unknown>
         | undefined) ?? null
     );
+  }
+  if (kind === 'weapon') {
+    const weapon = weaponById(weaponRefOf(itemId));
+    if (!weapon) return null;
+    // Everything a buyer prices a weapon on, straight off lib/weapons so the
+    // board and the fight can never disagree about what it does.
+    return {
+      weapon_id: weapon.id,
+      name: weapon.name,
+      tier: weapon.tier,
+      damage: weapon.damage,
+      reach: weapon.reach,
+      ammo: weapon.ammo,
+    };
   }
   if (kind === 'cosmetic') {
     const row = db
