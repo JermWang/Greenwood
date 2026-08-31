@@ -23,8 +23,15 @@
 // set as the things that can be bought.
 import { AVATAR_SKINS } from '../components/iso/avatar-skins';
 import { DESK_LIVERIES, PLINTH_LIVERIES } from '../components/iso/desk-liveries';
+// Instrument slots come from lib/rarity, which is DATA. They used to come from
+// InstrumentModels, which is a `'use client'` renderer — and since the GLB
+// export route imports this file, that pulled React Three Fiber into a server
+// bundle and broke the production build. Same rule as the note above, pointing
+// the other way.
+import { COMPONENT_RARITIES, INSTRUMENT_SLOTS, RARITIES, SLOT_LABELS } from './rarity';
 
 export type AssetCategory =
+  | 'instrument'
   | 'desk'
   | 'character'
   | 'dressing'
@@ -128,7 +135,43 @@ const DESK_KINDS = [
   { id: 'settlement', name: 'Structured Desk', blurb: 'Support desk. Wider reach, smaller bonus.' },
 ];
 
+/**
+ * The eight instrument slots, and the label each one wears in the fiction.
+ *
+ * Taken from SLOT_LABELS so a rename lands in one place — the asset browser
+ * naming an instrument something the shop does not is exactly the drift this
+ * registry exists to avoid.
+ */
+const INSTRUMENT_KINDS = INSTRUMENT_SLOTS.map((slot) => ({
+  id: slot,
+  name: SLOT_LABELS[slot] ?? slot,
+}));
+
 export const ASSETS: AssetEntry[] = [
+  /*
+   * Instruments, one entry per slot, with a variant per rarity.
+   *
+   * They are here because they were nowhere: instruments had no model at all
+   * until the marketplace needed to show one, and the rule in CLAUDE.md is that
+   * anything added gets looked at on the turntable before it is wired into a
+   * scene. Rarity is a VARIANT rather than eight more entries, because what
+   * changes with rarity is one emissive element and the point of flipping
+   * through them is to check that the shape still reads at every heat.
+   */
+  ...INSTRUMENT_KINDS.map((kind) => ({
+    id: `instrument-${kind.id}`,
+    name: kind.name,
+    category: 'instrument' as const,
+    source: 'components/iso/InstrumentModels.tsx',
+    blurb: 'Fitted to a desk. Rarity is the lit element, never the body.',
+    animations: [],
+    variants: RARITIES.map((rarity) => ({
+      id: rarity,
+      label: COMPONENT_RARITIES[rarity].label,
+      props: { slot: kind.id, rarity },
+    })),
+    scale: 0.6,
+  })),
   ...DESK_KINDS.map((kind) => ({
     id: `desk-${kind.id}`,
     name: kind.name,
@@ -364,6 +407,7 @@ for (const creature of CREATURES) {
 }
 
 export const CATEGORIES: Array<{ id: AssetCategory; label: string }> = [
+  { id: 'instrument', label: 'Instruments' },
   { id: 'desk', label: 'Desks' },
   { id: 'character', label: 'Characters' },
   { id: 'dressing', label: 'Dressing' },

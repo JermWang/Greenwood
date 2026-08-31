@@ -123,6 +123,22 @@ export const SLOT_LABELS: Record<string, string> = {
   elevator: 'Liquidity Buffer',
 };
 
+/**
+ * The instrument slots, as DATA.
+ *
+ * It lived on InstrumentModels, which is where the models are — and that broke
+ * the production build. asset-registry needs the list, the GLB export route
+ * imports the registry, and a route is server code: importing the slot list
+ * from a `'use client'` component dragged React Three Fiber into a server
+ * bundle and page-data collection failed on it.
+ *
+ * The registry's own header warns about exactly this in the other direction
+ * (never import lib/cosmetics, it reaches for node:sqlite). Same rule, same
+ * reason: a list of names is data, and data does not belong in a module that
+ * also draws things.
+ */
+export const INSTRUMENT_SLOTS = Object.keys(SLOT_LABELS);
+
 /** Average multiplier across 4 slots; empty slots count as 1.0x. */
 export function computeNodeMultiplier(slotRarities: (Rarity | null | undefined)[]): number {
   const filled = [...slotRarities];

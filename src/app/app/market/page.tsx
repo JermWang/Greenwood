@@ -27,8 +27,13 @@ import { listingAccent, listingSubtitle, listingTitle, sellerLabel } from '@/lib
  * The dock floats over a running region and gets the drawn tile instead.
  */
 const ListingThumb = dynamic(() => import('@/components/ui/ListingThumb'), { ssr: false });
+/*
+ * The one canvas every ListingThumb on this page draws into. Without it the
+ * thumbnails render nothing — see the header in ThumbStage.
+ */
+const ThumbStage = dynamic(() => import('@/components/ui/ThumbStage'), { ssr: false });
 /* Still used directly by the sell picker below, which shows crates you own
-   rather than listings. */
+   rather than listings, and so has no listing to hand a ListingThumb. */
 const CrateThumb = dynamic(() => import('@/components/three/CrateThumb'), { ssr: false });
 
 const KINDS: Array<{ key: MarketItemKind | 'all'; label: string }> = [
@@ -124,6 +129,8 @@ export default function MarketPage() {
       subtitle="Route instruments, sealed allocations, and complete desks across the fund network."
       maxWidth="max-w-[1500px]"
     >
+      {/* One canvas, behind every thumbnail on the page. */}
+      <ThumbStage />
       <div className="exchange-layout">
         <section className="exchange-hero">
           <div><span className="eg-scene-kicker">FUND-TO-FUND / LIVE BOOK</span><h2>Route assets.<br /><em>Reprice yield.</em></h2><p>Every order is backed by a real portfolio asset: an instrument, a sealed allocation, or a complete desk.</p></div>
@@ -319,9 +326,8 @@ function ListingCard({
     <article className="exchange-lot" style={{ '--lot-accent': accent } as CSSProperties}>
       <span className="exchange-lot-scan" />
       <div className="flex items-center gap-2.5">
-        {/* `live` because this page has no other 3D on it — the crate can
-            afford its own canvas here, and cannot in the HUD dock. */}
-        <ListingThumb listing={listing} size={44} live />
+        {/* Draws into the page's single ThumbStage canvas — see ListingThumb. */}
+        <ListingThumb listing={listing} size={44} />
         <div className="min-w-0">
           <div className="truncate text-xs font-semibold text-white">{listingTitle(listing)}</div>
           <div className="truncate font-mono text-[10px] uppercase" style={{ color: accent }}>

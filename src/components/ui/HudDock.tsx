@@ -45,6 +45,7 @@ import { useOperation } from '@/lib/useOperation';
 import { COMPONENT_RARITIES, RARITIES, SLOT_LABELS, asRarity, rarityHex } from '@/lib/rarity';
 import { listingSubtitle, listingTitle, sellerLabel } from '@/lib/listings';
 import ListingThumb from './ListingThumb';
+import ThumbStage from './ThumbStage';
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
@@ -262,6 +263,13 @@ export default function HudDock({ wallet }: { wallet: string | null }) {
 
   return (
     <div className="eg-dock">
+      {/*
+        Mounted only while the market is open, so a player who never opens it
+        never pays for a canvas — and the one canvas is shared by every
+        thumbnail in the panel rather than one per row. See ThumbStage.
+      */}
+      {open === 'market' && <ThumbStage />}
+
       {open === 'market' && (
         <section className="eg-dock-panel is-market" aria-label="Market">
           <header>
