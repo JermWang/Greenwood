@@ -144,7 +144,7 @@ Income Note, Trading Floor, The Vault.
 
 ## Known state
 
-- **627 tests pass.** The suite is green; if it is not, that is new. (It was 639
+- **630 tests pass.** The suite is green; if it is not, that is new. (It was 639
   before `lib/next-step` went with the dashboard panel that was its only caller.)
 - **The introduction DEFERS steps it cannot act on** rather than stopping at
   them (`canAct` in `lib/intro`, context assembled in `api/intro/[wallet]`).
@@ -200,6 +200,36 @@ Income Note, Trading Floor, The Vault.
   and the region page gates again on arrival. A remembered region that has since
   closed falls back to the Grounds. If you add a region, give its page
   `useRememberRegion` or the button will never send anyone back to it.
+- **The HUD is budgeted, and the budget is about a tenth of the screen.** It was
+  measured at 34% of a 1280x720 board — a 70px top bar, a 380x193 guide, and two
+  corner panels of ~220px each sitting over the near half of the room. It is 17%
+  with the guide open and 9% with it closed. If you add a panel, measure.
+
+  Three things hold that, and all three are easy to undo by accident:
+
+  - **The room panels start FOLDED** and remember what the player chose
+    (`togglePanel` in `IsoFloor`). Persistence is written on the CLICK, not in an
+    effect watching the state — the effect version needed a "skip the first
+    write" ref, and a ref survives React's dev double-invoke while state does
+    not, so it saved the default over the value it had just restored.
+  - **`[hidden]` is honoured globally**, last rule in `globals.css`. The
+    attribute only carries `display: none` from the UA sheet, so any author rule
+    setting `display` beats it. That was tracked by a hand-maintained list of
+    four selectors, and `.eg-layout-rules` had already fallen off it.
+  - **No scene computes its height from the top bar.** The bar is sized by its
+    contents (53px desktop, 55px mobile), so every `calc(100svh - <constant>)`
+    is a guess that was wrong on one of them. `.eg-sandbox` and `.df-page` both
+    use `position: absolute; inset: 0` against the positioned `.eg-stage-content`
+    instead — a definite height at every viewport, with no number to keep in step.
+- **The introduction is a CHECKLIST**, and the code used to argue at length that
+  it must not be. The old reasoning — ten tasks on a fresh account is a wall, and
+  a wall gets dismissed — was right about walls and wrong about what replaced
+  one: showing only the current step meant nothing on screen said the
+  introduction was finite. Ten rows with three ticked is evidence; "3 / 10" in a
+  corner is a claim. The wall is avoided by the rows being one line each with
+  **only the current row opening**, carrying its `why`, its reward and its one
+  call to action. Keep that shape — a panel where every row expands is the wall
+  again.
 
 ## Two things that were built and wired to nothing
 
