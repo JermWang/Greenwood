@@ -2658,3 +2658,25 @@ body {
  * general so the next foldable thing is covered without being remembered.
  */
 [hidden] { display: none; }
+
+/*
+ * The doorway, when the introduction is open over it.
+ *
+ * Both are centred, so they collided: the guide hangs from the top bar and
+ * reaches about 285px down, and the figure's head starts at 160px. It covered
+ * 38% of the avatar — the head and torso, which is the entire identifying half
+ * of the one thing that screen exists to show.
+ *
+ * Conditional on the panel actually being on screen, via :has(), so a player
+ * who has closed the guide (or finished the introduction, after which it
+ * renders nothing at all) still gets the composition centred. Without the
+ * guard this would leave a permanent gap at the top for a panel that is not
+ * there.
+ */
+.eg-os:has(.eg-guide-panel) .eg-doorway {
+  justify-content: flex-end;
+  padding-bottom: clamp(20px, 7vh, 76px);
+}
+.eg-os:has(.eg-guide-panel) .eg-doorway-figure {
+  width: min(68vw, 38vh, 380px);
+}
