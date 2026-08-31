@@ -15,7 +15,7 @@ import SoundToggle from '@/components/ui/SoundToggle';
 import TransactionSafetyModal from '@/components/ui/TransactionSafetyModal';
 import { useEvmWallet } from '@/lib/evm';
 import { CHAIN, TOKEN_LIVE } from '@/lib/config';
-import { REGIONS } from '@/lib/regions';
+import { REGIONS, isHostileRegion } from '@/lib/regions';
 
 /*
  * `/app` is deliberately absent: it is a door, not a room (see app/app/page), so
@@ -70,6 +70,8 @@ function GreenBalanceModule() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const wallet = useOperation((s) => s.wallet);
+  /** Whether the player is somewhere that can kill them. See the HUD below. */
+  const hostileHere = REGIONS.some((region) => region.href === pathname && isHostileRegion(region));
   return (
     <div className="eg-os min-h-screen">
       <DeployNotice />
@@ -124,8 +126,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           regions.
         */}
         {pathname !== '/app' && <ChatDock />}
-        {/* The one menu. Everything else is reached by walking to it. */}
-        <MarketHud wallet={wallet} />
+        {/*
+          The one menu, and now only where its own argument holds.
+
+          It was on every screen under /app, which is what made it look
+          arbitrary: on the Grounds it was a floating shortcut to the Trading
+          Floor, a building thirty tiles away with a door you walk through —
+          two ways to reach one place, one of which contradicts the rule that
+          navigation happens in the world. It also fought the chat dock for the
+          bottom of the screen.
+
+          The exception it was granted is specifically about being OUT there:
+          deciding whether the salvage in your pack is worth the walk home is a
+          decision you make while carrying it, in a region that can kill you,
+          and sending someone indoors to look up a number is what the exception
+          exists to avoid. So it appears where there are hostiles and nowhere
+          else — read from the region table rather than a path list, so a
+          region added later gets the right answer without this being edited.
+        */}
+        {hostileHere && <MarketHud wallet={wallet} />}
       </div>
       <TransactionSafetyModal />
     </div>

@@ -1,43 +1,29 @@
 import { NextResponse } from 'next/server';
 import { TOKEN_LIVE } from '@/lib/config';
-import { getDb, setProtocolValue } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { writeSnapshot, backupsSupported } from '@/lib/backup';
+import { resetGameState, resetTargets } from '@/lib/reset';
+import { clearGlobalRegistry } from '@/lib/profiles';
+import { publicSupabaseConfigured } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Wipe all game state and restart the emission clock. Used to clear test data
- * before a real launch.
+ * Wipe all game state and restart the emission clock, for a relaunch.
  *
- * This destroys every player's nodes, components, crates, listings and balances
- * and cannot be undone, so it is deliberately awkward to trigger: it needs the
- * admin token AND an exact confirmation phrase in the body. The token alone is
- * not enough, because a wipe fired by accident on a live game is unrecoverable
- * in a way the deploy-notice endpoint's mistakes are not.
+ * This destroys every player's desks, instruments, allocations, listings,
+ * levels and balances and cannot be undone, so it is deliberately awkward to
+ * trigger: it needs the admin token AND an exact confirmation phrase in the
+ * body. The token alone is not enough, because a wipe fired by accident on a
+ * live game is unrecoverable in a way the deploy-notice endpoint's mistakes
+ * are not.
  *
- * genesisMs is rewritten rather than deleted. The halving curve is measured
- * from it, so a reset that left the old value would launch the game already
- * part-way down the emission schedule — day one would pay out at a rate meant
- * for a network weeks old.
+ * WHAT gets wiped is no longer decided here. lib/reset reads the schema and
+ * empties everything it is not explicitly told to spare, because the list that
+ * used to live in this file went stale and left twelve tables standing — see
+ * the header there. This route owns the GUARDS; that module owns the wipe.
  */
 const CONFIRM = 'WIPE-ALL-GAME-STATE';
-
-/** Every table holding player or protocol state. Order avoids FK complaints. */
-const TABLES = [
-  'listings',
-  'crates',
-  'components',
-  'nodes',
-  'floor_layouts',
-  'stakes',
-  'ledger',
-  'settlements',
-  'idempotency',
-  'users',
-] as const;
-
-/** Protocol counters that must return to zero alongside the tables. */
-const COUNTERS = ['burned', 'reserve', 'treasury', 'emitted', 'solRevenue'] as const;
 
 export async function POST(request: Request) {
   /*
@@ -55,13 +41,21 @@ export async function POST(request: Request) {
    * overridable, because there is one legitimate use -- clearing test data off
    * a configured testnet -- and a rule with no escape hatch gets worked around
    * in a worse way.
+   *
+   * A RELAUNCH IS THE ONE TIME THIS GATE IS IN THE WAY ON PURPOSE. The correct
+   * sequence is to unset the old token address FIRST, wipe, then configure the
+   * new one -- which passes this gate honestly, because between those two steps
+   * the game genuinely holds no real value. Setting the override while the old
+   * token is still live means wiping balances that are still redeemable.
    */
   if (TOKEN_LIVE && process.env.OSR_ALLOW_RESET !== 'yes-wipe-a-live-game') {
     return NextResponse.json(
       {
         error:
           'refused: the token is live, so this would wipe a game holding real value. ' +
-          'Set OSR_ALLOW_RESET=yes-wipe-a-live-game if that is genuinely the intent.',
+          'For a relaunch, clear NEXT_PUBLIC_OSR_TOKEN first and wipe before pointing at ' +
+          'the new one. Set OSR_ALLOW_RESET=yes-wipe-a-live-game only if wiping a live ' +
+          'game is genuinely the intent.',
       },
       { status: 403 }
     );
@@ -76,25 +70,31 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+
+  /*
+   * A dry run, so the irreversible thing can be inspected before it is done.
+   *
+   * Same guards, same code path for deciding WHAT would go — it calls the same
+   * resetTargets the wipe uses, rather than describing it in prose that could
+   * drift from the behaviour.
+   */
+  if (body.dryRun === true) {
+    const { wipe, keep } = resetTargets(getDb());
+    return NextResponse.json({
+      dryRun: true,
+      wouldWipe: wipe,
+      wouldKeep: keep,
+      wouldClearRegistry: body.keepRegistry === true ? [] : ['activity_history', 'profiles', 'privy_identities'],
+      backupsSupported: backupsSupported(),
+    });
+  }
+
   if (body.confirm !== CONFIRM) {
     return NextResponse.json(
       { error: `refused: set confirm to "${CONFIRM}" to wipe all game state` },
       { status: 400 }
     );
   }
-
-  const db = getDb();
-  const before: Record<string, number> = {};
-  const after: Record<string, number> = {};
-  const count = (t: string) => {
-    try {
-      return Number((db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n);
-    } catch {
-      return -1; // table absent on an older schema
-    }
-  };
-
-  for (const t of TABLES) before[t] = count(t);
 
   /*
    * Snapshot first. This is the single most predictable moment in the app's
@@ -118,48 +118,51 @@ export async function POST(request: Request) {
     }
   }
 
-  db.exec('BEGIN IMMEDIATE');
+  let report;
   try {
-    for (const t of TABLES) {
-      try {
-        db.exec(`DELETE FROM ${t}`);
-      } catch {
-        /* table absent — nothing to clear */
-      }
-    }
-    // Reclaim the autoincrement sequences so a fresh game starts at id 1
-    // rather than continuing the test run's numbering.
-    try {
-      db.exec('DELETE FROM sqlite_sequence');
-    } catch {
-      /* no sequence table if nothing ever autoincremented */
-    }
-    db.exec('COMMIT');
+    report = resetGameState(getDb(), Number(body.genesisMs ?? Date.now()));
   } catch (e) {
-    db.exec('ROLLBACK');
     console.error('[admin/reset] wipe failed', e);
-    return NextResponse.json({ error: 'wipe failed' }, { status: 500 });
+    return NextResponse.json({ error: 'wipe failed', backup }, { status: 500 });
   }
 
-  for (const c of COUNTERS) setProtocolValue(c, '0');
-  // Clear per-day crate budgets so the first real day starts with a full one.
-  try {
-    db.exec("DELETE FROM protocol WHERE key LIKE 'crates_found_day_%'");
-  } catch {
-    /* nothing recorded yet */
+  /*
+   * The registry goes with it, unless asked otherwise.
+   *
+   * Clearing by default is the same argument as the inverted table list: a wipe
+   * that leaves 235 profiles standing produces a fresh world with a populated
+   * leaderboard, which is the half-done state this whole change exists to stop.
+   *
+   * A failure here does NOT fail the request. The game is already wiped by this
+   * point and reporting a 500 would suggest otherwise; the operator needs to
+   * know the local half succeeded and the remote half needs retrying, so the
+   * error is returned as data.
+   */
+  let registry: Record<string, number> | null = null;
+  let registryError: string | null = null;
+  if (body.keepRegistry === true) {
+    registryError = 'skipped: keepRegistry was set';
+  } else if (!publicSupabaseConfigured()) {
+    registryError = 'skipped: Supabase is not configured on this server';
+  } else {
+    try {
+      registry = await clearGlobalRegistry();
+    } catch (error) {
+      registryError = String(error);
+      console.error('[admin/reset] registry clear failed', error);
+    }
   }
-
-  const genesisMs = Number(body.genesisMs ?? Date.now());
-  setProtocolValue('genesisMs', String(genesisMs));
-
-  for (const t of TABLES) after[t] = count(t);
 
   return NextResponse.json({
     wiped: true,
-    before,
-    after,
-    genesisMs,
-    genesisIso: new Date(genesisMs).toISOString(),
+    before: report.before,
+    after: report.after,
+    tablesWiped: report.wiped,
+    tablesKept: report.kept,
+    registry,
+    registryError,
+    genesisMs: report.genesisMs,
+    genesisIso: new Date(report.genesisMs).toISOString(),
     /**
      * The snapshot taken immediately before the wipe.
      *

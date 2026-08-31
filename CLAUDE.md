@@ -129,7 +129,12 @@ Income Note, Trading Floor, The Vault.
   lose. A denylist would fail open.
 - **Navigation happens in the world.** There is no nav rail and no dock — the
   Exchange HUD is the single deliberate exception, because checking prices
-  mid-run is a decision input rather than a destination.
+  mid-run is a decision input rather than a destination. **It now renders only
+  where there are hostiles** (`isHostileRegion`, checked in `app/app/layout`),
+  which is the whole of the exception it was granted: on the Grounds it was a
+  floating shortcut to a building thirty tiles away with a door on it, so the
+  one screen that broke the rule was also the one where the rule was easiest to
+  follow. Gate it on the region table, never on a path list.
 - **The browser cannot write to world chat, and that is arranged rather than
   checked.** The chat channel is opened with `private: true`, and the RLS policy
   on `realtime.messages` grants SELECT and deliberately withholds INSERT, so

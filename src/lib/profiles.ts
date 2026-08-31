@@ -422,3 +422,48 @@ export async function saveAvatar(
   const url = `${pub.publicUrl}?v=${Date.now()}`;
   return updateProfileIdentity(wallet, { avatarUrl: url });
 }
+
+/**
+ * Empty the global registry, for a relaunch.
+ *
+ * THE SECOND HALF OF A WIPE, and the half that is easy to miss because it is
+ * not in the SQLite file everybody thinks of as "the database". Profiles and
+ * activity history live in Supabase and feed the leaderboard and every profile
+ * page, so a reset that clears the game but not this one launches a fresh world
+ * with a populated leaderboard of funds that no longer exist — names, levels
+ * and lifetime production for accounts with nothing behind them.
+ *
+ * `privy_identities` goes with them. Privy was replaced by wallet sessions (see
+ * lib/siwe) and the table is a leftover, but it maps a person to a wallet, so a
+ * relaunch is exactly the moment not to keep it lying around.
+ *
+ * Avatar IMAGES in storage are deliberately not deleted. Once the profile rows
+ * are gone nothing references them, so they are inert; and removing pictures
+ * people uploaded is a heavier decision than clearing a leaderboard, and should
+ * be made on purpose rather than as a side effect of a reset. The count is
+ * reported so it is a visible leftover rather than a forgotten one.
+ */
+export async function clearGlobalRegistry(): Promise<Record<string, number>> {
+  if (!supabaseConfigured()) throw new Error('profile database is not configured');
+  const supabase = getServerSupabase();
+  const cleared: Record<string, number> = {};
+
+  for (const table of ['activity_history', 'profiles', 'privy_identities'] as const) {
+    const { count: before } = await supabase
+      .from(table)
+      .select('*', { count: 'exact', head: true });
+    /*
+     * PostgREST refuses an unfiltered delete, which is a guard worth having
+     * everywhere except here. `<key> is not null` is the documented way to say
+     * "yes, all of them" while still going through the same policy checks.
+     */
+    const key = table === 'activity_history' ? 'id' : 'wallet';
+    const { error } = await supabase.from(table).delete().not(key, 'is', null);
+    if (error) throw new Error(`could not clear ${table}: ${error.message}`);
+    cleared[table] = before ?? 0;
+  }
+
+  const { data: avatars } = await supabase.storage.from('avatars').list('', { limit: 1000 });
+  cleared.avatars_left_in_storage = avatars?.length ?? 0;
+  return cleared;
+}

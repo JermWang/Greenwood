@@ -2883,16 +2883,67 @@ body {
   bottom: clamp(10px, 1.6vw, 18px);
 }
 
+/*
+ * GLASS, and the reason it needs saying is that transparency and legibility
+ * pull against each other here harder than in most UI.
+ *
+ * The thing behind this panel is not a dim page, it is a lit outdoor world in
+ * bright greens with white signage moving through it. Dropping the opacity
+ * alone would put 11px text over moving high-contrast detail — readable in a
+ * screenshot, unreadable while walking.
+ *
+ * So three things do the work together, and removing any one of them breaks
+ * the other two:
+ *
+ *   1. A HEAVY blur (18px), not a fashionable one. Blur is what turns the
+ *      world behind into colour rather than detail; at 6-8px the tree edges
+ *      still read as edges and fight the text.
+ *   2. A dark tint that stays dark. The alpha floor is about 0.55 — below
+ *      that, pale ground under the panel lifts the backdrop enough to lose
+ *      white text, and the sunlit grass in the Grounds is exactly that.
+ *   3. A text shadow on every glyph. This is the part that actually buys the
+ *      transparency: with a 1px dark shadow the text keeps its own contrast
+ *      independent of whatever is behind it, so the tint can stay light
+ *      enough to see through.
+ *
+ * saturate() is here because blurring alone greys the backdrop and the world's
+ * colour is the thing worth seeing through to.
+ */
+.eg-chat,
+.eg-chat-tab {
+  background: linear-gradient(
+    180deg,
+    rgba(18, 22, 16, 0.62) 0%,
+    rgba(9, 11, 8, 0.72) 100%
+  );
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+/*
+ * No backdrop-filter, no transparency.
+ *
+ * Without the blur the panel is a dark sheet of glass with a lit world showing
+ * straight through it at full detail, which is worse than an opaque box rather
+ * than a slightly degraded version of one. Firefox with the feature disabled
+ * and older WebViews both land here.
+ */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .eg-chat,
+  .eg-chat-tab {
+    background: rgba(10, 12, 9, 0.94);
+  }
+}
+
 /* Collapsed: a tab, with the unread count on it. */
 .eg-chat-tab {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 7px 12px;
-  border: 1px solid rgba(212, 210, 207, 0.16);
+  border: 1px solid rgba(212, 210, 207, 0.2);
   border-radius: 999px;
-  background: rgba(12, 14, 10, 0.82);
-  backdrop-filter: blur(10px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   font: 700 9px var(--font-mono), monospace;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -2920,11 +2971,23 @@ body {
   width: min(360px, calc(100vw - 20px));
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(212, 210, 207, 0.16);
+  /* A brighter top edge than sides: the lip of a pane catching the light, and
+     the cheapest way to read as glass rather than as a low-opacity rectangle. */
+  border: 1px solid rgba(212, 210, 207, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.22);
   border-radius: 10px;
-  background: rgba(10, 12, 9, 0.9);
-  box-shadow: 0 26px 70px -40px #000;
-  backdrop-filter: blur(14px);
+  /* The inset highlight is the second half of that edge; the drop shadow lifts
+     the panel off a world that is directly behind it rather than below it. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 26px 70px -40px #000;
+}
+/* Every glyph carries its own contrast — see the note above the glass rules. */
+.eg-chat header,
+.eg-chat-log,
+.eg-chat-locked,
+.eg-chat-entry input {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 .eg-chat header {
   display: flex;
@@ -2981,7 +3044,7 @@ body {
 .eg-chat-log li { padding: 1px 0 1px 10px; text-indent: -10px; }
 .eg-chat-name { color: var(--robin-neon, #ccff00); font-weight: 600; }
 .eg-chat-log li.is-mine .eg-chat-name { color: #8ab4ff; }
-.eg-chat-text { color: rgba(232, 240, 243, 0.88); }
+.eg-chat-text { color: rgba(240, 246, 248, 0.95); }
 /* The room's own voice: a refusal, or a note about the connection. Amber
    rather than neon, so it reads as the game talking and is never mistaken
    for a player -- there is no name a person can pick that renders like this. */
