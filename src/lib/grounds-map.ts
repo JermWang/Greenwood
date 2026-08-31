@@ -355,8 +355,16 @@ export function propAt(x: number, z: number): MapProp | null {
   // Planters only near the buildings: they are landscaping, and landscaping
   // stops where the maintenance does. Where it stops is the first quiet sign
   // that the settlement's reach has an edge.
+  /*
+   * Boulders went from 14% of the non-planter props to 28%.
+   *
+   * The prop COUNT is untouched: these are solid, the same function decides
+   * what a player can walk through, so more props would mean a busier map to
+   * cross rather than a better one to look at. Changing which kind a prop is
+   * costs nothing in movement.
+   */
   const kind: PropKind =
-    gz > FORECOURT_Z.min - 8 && roll > 0.55 ? 'planter' : roll > 0.86 ? 'boulder' : 'tree';
+    gz > FORECOURT_Z.min - 8 && roll > 0.55 ? 'planter' : roll > 0.72 ? 'boulder' : 'tree';
 
   return { x: gx, z: gz, kind, seed: Math.round(hash(gx, gz, 3) * 100000), solid: true };
 }

@@ -148,7 +148,21 @@ export function propAt(x: number, z: number): MapProp | null {
   }
 
   const roll = hash(gx, gz, 2);
-  const kind: PropKind = roll > 0.88 ? 'dead' : roll > 0.82 ? 'boulder' : 'tree';
+  /*
+   * Boulders were 6% of props and the floor read as trees with the occasional
+   * accident. They are 18% now.
+   *
+   * THE PROP COUNT IS UNCHANGED, and that is the point of doing it here rather
+   * than by scattering more objects: every prop is `solid`, the server reads
+   * this same function through isWalkable, and adding props would make the
+   * forest harder to walk through. Swapping the KIND of a prop that already
+   * existed changes what you see and nothing about where you can go.
+   *
+   * Dead trees keep their share. They are the region telling you what happened
+   * here, and thinning them to make room for rocks would trade story for
+   * texture.
+   */
+  const kind: PropKind = roll > 0.88 ? 'dead' : roll > 0.70 ? 'boulder' : 'tree';
 
   return {
     x: gx,

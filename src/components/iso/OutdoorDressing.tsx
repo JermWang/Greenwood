@@ -23,6 +23,9 @@ import { useMemo } from 'react';
 import { ISO } from './palette';
 import { hash2 } from './mapkit';
 
+/** A harvested pile: the same material, weathered down. */
+const SPENT = '#4a4740';
+
 function flat(color: string, rough = 0.85, metal = 0.03) {
   return <meshStandardMaterial color={color} flatShading roughness={rough} metalness={metal} />;
 }
@@ -256,23 +259,29 @@ export function GatheringNode({
             receiveShadow
           >
             <boxGeometry args={[s, s * 0.7, s * 1.3]} />
-            {flat(def.color, 0.9)}
+            {/* Spent nodes go darker and rougher rather than disappearing: a
+                node that vanishes teaches players the world is inconsistent, one
+                that visibly recharges teaches them to come back. This carries
+                that on the pile itself now the ring is gone. */}
+            {flat(depleted ? SPENT : def.color, depleted ? 1 : 0.9)}
           </mesh>
         );
       })}
-      {/* A quiet ground marker so a node reads as interactive from across a
-          clearing. Dimmed rather than hidden when spent — a node that vanishes
-          teaches players the world is inconsistent; one that visibly recharges
-          teaches them to come back. */}
-      <mesh position={[0, 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.55, 0.7, 4, 1, Math.PI / 4]} />
-        <meshBasicMaterial
-          color={def.accent}
-          transparent
-          opacity={depleted ? 0.14 : 0.55}
-          toneMapped={false}
-        />
-      </mesh>
+      {/*
+        NO GROUND MARKER.
+
+        There was a lit ring here, on the reasoning that a node should read as
+        interactive from across a clearing. It made every salvage pile sit on a
+        glowing disc, and with one under each of them the outdoors read as a
+        board game rather than as a place — the same reason the tree footprints
+        went (see TreeField). It also put an accent colour on the ground, which
+        the brand rule reserves for signage, UI and working equipment.
+
+        A node is legible without it: it is a heap of cut material on open
+        ground, which is what a heap of cut material looks like. Being spent is
+        still shown — the pile itself dims — so the "come back later" lesson
+        survives the marker that used to carry it.
+      */}
     </group>
   );
 }

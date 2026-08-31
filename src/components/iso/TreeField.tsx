@@ -85,26 +85,39 @@ export default memo(function TreeField({
         return (
           <group key={key}>
             {/*
-              Footprint under a reachable tree.
+              Footprint under a tree, ON HOVER ONLY.
 
-              Green when your axe will cut it, amber when it will not — and the
-              amber one is deliberately still SHOWN rather than hidden. A tree
-              you cannot fell yet is the clearest possible advertisement for the
-              next axe up, and hiding it would make the ladder invisible until
-              somebody happened to buy a rung.
+              This used to be painted under every reachable tree all the time,
+              on the reasoning that an amber marker advertises the next axe up
+              and hiding it would make the ladder invisible. The reasoning was
+              sound and the result was not: a wood is hundreds of trees, so
+              hundreds of lit rings sat on the forest floor at once and the
+              place stopped reading as a wood at all. The brand rule says the
+              world is lit in ordinary colour and Robin Neon is for UI — a
+              permanent grid of neon squares across the ground is the largest
+              possible breach of it.
+
+              The ladder still shows, at the moment somebody is actually asking:
+              point at a tree and it answers, green if your axe will cut it and
+              amber if it will not. What is lost is the advertisement nobody
+              asked for; what is kept is the answer.
             */}
-            <TileFill
-              x={tree.x}
-              z={tree.z}
-              color={cuttable ? ISO.accent : ISO.amber}
-              opacity={busy ? 0.5 : hovered ? 0.36 : 0.16}
-            />
-            <TileRing
-              x={tree.x}
-              z={tree.z}
-              color={cuttable ? ISO.accent : ISO.amber}
-              opacity={hovered ? 1 : 0.6}
-            />
+            {(hovered || busy) && (
+              <>
+                <TileFill
+                  x={tree.x}
+                  z={tree.z}
+                  color={cuttable ? ISO.accent : ISO.amber}
+                  opacity={busy ? 0.5 : 0.36}
+                />
+                <TileRing
+                  x={tree.x}
+                  z={tree.z}
+                  color={cuttable ? ISO.accent : ISO.amber}
+                  opacity={1}
+                />
+              </>
+            )}
 
             {/* Transparent, not invisible: three.js skips invisible objects
                 when raycasting, which would make this a target nothing can hit.
