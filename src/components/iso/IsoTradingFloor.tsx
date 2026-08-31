@@ -42,7 +42,7 @@ import {
   Wall,
   ZoneSign,
 } from './MapDressing';
-import { useFloorPresence, type FloorPeer, type PresenceIdentity } from './useFloorPresence';
+import { useWorldPresence, type FloorPeer, type PresenceIdentity } from './useWorldPresence';
 import NpcField from './NpcField';
 import NpcDialogue from '@/components/ui/NpcDialogue';
 import { npcAt, type Npc } from '@/lib/npcs';
@@ -412,7 +412,7 @@ export default function IsoTradingFloor({
     void api.regions(me).then((r) => setTotalLevel(r.totalLevel)).catch(() => {});
   }, [identity?.wallet]);
   const [hoveredStall, setHoveredStall] = useState<string | null>(null);
-  const { peers, live } = useFloorPresence(identity, position);
+  const { peers, live } = useWorldPresence('trading-floor', identity, position);
 
   /**
    * Route from wherever the character stands to the clicked cell.

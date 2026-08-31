@@ -108,3 +108,34 @@ export function recommendShard(counts: Record<string, number>): Shard {
 
 /** Cookie the browser remembers its shard in, readable by both halves. */
 export const SHARD_COOKIE = 'evergreen_shard';
+
+/**
+ * Which shard a cookie jar says this player is on.
+ *
+ * Takes the raw cookie STRING rather than reading it, so the same function
+ * answers on both halves: the server passes `request.headers.get('cookie')` and
+ * the browser passes `document.cookie`, which are the same format. That is the
+ * point of this module having no imports — the renderer, the region gate and
+ * the presence channel must agree on the answer, and only one of them can see a
+ * database.
+ *
+ * Falls back to DEFAULT_SHARD rather than null. A player with no cookie is not
+ * an error state, it is a first visit, and every caller would otherwise have to
+ * invent the same default.
+ */
+export function shardFromCookie(cookie: string | null | undefined): string {
+  if (!cookie) return DEFAULT_SHARD;
+  const hit = cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${SHARD_COOKIE}=`));
+  const id = hit?.slice(SHARD_COOKIE.length + 1);
+  // Validated against the table, not trusted. The cookie is client-writable, and
+  // an unknown id would otherwise open a channel nobody else is listening on --
+  // a private world, reached by editing devtools, which is the one way to be
+  // alone in a shared region.
+  return shardById(id)?.id ?? DEFAULT_SHARD;
+}
+
+/** How long a shard choice sticks. Long: it is a place you come back to. */
+export const SHARD_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;

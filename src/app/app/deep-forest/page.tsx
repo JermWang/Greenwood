@@ -21,6 +21,7 @@ import DeepForestScene from '@/components/iso/DeepForestScene';
 import DeepForestPlayer from '@/components/iso/DeepForestPlayer';
 import { ISO, ISO_OFFSET } from '@/components/iso/palette';
 import { useOperation } from '@/lib/useOperation';
+import { useRememberRegion } from '@/lib/last-region';
 import { DEV_WALLET_BYPASS } from '@/lib/dev-mode';
 import {
   api,
@@ -79,6 +80,9 @@ function Pile({ pile }: { pile: VisiblePile }) {
 
 export default function DeepForestPage() {
   const { wallet } = useOperation();
+  // Recorded so the dashboard's one button can bring you straight back here
+  // instead of to the Grounds. See lib/last-region.
+  useRememberRegion(wallet, 'deep-forest');
   const [state, setState] = useState<ExpeditionState | null>(null);
   const [piles, setPiles] = useState<VisiblePile[]>([]);
   const [creatures, setCreatures] = useState<CreatureView[]>([]);

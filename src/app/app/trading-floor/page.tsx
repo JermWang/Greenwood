@@ -11,9 +11,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { X } from '@phosphor-icons/react';
 import { api, type CosmeticsResponse } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
+import { useRememberRegion } from '@/lib/last-region';
 import QuestPanel from '@/components/ui/QuestPanel';
 import CosmeticsShop from '@/components/ui/CosmeticsShop';
-import type { PresenceIdentity } from '@/components/iso/useFloorPresence';
+import type { PresenceIdentity } from '@/components/iso/useWorldPresence';
 
 const IsoTradingFloor = dynamic(() => import('@/components/iso/IsoTradingFloor'), { ssr: false });
 
@@ -24,6 +25,9 @@ function wornAvatar(catalog: CosmeticsResponse | null) {
 
 export default function TradingFloorPage() {
   const wallet = useOperation((state) => state.wallet);
+  // Recorded so the dashboard's one button can bring you straight back here
+  // instead of to the Grounds. See lib/last-region.
+  useRememberRegion(wallet, 'trading-floor');
   const op = useOperation((state) => state.op);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<CosmeticsResponse | null>(null);
@@ -52,7 +56,7 @@ export default function TradingFloorPage() {
 
   const worn = wornAvatar(catalog);
 
-  // Guests get an avatar too. useFloorPresence refuses to broadcast a non-wallet
+  // Guests get an avatar too. useWorldPresence refuses to broadcast a non-wallet
   // identity, so they can walk the floor without appearing to anyone else.
   const identity: PresenceIdentity = useMemo(
     () =>

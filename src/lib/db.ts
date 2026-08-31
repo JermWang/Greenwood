@@ -344,6 +344,26 @@ function migrate(db: DatabaseSync) {
       FOREIGN KEY (wallet) REFERENCES users(wallet)
     );
 
+    -- Who is on which shard, for the shard picker and its caps.
+    --
+    -- Deliberately NOT where a player is standing. Position lives in Supabase
+    -- presence for the shared rooms and in expedition_state for the contested
+    -- ones, both because it changes constantly and because it should vanish the
+    -- moment a tab closes. This table answers one much slower question -- how
+    -- busy is each world -- and is written on a heartbeat measured in tens of
+    -- seconds, not on a step.
+    --
+    -- One row per wallet: you are in one world at a time, so a join overwrites
+    -- rather than accumulating, and a player who never says goodbye ages out of
+    -- the count on seen_at instead of haunting it forever.
+    CREATE TABLE IF NOT EXISTS world_presence (
+      wallet TEXT PRIMARY KEY,
+      shard_id TEXT NOT NULL,
+      region_id TEXT NOT NULL,
+      seen_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_world_presence_shard ON world_presence(shard_id, seen_at);
+
     CREATE TABLE IF NOT EXISTS creature_state (
       spawn_id TEXT PRIMARY KEY,
       health INTEGER NOT NULL,

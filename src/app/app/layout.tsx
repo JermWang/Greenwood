@@ -15,8 +15,13 @@ import TransactionSafetyModal from '@/components/ui/TransactionSafetyModal';
 import { useEvmWallet } from '@/lib/evm';
 import { CHAIN, TOKEN_LIVE } from '@/lib/config';
 
+/*
+ * `/app` is deliberately absent: it is a door, not a room (see app/app/page), so
+ * routeTitle falls through to "Evergreen" there. It read "Fund Overview" back
+ * when the dashboard was an overview, and a chip naming a screen that no longer
+ * exists is worse than no chip at all.
+ */
 const ROUTE_TITLES: Record<string, string> = {
-  '/app': 'Fund Overview',
   '/app/trading-floor': 'Trading Floor',
   '/app/floor': 'Machine Room',
   '/app/inventory': 'Instruments',
@@ -32,7 +37,7 @@ const ROUTE_TITLES: Record<string, string> = {
 function routeTitle(pathname: string) {
   const exact = ROUTE_TITLES[pathname];
   if (exact) return exact;
-  return Object.entries(ROUTE_TITLES).find(([path]) => path !== '/app' && pathname.startsWith(path))?.[1] ?? 'Evergreen';
+  return Object.entries(ROUTE_TITLES).find(([path]) => pathname.startsWith(path))?.[1] ?? 'Evergreen';
 }
 
 function GreenBalanceModule() {

@@ -144,7 +144,8 @@ Income Note, Trading Floor, The Vault.
 
 ## Known state
 
-- **639 tests pass.** The suite is green; if it is not, that is new.
+- **627 tests pass.** The suite is green; if it is not, that is new. (It was 639
+  before `lib/next-step` went with the dashboard panel that was its only caller.)
 - **The introduction DEFERS steps it cannot act on** rather than stopping at
   them (`canAct` in `lib/intro`, context assembled in `api/intro/[wallet]`).
   Five of the ten steps wait on a random find, money not yet earned, or another
@@ -180,6 +181,25 @@ Income Note, Trading Floor, The Vault.
 - **Enterable buildings exist now**, in the sense that mattered: the Machine Room
   and the Trading Floor are buildings in the Grounds that you walk into. The
   Deep Forest's generators are still solid props.
+- **`/app` is a DOOR, not a dashboard.** It holds your avatar on a turntable and
+  one button, aimed at the region you were last standing in — nothing else. It
+  used to be eleven panels of read-outs about a game you were not yet in, which
+  made the screen you looked at most the screen where nothing happened.
+
+  The rule that made the deletion safe is the one below about gates and callers,
+  applied in reverse: **every verb the dashboard owned had to land somewhere in
+  the world before its panel could go.** Two of them only lived there, and both
+  moved into the Machine Room, at the desk they concern —
+  `api.openCrate` (which has always taken a target desk, and on the dashboard
+  got whichever row you happened to have selected) and `upgradeCompound` /
+  `expediteCompound`, now "Floor capacity" under the desk book, beside the count
+  it raises. Route, level-up and build were already there.
+
+  The resume target is `lib/last-region`: per-browser, client-side, and never
+  trusted — the dashboard checks it against `/api/regions` before offering it,
+  and the region page gates again on arrival. A remembered region that has since
+  closed falls back to the Grounds. If you add a region, give its page
+  `useRememberRegion` or the button will never send anyone back to it.
 
 ## Two things that were built and wired to nothing
 

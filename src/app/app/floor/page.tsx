@@ -8,6 +8,7 @@ import { api, type InventoryItem } from '@/lib/api-client';
 import { COMPONENT_RARITIES, SLOT_LABELS, type Rarity } from '@/lib/rarity';
 import { MACHINE_SPECS } from '@/lib/floor-rules';
 import { useOperation } from '@/lib/useOperation';
+import { useRememberRegion } from '@/lib/last-region';
 
 function componentKind(item: InventoryItem): MachineKind {
   const slot = item.slot.toLowerCase();
@@ -19,6 +20,9 @@ function componentKind(item: InventoryItem): MachineKind {
 export default function CompanyFloorPage() {
   const wallet = useOperation((state) => state.wallet);
   const op = useOperation((state) => state.op);
+  // Recorded so the dashboard's one button can bring you straight back here
+  // instead of to the Grounds. See lib/last-region.
+  useRememberRegion(wallet, 'machine-room');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
 

@@ -28,6 +28,7 @@ import RegionPlayer, { type RegionMap } from '@/components/iso/RegionPlayer';
 import TreeField from '@/components/iso/TreeField';
 import { ISO_OFFSET } from '@/components/iso/palette';
 import { useOperation } from '@/lib/useOperation';
+import { useRememberRegion } from '@/lib/last-region';
 import { DEV_WALLET_BYPASS } from '@/lib/dev-mode';
 import {
   ARRIVAL,
@@ -63,6 +64,9 @@ const MAP: RegionMap<Doorway> = {
 
 export default function TreelinePage() {
   const { wallet } = useOperation();
+  // Recorded so the dashboard's one button can bring you straight back here
+  // instead of to the Grounds. See lib/last-region.
+  useRememberRegion(wallet, 'treeline');
   const router = useRouter();
   const [regions, setRegions] = useState<RegionsResponse | null>(null);
   const [here, setHere] = useState<{ x: number; z: number }>({ ...ARRIVAL });

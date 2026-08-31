@@ -24,6 +24,7 @@ import HqScene from '@/components/iso/HqScene';
 import RegionPlayer, { type RegionMap } from '@/components/iso/RegionPlayer';
 import { ISO_OFFSET } from '@/components/iso/palette';
 import { useOperation } from '@/lib/useOperation';
+import { useRememberRegion } from '@/lib/last-region';
 import { DEV_WALLET_BYPASS } from '@/lib/dev-mode';
 import {
   ARRIVAL,
@@ -41,6 +42,9 @@ import WorldMap from '@/components/ui/WorldMap';
 import LiftPanel from '@/components/ui/LiftPanel';
 import { type Floor } from '@/lib/hq-floors';
 import { api, type RegionsResponse } from '@/lib/api-client';
+import PeerField from '@/components/iso/PeerField';
+import { usePresenceIdentity } from '@/components/iso/usePresenceIdentity';
+import { useWorldPresence } from '@/components/iso/useWorldPresence';
 
 /** Module-level: an inline literal makes R3F re-apply the camera every render. */
 const CAMERA = { position: ISO_OFFSET, zoom: 26, near: -400, far: 600 } as const;
@@ -57,6 +61,9 @@ const MAP: RegionMap<Doorway> = {
 
 export default function HqPage() {
   const { wallet } = useOperation();
+  // Recorded so the dashboard's one button can bring you straight back here
+  // instead of to the Grounds. See lib/last-region.
+  useRememberRegion(wallet, 'evergreen-hq');
   const router = useRouter();
   const [regions, setRegions] = useState<RegionsResponse | null>(null);
   const [here, setHere] = useState<{ x: number; z: number }>({ ...ARRIVAL });
@@ -68,6 +75,10 @@ export default function HqPage() {
   const tier = useMemo(() => renderTier(), []);
   /** Live position for the camera, so it travels with the walk. */
   const livePos = useRef<{ x: number; z: number } | null>(null);
+
+  /** Everybody else on the plaza. See the note in the Grounds page. */
+  const identity = usePresenceIdentity();
+  const { peers } = useWorldPresence('evergreen-hq', identity, here);
 
   const load = useCallback(() => {
     if (!wallet) return;
@@ -188,6 +199,7 @@ export default function HqPage() {
           minZoom={14}
         />
         <HqScene />
+        <PeerField peers={peers} />
         <NpcField region="evergreen-hq" playerAt={here} onTalk={setTalking} />
         {(wallet || DEV_WALLET_BYPASS) && (
           <RegionPlayer

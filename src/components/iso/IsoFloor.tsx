@@ -8,6 +8,7 @@
 // walk and no first-person camera, so placement is a single click rather than a
 // walk-to-the-spot-and-aim.
 
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowsClockwise, CaretDown, CaretUp, ChartLineUp, Drop, Stack, Trash, Vault } from '@phosphor-icons/react';
 import IsoScene from './IsoScene';
@@ -17,7 +18,7 @@ import { type IsoMachine, type MachineKind, type PlacedIsoMachine } from './pale
 import MachineSpec from '@/components/ui/MachineSpec';
 import { LAYOUT_RULES } from '@/lib/floor-rules';
 import { carryOverLocal } from '@/lib/legacy-keys';
-import { api, type BenchRecipe, type FloorBonus } from '@/lib/api-client';
+import { api, type BenchRecipe, type CrateResult, type FloorBonus, type UserOperation } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
 import { atBench } from '@/lib/craft-bench';
 import BenchPanel from '@/components/ui/BenchPanel';
@@ -25,6 +26,11 @@ import NpcField from './NpcField';
 import NpcDialogue from '@/components/ui/NpcDialogue';
 import { npcAt, type Npc } from '@/lib/npcs';
 import BuildPrompt, { type DeskFamily } from './BuildPrompt';
+import AllocationPrompt from './AllocationPrompt';
+
+// The reveal at the end of opening one. Loaded on demand because it is a whole
+// second three.js scene and most visits to this room never open an allocation.
+const CrateCinematic = dynamic(() => import('@/components/three/CrateCinematic'), { ssr: false });
 
 export type { MachineKind, IsoMachine };
 
@@ -80,6 +86,13 @@ export default function IsoFloor({
   const [routing, setRouting] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
+  /** The allocation prompt, and the reveal it hands off to. */
+  const [allocOpen, setAllocOpen] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const [allocError, setAllocError] = useState<string | null>(null);
+  const [crateResult, setCrateResult] = useState<CrateResult | null>(null);
+  const [expanding, setExpanding] = useState(false);
+  const [expandError, setExpandError] = useState<string | null>(null);
   /** Live fund, for what a desk costs against and to refresh after building. */
   const op = useOperation((s) => s.op);
   const refresh = useOperation((s) => s.refresh);
@@ -304,6 +317,11 @@ export default function IsoFloor({
     // Moving cancels a build you had not confirmed. A prompt that followed you
     // across the floor would have detached from the tile it was about.
     setBuildAt(null);
+    // Same for the allocation prompt, and for a stronger reason: it names the
+    // desk the instrument is going into, so one that survived a walk would be
+    // offering to fit a desk you are no longer standing at.
+    setAllocOpen(false);
+    setAllocError(null);
   }, []);
 
   /**
@@ -375,6 +393,62 @@ export default function IsoFloor({
       setUpgrading(false);
     }
   }, [nearbyDesk, wallet, upgrading, refresh]);
+
+  /**
+   * Opening a sealed allocation into the desk you are standing at.
+   *
+   * The target is the desk, not a selection: see the header of AllocationPrompt
+   * for why that is the whole reason this moved here. Marking them seen is
+   * folded into the open rather than done on arrival — the unopened count is
+   * what puts the button on the desk panel in the first place, and clearing it
+   * merely for walking past would hide the find.
+   */
+  const openAllocation = useCallback(
+    async (allocation: UserOperation['crates'][number]) => {
+      if (!nearbyDesk || !wallet || opening) return;
+      setOpening(true);
+      setAllocError(null);
+      try {
+        const result = await api.openCrate(wallet, allocation.id, nearbyDesk.node.id);
+        setAllocOpen(false);
+        setCrateResult(result);
+        void api.markCratesSeen(wallet).catch(() => {});
+        void refresh();
+      } catch (e) {
+        setAllocError(e instanceof Error ? e.message : 'That did not go through.');
+      } finally {
+        setOpening(false);
+      }
+    },
+    [nearbyDesk, wallet, opening, refresh]
+  );
+
+  /**
+   * Expanding the floor: how many desks it may hold at all.
+   *
+   * Fund-wide rather than per-desk, so it hangs off the desk book instead of the
+   * desk panel — the book is already the place that says how many of the things
+   * are placed out of how many exist, which is exactly the number this raises.
+   * It was a card called "Portfolio Upgrade" on the dashboard, where the limit
+   * it lifts was nowhere in sight.
+   */
+  const expandFloor = useCallback(
+    async (expedite: boolean) => {
+      if (!wallet || expanding) return;
+      setExpanding(true);
+      setExpandError(null);
+      try {
+        if (expedite) await api.expediteCompound(wallet);
+        else await api.upgradeCompound(wallet);
+        void refresh();
+      } catch (e) {
+        setExpandError(e instanceof Error ? e.message : 'That did not go through.');
+      } finally {
+        setExpanding(false);
+      }
+    },
+    [wallet, expanding, refresh]
+  );
 
   /**
    * The craft bench, opened by standing at it.
@@ -459,6 +533,19 @@ export default function IsoFloor({
   );
 
   const selectedMachine = selectedId ? machines.find((m) => m.id === selectedId) : null;
+  const allocations = op?.crates ?? [];
+  const unopened = op?.unseenCrates.length ?? 0;
+  /**
+   * How many desks this floor may hold at all.
+   *
+   * Equity and Treasury are capped separately — Treasury gets the bonus slots a
+   * levelled portfolio grants — so the floor's ceiling is the two added, not
+   * `maxNodes`. Same arithmetic the dashboard did, moved to where the ceiling is
+   * something you can walk into.
+   */
+  const capacity = op ? op.maxNodes * 2 + op.shaftBonusSlots : 0;
+  const expansion = op?.compound.nextUpgradeCost ?? null;
+  const expandCooling = (op?.compound.cooldownRemainingMs ?? 0) > 0;
 
   return (
     <main className="eg-sandbox">
@@ -548,6 +635,16 @@ export default function IsoFloor({
                 : `Level up → L${nearbyDesk.node.level + 1} · ${Math.round(nearbyDesk.node.nextLevelCost).toLocaleString()} GREEN`}
             </button>
           )}
+
+          {/* Only once there is something to open. An always-present button that
+              is always disabled teaches nothing; one that appears the shift after
+              a desk turns something up is itself the notification. */}
+          {allocations.length > 0 && (
+            <button className="desk-here-up" onClick={() => setAllocOpen(true)}>
+              Open allocation
+              {unopened > 0 ? ` · ${unopened} new` : ` · ${allocations.length} sealed`}
+            </button>
+          )}
         </div>
       )}
 
@@ -580,6 +677,34 @@ export default function IsoFloor({
         onBuild={build}
         onClose={() => { setBuildAt(null); setBuildError(null); }}
       />
+
+      <AllocationPrompt
+        open={allocOpen && !!nearbyDesk}
+        wallet={wallet ?? null}
+        deskLabel={
+          nearbyDesk
+            ? `${nearbyDesk.node.type === 'oil' ? 'Equity Desk' : 'Treasury Desk'} L${nearbyDesk.node.level}`
+            : ''
+        }
+        allocations={allocations}
+        cost={op?.compound.crateCost ?? 0}
+        balance={op?.greenBalance ?? 0}
+        busy={opening}
+        error={allocError}
+        onOpen={(allocation) => void openAllocation(allocation)}
+        onClose={() => { setAllocOpen(false); setAllocError(null); }}
+      />
+
+      {/* The reveal. Reopening the prompt from it is deliberate: you are still
+          standing at the same desk, so "open another" fits the next instrument
+          to the same one without a walk. */}
+      {crateResult && (
+        <CrateCinematic
+          result={crateResult}
+          onClose={() => setCrateResult(null)}
+          onOpenAnother={() => { setCrateResult(null); setAllocOpen(true); }}
+        />
+      )}
 
       <header className="eg-sandbox-top">
         <div>
@@ -626,6 +751,43 @@ export default function IsoFloor({
           <button onClick={rotateSelected} disabled={!selectedId}><ArrowsClockwise size={15} /> Rotate</button>
           <button onClick={storeSelected} disabled={!selectedId}><Trash size={15} /> Store</button>
         </div>
+
+        {/* Expanding the floor, next to the count it raises. The cooldown is
+            named rather than left to a greyed-out button, and the expedite fee
+            only appears while there is actually a cooldown to skip. */}
+        {bookOpen && wallet && op && (
+          <div className="eg-floor-capacity">
+            <span>
+              <b>Floor capacity</b>
+              <em>{op.nodes.length}/{capacity} desks</em>
+            </span>
+            {expansion ? (
+              <>
+                <button
+                  onClick={() => void expandFloor(false)}
+                  disabled={expanding || expandCooling || op.greenBalance < expansion.totalGreen}
+                >
+                  {expanding
+                    ? 'Expanding…'
+                    : `Expand → L${expansion.targetLevel} · ${Math.round(expansion.totalGreen).toLocaleString()} GREEN`}
+                </button>
+                {expandCooling && (
+                  <button
+                    className="is-secondary"
+                    onClick={() => void expandFloor(true)}
+                    disabled={expanding}
+                    title="Pay 0.005 ETH to skip the cooldown"
+                  >
+                    Cooling for {Math.ceil((op.compound.cooldownRemainingMs) / 3600000)}h · skip for 0.005 ETH
+                  </button>
+                )}
+              </>
+            ) : (
+              <em>Fully expanded · {op.compound.cratesPerDay} allocations a day</em>
+            )}
+            {expandError && <p className="build-error">{expandError}</p>}
+          </div>
+        )}
 
         {/* What the highlighted machine actually does. Shown here rather than in
             a separate modal because this is the moment the player is choosing

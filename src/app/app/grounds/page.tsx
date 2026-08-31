@@ -30,6 +30,7 @@ import GroundsScene from '@/components/iso/GroundsScene';
 import GroundsPlayer from '@/components/iso/GroundsPlayer';
 import { ISO_OFFSET } from '@/components/iso/palette';
 import { useOperation } from '@/lib/useOperation';
+import { useRememberRegion } from '@/lib/last-region';
 import { DEV_WALLET_BYPASS } from '@/lib/dev-mode';
 import { allProps, ARRIVAL, BOUNDS, DOORS, type Doorway } from '@/lib/grounds-map';
 import { type AxeId } from '@/lib/woodcutting';
@@ -40,6 +41,9 @@ import TreeField from '@/components/iso/TreeField';
 import NpcDialogue from '@/components/ui/NpcDialogue';
 import { npcAt, type Npc } from '@/lib/npcs';
 import { api, type RegionsResponse } from '@/lib/api-client';
+import PeerField from '@/components/iso/PeerField';
+import { usePresenceIdentity } from '@/components/iso/usePresenceIdentity';
+import { useWorldPresence } from '@/components/iso/useWorldPresence';
 
 /**
  * How far out of a doorway you land.
@@ -94,6 +98,9 @@ const WORLD = BOUNDS;
 
 export default function GroundsPage() {
   const { wallet } = useOperation();
+  // Recorded so the dashboard's one button can bring you straight back here
+  // instead of to the Grounds. See lib/last-region.
+  useRememberRegion(wallet, 'grounds');
   const router = useRouter();
   const [regions, setRegions] = useState<RegionsResponse | null>(null);
   const [spawn] = useState(spawnCell);
@@ -117,6 +124,22 @@ export default function GroundsPage() {
    * character finished arriving once per waypoint.
    */
   const livePos = useRef<{ x: number; z: number } | null>(null);
+
+  /*
+   * Everybody else standing on the Grounds.
+   *
+   * Fed `here` rather than `livePos`: the ref updates every frame, and
+   * broadcasting at frame rate would be sixty presence writes a second for a
+   * walk nobody is being scored on. `here` moves once per tile, the hook
+   * throttles on top of that, and peers still read as walking because the
+   * animation is derived from the motion rather than sent with it.
+   *
+   * Client-posted, and safe to be: nothing on the Grounds is contested. The
+   * server-authoritative treatment is for the regions where a position decides
+   * who reaches the loot first -- see lib/expedition.
+   */
+  const identity = usePresenceIdentity();
+  const { peers } = useWorldPresence('grounds', identity, here);
 
   /**
    * Every tree the map puts in this region.
@@ -426,6 +449,7 @@ export default function GroundsPage() {
           followRef={livePos}
         />
         <GroundsScene felled={felled} />
+        <PeerField peers={peers} />
         <NpcField region="grounds" playerAt={here} onTalk={setTalking} />
         <TreeField
           region="grounds"

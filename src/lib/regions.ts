@@ -87,6 +87,25 @@ export interface Region {
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
   /** One line for the gate sign and the region card. */
   blurb: string;
+  /**
+   * Whether other players are visible here.
+   *
+   * 'shared' is the default state of this world and 'solo' is the exception,
+   * which is the opposite of how it reads: only ONE region is solo, and it is
+   * solo because it is YOURS. The Machine Room is a fund's own floor — its desks,
+   * its layout, its score — and putting strangers on it would make a private
+   * workspace into a lobby.
+   *
+   * Everything else is a place people are meant to run into each other: the
+   * outdoors because that is the whole tension, the Trading Floor because it is
+   * a market and a market with one person in it is a menu, and HQ's rooms
+   * because the Lounge is literally "where the floor goes when the numbers are
+   * in" and that sentence needs somebody else in the room to be true.
+   *
+   * Read by the presence hook to decide whether to open a channel at all. A
+   * region that does not need one must not pay for one — see useWorldPresence.
+   */
+  presence: 'solo' | 'shared';
 }
 
 /**
@@ -112,6 +131,7 @@ export const REGIONS: Region[] = [
     lighting: 'interior-neutral',
     bounds: { minX: -11, maxX: 11, minZ: -11, maxZ: 11 },
     blurb: 'The social floor. Stalls, the Outfitter, and everyone else.',
+    presence: 'shared',
   },
   {
     id: 'machine-room',
@@ -125,6 +145,7 @@ export const REGIONS: Region[] = [
     lighting: 'interior-neutral',
     bounds: { minX: -12, maxX: 12, minZ: -20, maxZ: 12 },
     blurb: 'Your floor. Desks, instruments, and the layout that scores them.',
+    presence: 'solo',
   },
   {
     id: 'grounds',
@@ -152,6 +173,7 @@ export const REGIONS: Region[] = [
      */
     bounds: { minX: -22, maxX: 22, minZ: -20, maxZ: 24 },
     blurb: 'Outside. Paths, tree lines, and the fence at the far end.',
+    presence: 'shared',
   },
   {
     /**
@@ -179,6 +201,7 @@ export const REGIONS: Region[] = [
     // Must match BOUNDS in lib/hq-map — asserted in hq-map.test.
     bounds: { minX: -20, maxX: 17, minZ: -15, maxZ: 20 },
     blurb: 'The plaza, the fountain, and the tower that runs the lights.',
+    presence: 'shared',
   },
   {
     /**
@@ -204,6 +227,7 @@ export const REGIONS: Region[] = [
     lighting: 'interior-neutral',
     bounds: { minX: -14, maxX: 14, minZ: -14, maxZ: 14 },
     blurb: 'Reception, the boards, and the lifts.',
+    presence: 'shared',
   },
   {
     /**
@@ -224,6 +248,7 @@ export const REGIONS: Region[] = [
     lighting: 'interior-neutral',
     bounds: { minX: -12, maxX: 12, minZ: -12, maxZ: 12 },
     blurb: 'Where the floor goes when the numbers are in.',
+    presence: 'shared',
   },
   {
     id: 'treeline',
@@ -241,6 +266,7 @@ export const REGIONS: Region[] = [
     // Must match BOUNDS in lib/treeline-map — asserted in treeline-map.test.
     bounds: { minX: -26, maxX: 26, minZ: -20, maxZ: 20 },
     blurb: 'Past the fence. Something moves out here, but it will not follow you home.',
+    presence: 'shared',
   },
   {
     id: 'deep-forest',
@@ -268,6 +294,7 @@ export const REGIONS: Region[] = [
      */
     bounds: { minX: -46, maxX: 46, minZ: -46, maxZ: 46 },
     blurb: 'Dead generators, and everyone else who wants them. You keep what you carry out.',
+    presence: 'shared',
   },
 ];
 

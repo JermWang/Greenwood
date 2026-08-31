@@ -8,6 +8,7 @@ import WalletButton from '@/components/ui/WalletButton';
 import { api, type GlobalProfile } from '@/lib/api-client';
 import { CHAIN } from '@/lib/config';
 import { carryOverLocal } from '@/lib/legacy-keys';
+import WorldPicker from '@/components/ui/WorldPicker';
 import { useWalletStore } from '@/lib/store';
 
 const localProfileKey = (wallet: string) => `evergreen:operator-profile:${wallet.toLowerCase()}`;
@@ -101,6 +102,9 @@ export default function StartCompanyPage() {
               <input id="company-name" value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={32} autoFocus placeholder="Evergreen Capital" />
               <button type="submit" disabled={saving || name.trim().length < 2}>{saving ? 'Creating fund…' : 'Create fund'}</button>
             </form>
+            {/* Chosen on the way in, beside naming the fund, because both are
+                things you decide once and then walk through the door. */}
+            <WorldPicker />
             {profile && <small className="eg-profile-existing">Wallet registry found. Complete the name to finish setup.</small>}
           </>
         )}

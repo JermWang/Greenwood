@@ -1,6 +1,6 @@
 'use client';
 
-// Live presence for the Trading Floor.
+// Live presence for a region, on a shard.
 //
 // Built on Supabase Presence rather than a table, because where a player is
 // standing is ephemeral: it should vanish when they close the tab, and it must
@@ -12,6 +12,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
+import { regionById, type RegionId } from '@/lib/regions';
+import { shardFromCookie } from '@/lib/shards';
 
 export interface FloorPeer {
   wallet: string;
@@ -40,11 +42,22 @@ export interface PresenceIdentity {
   outfitLevel?: number;
 }
 
-const CHANNEL = 'evergreen-trading-floor';
+
+/**
+ * How often this client tells the SERVER which world it is in.
+ *
+ * Two orders of magnitude slower than the position broadcast, and a different
+ * question: presence is 'where am I standing', this is 'which world am I in',
+ * and only the second needs to survive a page the player is not looking at.
+ * It feeds the shard picker's population counts -- see lib/world-presence.
+ */
+const HEARTBEAT_MS = 30_000;
+
 /** Position updates are throttled: a click-to-move sends one per step, not per frame. */
 const TRACK_INTERVAL_MS = 220;
 
-export function useFloorPresence(
+export function useWorldPresence(
+  region: RegionId,
   me: PresenceIdentity | null,
   position: { x: number; z: number }
 ): { peers: FloorPeer[]; live: boolean } {
@@ -61,10 +74,26 @@ export function useFloorPresence(
     // Guests render their own avatar but never broadcast: without a wallet
     // there is no stable presence key, and every guest would collide on one.
     if (!me?.wallet || !me.wallet.startsWith('0x')) return;
+    // A solo region opens no channel at all. The Machine Room is one fund's own
+    // floor, and the cost of getting this wrong is not a wasted socket, it is
+    // strangers standing in somebody's workspace.
+    if (regionById(region)?.presence !== 'shared') return;
     const supabase = getBrowserSupabase();
     if (!supabase) return;
 
-    const channel = supabase.channel(CHANNEL, {
+    /*
+     * One channel per shard per region, and both halves of that key matter.
+     *
+     * Without the region, everybody outdoors shares one roster and players
+     * standing in the Deep Forest appear on the Grounds. Without the shard,
+     * the several worlds lib/shards exists to provide are one world wearing
+     * four names.
+     *
+     * Read at subscribe time rather than held in state: a player changes shard
+     * by leaving through /start, which remounts everything below it anyway.
+     */
+    const shard = shardFromCookie(typeof document === 'undefined' ? null : document.cookie);
+    const channel = supabase.channel(`evergreen:${shard}:${region}`, {
       config: { presence: { key: me.wallet.toLowerCase() } },
     });
 
@@ -116,14 +145,28 @@ export function useFloorPresence(
 
     const timer = window.setInterval(track, TRACK_INTERVAL_MS);
 
+    // Population, separately and far more slowly. Failures are swallowed: a
+    // missed heartbeat costs one player off a count for ninety seconds, and a
+    // presence hook that can throw would take the scene down with it.
+    const beat = () => {
+      void fetch('/api/shards', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ wallet: me?.wallet, region }),
+      }).catch(() => {});
+    };
+    beat();
+    const heart = window.setInterval(beat, HEARTBEAT_MS);
+
     return () => {
       window.clearInterval(timer);
+      window.clearInterval(heart);
       void supabase.removeChannel(channel);
       setLive(false);
       setOthers([]);
     };
     // Only the identity should rebuild the subscription; position rides the ref.
-  }, [me?.wallet, me?.name, me?.tier]);
+  }, [region, me?.wallet, me?.name, me?.tier]);
 
   const peers = useMemo<FloorPeer[]>(() => {
     const self: FloorPeer[] = me

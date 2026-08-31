@@ -19,18 +19,23 @@ const TitleCinematic = dynamic(() => import('@/components/iso/TitleCinematic'), 
  * The menu, weighted rather than uniform.
  *
  * Three identical bars gave the demo and the handbook the same visual weight as
- * starting the game, which is not how the game is actually shaped: the fund
- * dashboard is the hub, and the floors hang off it. So the primary action is a
- * wide card that names the rooms it opens onto — a bare "Start" tells a new
- * player nothing about what is behind it — and the two supporting entries sit
- * under it as a pair.
+ * starting the game, which is not how the game is actually shaped: this is the
+ * way in, and the other two are asides. So the primary action is a wide card
+ * that names the places it opens onto — a bare "Start" tells a new player
+ * nothing about what is behind it — and the two supporting entries sit under it
+ * as a pair.
+ *
+ * The places named are PLACES, not screens. "Dashboard" used to head this list,
+ * from when the dashboard was the hub the floors hung off; it is a door now (see
+ * app/app/page) and the hub is the Grounds, so naming it here would advertise
+ * the one stop on the way that a player passes straight through.
  */
 const PRIMARY = {
   label: 'Start / continue',
   detail: 'Create a fund, or pick up where you left off',
   href: '/start',
   Icon: Play,
-  rooms: ['Dashboard', 'Trading Floor', 'Machine Room'],
+  rooms: ['Evergreen Grounds', 'Trading Floor', 'Machine Room'],
 } as const;
 
 const SECONDARY = [
