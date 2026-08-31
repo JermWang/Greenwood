@@ -162,8 +162,10 @@ export interface IntroStepView {
   progress: number;
   xp: number;
   scrip: number;
-  /** Where to go to do it. */
+  /** Where to go to do it. Used for resuming, never for teleporting. */
   href: string;
+  /** The room, named. The guide prints this instead of linking — see lib/intro. */
+  where: string;
   done: boolean;
   claimed: boolean;
   /** Exactly one step is current at a time. */
@@ -423,6 +425,21 @@ export interface MarketListing {
   item: Record<string, unknown> | null;
 }
 
+/** One completed trade, from the point of view of the wallet that asked. */
+export interface TradeView {
+  id: number;
+  side: 'bought' | 'sold';
+  itemKind: MarketItemKind;
+  itemId: number;
+  priceGreen: number;
+  /** What the seller received after the fee. Zero on a buy — see lib/market. */
+  netGreen: number;
+  feeGreen: number;
+  at: number;
+  counterparty: string;
+  counterpartyName?: string | null;
+  item: Record<string, unknown> | null;
+}
 export interface MarketSale {
   item_kind: MarketItemKind;
   item_id: number;
@@ -932,6 +949,9 @@ export const api = {
       kind ? `/market/listings?kind=${kind}` : '/market/listings'
     ),
 
+  /** This wallet's own completed trades. Authenticated: receipts are private. */
+  marketHistory: (wallet: string) =>
+    request<{ trades: TradeView[] }>(`/market/history?wallet=${wallet}`),
   marketList: (wallet: string, itemKind: MarketItemKind, itemId: number, priceGreen: number) =>
     post<{ listing: MarketListing }>('/market/list', { wallet, itemKind, itemId, priceGreen }),
 

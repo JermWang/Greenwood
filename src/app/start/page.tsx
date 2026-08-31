@@ -127,10 +127,24 @@ export default function StartCompanyPage() {
           <div className="eg-profile-check"><span /><h1>Checking fund registry.</h1><p>Looking for an existing fund profile tied to this wallet.</p></div>
         ) : (
           <>
-            <h1>Name your fund.</h1>
-            <p>This profile record is off-chain. Creating it requires no token approval, payment, or gas transaction.</p>
+            {/*
+              THIS IS THE USERNAME, and it now says so.
+
+              It asked for a "fund name" and never mentioned that the answer is
+              what everybody else sees — on the Exchange beside your listings,
+              in world chat, on the leaderboard. People typed a throwaway and
+              then had no idea where the name following them around had come
+              from. Naming the places it appears is the whole fix; it is the
+              same field it always was, and it has always been required.
+            */}
+            <h1>Choose your name.</h1>
+            <p>
+              This is your username — the name other funds see on your listings, in world
+              chat and on the leaderboard. It is off-chain, and setting it costs no
+              approval, payment or gas.
+            </p>
             <form onSubmit={createProfile} className="eg-profile-form">
-              <label htmlFor="company-name">Fund name</label>
+              <label htmlFor="company-name">Username · your fund name</label>
               <input id="company-name" value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={32} autoFocus placeholder="Evergreen Capital" />
               <button type="submit" disabled={saving || name.trim().length < 2}>{saving ? 'Creating fund…' : 'Create fund'}</button>
             </form>

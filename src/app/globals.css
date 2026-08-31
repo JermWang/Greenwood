@@ -110,6 +110,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
  * the document pages keep their padding untouched.
  */
 .eg-stage-content:has(> .df-page),
+.eg-stage-content:has(> .iso-page),
 .eg-stage-content:has(> .eg-sandbox) {
   min-height: 0;
   /* The flex line above already sized this to the exact remaining height.
@@ -599,7 +600,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media(max-width:760px){.eg-build-catalog{max-height:62%}}
 
 /* --- Daily quests + XP tracks HUD ---------------------------------------- */
-.iso-page{position:relative}
+/*
+ * The Trading Floor's stage, sized the way .df-page is.
+ *
+ * It was `position: relative` with no height, so `.iso-floor-wrap`'s
+ * `height: 100%` resolved against an auto-height parent and fell through to its
+ * 520px min-height — while the R3F canvas inside measured 150px and STAYED
+ * there through resizes. The floor rendered as a postage stamp in the top
+ * quarter of a black screen.
+ *
+ * This is the exact failure CLAUDE.md records for the other scenes ("no scene
+ * computes its height from the top bar"), and the fix is the same one: an
+ * absolute box against the positioned .eg-stage-content, which the flex line
+ * above has already sized to the precise remaining height. .iso-page was simply
+ * never added to that rule when .df-page and .eg-sandbox were.
+ *
+ * It matters more than it did: the Exchange lives on this floor now, so a
+ * mis-sized room is a mis-sized market.
+ */
+.iso-page{position:absolute;inset:0;width:100%;min-height:0}
 .iso-quest-dock{position:absolute;z-index:6;left:16px;top:16px;width:min(300px,calc(100% - 32px))}
 @media(max-width:760px){.iso-quest-dock{left:10px;top:10px;width:calc(100% - 20px)}}
 .quest-panel{overflow:hidden;border:1px solid rgba(212,210,207,.14);border-radius:12px;background:rgba(29,28,20,.9);backdrop-filter:blur(12px)}
@@ -856,6 +875,267 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .iso-shop-dock .shop-head{padding-right:34px}
 .iso-floor-cta{margin-top:6px;padding:6px 12px;border-radius:6px;background:var(--accent);font:800 7px var(--font-mono),monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--robin-black)}
 
+/* ===========================================================================
+   The Exchange, at the table.
+
+   Shares the Outfitter's dock geometry deliberately — same corner, same
+   material, same close button — because they are the same gesture: you walked
+   to a table on the Trading Floor and it opened over the room. Two panels in
+   one room that look like they come from different games is how a room stops
+   reading as a room.
+
+   Wider than the Outfitter (760 against 620) because a lot row carries a
+   thumbnail, a title, a subtitle, a seller, a price and two buttons, and the
+   Outfitter's card grid does not.
+   =========================================================================== */
+/*
+ * CENTRED, AND ABOVE THE INTRODUCTION.
+ *
+ * It was docked top-right like the Outfitter, and the introduction lives in
+ * exactly that corner at z-index 46 — so the guide drew over the panel's own
+ * close button. Two panels fighting for one corner is a layout argument, and
+ * the honest resolution is that these are not the same kind of thing: the
+ * Outfitter is a side panel you glance at while standing in the room, and the
+ * Exchange is the activity you walked across the floor to do. So it takes the
+ * screen while it is open, with a scrim, and hands it straight back.
+ *
+ * z-index 60 clears the guide (46) and the docks (26), and stays under the
+ * transaction and leave modals (200+) — those must cover a market, never the
+ * other way round.
+ */
+.mk-scrim {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(8, 8, 8, 0.62);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.mk {
+  display: flex;
+  width: min(760px, 100%);
+  max-height: min(660px, 100%);
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+  border: 1px solid rgba(212, 210, 207, 0.16);
+  border-radius: 16px;
+  background: rgba(23, 22, 15, 0.96);
+  box-shadow: 0 30px 80px -40px #000;
+}
+.mk-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.mk-head h2 { margin-top: 4px; font-size: 1.7rem; font-weight: 620; letter-spacing: -.03em; }
+.mk-close {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  place-items: center;
+  border: 1px solid rgba(212, 210, 207, 0.18);
+  border-radius: 7px;
+  color: rgba(226, 235, 239, 0.6);
+  cursor: pointer;
+}
+.mk-close:hover { border-color: var(--accent); color: var(--accent); }
+
+.mk-tabs { display: flex; gap: 6px; margin-top: 14px; }
+.mk-tabs button {
+  padding: 7px 15px;
+  border: 1px solid rgba(212, 210, 207, 0.14);
+  border-radius: 999px;
+  font: 700 8.5px var(--font-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.5);
+  cursor: pointer;
+}
+.mk-tabs button.is-on { border-color: rgba(204, 255, 0, 0.5); background: rgba(204, 255, 0, 0.1); color: var(--accent); }
+
+/* The categories, echoing the tables you can stand at. The count is on the chip
+   because "Desks 0" is the answer to "why is this list empty". */
+.mk-kinds { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.mk-kinds button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid rgba(212, 210, 207, 0.12);
+  border-radius: 6px;
+  font-size: 10.5px;
+  color: rgba(226, 235, 239, 0.55);
+  cursor: pointer;
+}
+.mk-kinds button.is-on { border-color: rgba(204, 255, 0, 0.4); color: #fff; }
+.mk-kinds button i {
+  font: 700 8px var(--font-mono), monospace;
+  font-style: normal;
+  color: rgba(226, 235, 239, 0.35);
+}
+
+.mk-list, .mk-picks { margin: 10px 0 0; padding: 0; overflow-y: auto; list-style: none; }
+.mk-list { flex: 1 1 auto; min-height: 0; }
+.mk-lot {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-top: 1px solid rgba(212, 210, 207, 0.08);
+}
+.mk-lot-body { min-width: 0; }
+.mk-lot-body b { display: block; font-size: 12.5px; font-weight: 650; color: #fff; }
+.mk-lot-body small,
+.mk-lot-body em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mk-lot-body small {
+  margin-top: 1px;
+  font: 700 8.5px var(--font-mono), monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.42);
+}
+.mk-lot-body em { margin-top: 2px; font-size: 10px; font-style: normal; color: rgba(226, 235, 239, 0.5); }
+.mk-lot-buy { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.mk-price { font: 700 13px var(--font-mono), monospace; white-space: nowrap; color: var(--accent); }
+.mk-price i { font: 600 8px var(--font-mono), monospace; font-style: normal; color: rgba(226, 235, 239, 0.35); }
+.mk-net { font: 600 9px var(--font-mono), monospace; color: rgba(226, 235, 239, 0.38); }
+.mk-lot-actions { display: flex; align-items: center; gap: 6px; }
+.mk-go {
+  padding: 6px 13px;
+  border-radius: 7px;
+  background: rgba(204, 255, 0, 0.16);
+  font: 800 8.5px var(--font-mono), monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  cursor: pointer;
+}
+.mk-go:hover:not(:disabled) { background: rgba(204, 255, 0, 0.26); }
+.mk-go:disabled { opacity: 0.4; cursor: default; }
+.mk-go.is-quiet { background: rgba(212, 210, 207, 0.1); color: rgba(226, 235, 239, 0.62); }
+.mk-go.is-quiet:hover:not(:disabled) { background: rgba(212, 210, 207, 0.18); }
+
+/* The info toggle. Quiet until used, because it is on every row and a board of
+   glowing question marks is a board that looks like it needs troubleshooting. */
+.mk-why {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid rgba(212, 210, 207, 0.16);
+  border-radius: 7px;
+  color: rgba(226, 235, 239, 0.45);
+  cursor: pointer;
+}
+.mk-why:hover, .mk-why.is-on { border-color: rgba(204, 255, 0, 0.45); color: var(--accent); }
+.mk-blurb {
+  grid-column: 1 / -1;
+  margin: 2px 0 4px;
+  padding: 10px 12px;
+  border-left: 2px solid rgba(204, 255, 0, 0.35);
+  background: rgba(204, 255, 0, 0.04);
+  font-size: 11px;
+  line-height: 1.65;
+  color: rgba(226, 235, 239, 0.66);
+}
+
+.mk-empty { padding: 18px 4px; font-size: 11.5px; line-height: 1.6; color: rgba(226, 235, 239, 0.38); }
+.mk-kicker {
+  margin: 14px 0 0;
+  font: 700 7.5px var(--font-mono), monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.3);
+}
+
+.mk-picks { display: flex; max-height: 190px; flex-wrap: wrap; gap: 6px; }
+.mk-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid rgba(212, 210, 207, 0.14);
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.mk-pick:hover { border-color: rgba(212, 210, 207, 0.3); }
+.mk-pick.is-on { border-color: rgba(204, 255, 0, 0.5); background: rgba(204, 255, 0, 0.08); }
+.mk-pick span { display: block; font-size: 11.5px; color: #fff; }
+.mk-pick small {
+  display: block;
+  font: 700 8px var(--font-mono), monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.4);
+}
+.mk-pip { width: 8px; height: 8px; flex: none; border-radius: 999px; box-shadow: 0 0 6px currentColor; }
+
+.mk-price-row { display: flex; gap: 8px; margin-top: 12px; }
+.mk-price-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 42px;
+  padding: 0 13px;
+  border: 1px solid rgba(212, 210, 207, 0.16);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 13px;
+  color: #fff;
+}
+.mk-price-row input:focus { outline: none; border-color: rgba(204, 255, 0, 0.45); }
+.mk-price-row input:disabled { opacity: 0.45; }
+.mk-price-row button {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 17px;
+  border-radius: 8px;
+  background: var(--accent);
+  font: 800 8.5px var(--font-mono), monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--robin-black);
+  cursor: pointer;
+}
+.mk-price-row button:disabled { opacity: 0.4; cursor: default; }
+.mk-foot { margin-top: 8px; font-size: 10.5px; color: rgba(226, 235, 239, 0.42); }
+
+/* History: which side of the trade you were on, at a glance. */
+.mk-lot.is-trade { grid-template-columns: auto 1fr auto; }
+.mk-side {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: 700 7.5px var(--font-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.mk-side.is-bought { background: rgba(138, 180, 255, 0.14); color: #8ab4ff; }
+.mk-side.is-sold { background: rgba(204, 255, 0, 0.14); color: var(--accent); }
+
+.mk-note {
+  margin-top: 10px;
+  padding: 9px 12px;
+  border: 1px solid rgba(204, 255, 0, 0.22);
+  border-radius: 8px;
+  background: rgba(204, 255, 0, 0.06);
+  font-size: 11px;
+  color: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .mk { right: 10px; left: 10px; top: 10px; width: auto; max-height: calc(100% - 20px); padding: 12px; }
+  .mk-head h2 { font-size: 1.3rem; }
+}
+
 /* The build book carries the numbers a placement decision needs: what it costs
    to take further, where it stands now, and what it actually does. */
 .eg-build-items>button>b{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
@@ -1095,7 +1375,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-weight: 400;
   color: var(--heather-3, #82817d);
 }
-.intro-go, .intro-collect {
+.intro-collect {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1110,7 +1390,26 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   white-space: nowrap;
   cursor: pointer;
 }
-.intro-go:hover, .intro-collect:hover { filter: brightness(1.08); }
+.intro-collect:hover { filter: brightness(1.08); }
+
+/*
+ * "Go to the Machine Room" — a DIRECTION, not a button.
+ *
+ * Styled deliberately unlike `.intro-collect` beside it. The neon pill is the
+ * one control on the row that does something when clicked; this is a place
+ * name, and dressing it as a button would invite the click the change was
+ * made to remove.
+ */
+.intro-where {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 0;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--robin-neon, #ccff00);
+}
 .intro-collect:disabled { opacity: 0.6; cursor: default; }
 .intro-level {
   margin-top: 7px;

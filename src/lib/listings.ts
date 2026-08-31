@@ -84,6 +84,45 @@ export function listingAccent(listing: ListingLike): string {
 }
 
 /**
+ * What this thing IS, for somebody who has never seen one.
+ *
+ * Written because "Treasury Allocation" tells a new player nothing — it is a
+ * name, not an explanation, and the board was full of them. Every line here is
+ * checked against the code that implements it rather than written from memory:
+ * the family split is `openCrate` in lib/game, the multiplier is
+ * COMPONENT_RARITIES, and the accrued yield transferring with a desk is
+ * `describeItem` in lib/market including it in the payload for that reason.
+ *
+ * Deliberately says what it COSTS you as well as what it gives. An allocation
+ * that is free to buy and then charges GREEN to open is the one detail a buyer
+ * can be genuinely caught out by.
+ */
+export function listingBlurb(listing: ListingLike): string {
+  const item = fields(listing);
+  if (listing.itemKind === 'crate') {
+    const side =
+      item.crate_type === 'treasury_allocation'
+        ? 'a Treasury Desk, and yields a Treasury-side instrument'
+        : 'an Equity Desk, and yields an Equity-side instrument';
+    return `A sealed allocation found by ${side}. Which slot it fits and how rare it is are both rolled when you open it — and opening costs GREEN of its own. Sealed, it can be traded; listed, it cannot be opened.`;
+  }
+  if (listing.itemKind === 'component') {
+    const rarity = item.rarity as Rarity | undefined;
+    const def = rarity ? COMPONENT_RARITIES[rarity] : undefined;
+    const mult = def ? `${def.multiplier}×` : 'a multiplier';
+    return `An instrument. Fit it to a desk in the Machine Room and that desk earns ${mult} on the slot it fills. Each instrument fits one slot, and a desk can hold one of each. Equipped instruments cannot be sold until you take them off.`;
+  }
+  if (listing.itemKind === 'cosmetic') {
+    return `Appearance only — it changes how your fund looks and never what it earns. Rank is an upgrade track: a refined copy is visibly refined, and is worth more than a stock one.`;
+  }
+  const level = Number(item.level) || 1;
+  const accrued = Number(item.accrued) || 0;
+  return `A complete desk at level ${level}, sold with everything fitted to it. Whatever it has produced and not yet routed transfers with it${
+    accrued > 0 ? ` — ${Math.round(accrued).toLocaleString()} GREEN at the moment` : ''
+  }, which is part of what you are paying for.`;
+}
+
+/**
  * Who is selling, as a person where possible.
  *
  * A shortened address is a fallback, not a name — it is what somebody who has

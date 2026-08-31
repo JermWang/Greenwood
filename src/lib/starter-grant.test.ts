@@ -1,13 +1,17 @@
 // Who gets free GREEN, and who must not.
 //
-// The grant exists so a fresh operator can afford their first desk out of the
-// MIRRORED balance, which is only how the game works while spends settle
-// off-chain: in the demo, and before the token exists.
+// THE DEMO, AND NOBODY ELSE. A real wallet is granted nothing, whether or not a
+// token is configured.
 //
-// Once the token is live a spend is a real ERC-20 transfer and the route passes
-// settledOnChain, so osr_balance is neither debited by spends nor credited by
-// claims. Free GREEN there is a number on the screen that cannot buy anything
-// and cannot be withdrawn.
+// It used to depend on TOKEN_LIVE: free GREEN while no token existed, on the
+// reasoning that a mirrored balance buys nothing real. A RELAUNCH breaks that
+// reasoning. Between clearing the old token address and configuring the new
+// one the game is unconfigured but not worthless — balances earned in that
+// window are what the new token pays out against — so a grant there mints real
+// money one address at a time, and nothing limits the number of addresses.
+//
+// A demo account is the exception because it can never sign, never settles
+// on-chain, and its balance can never leave the demo.
 //
 // TOKEN_LIVE is read at module load from the environment, so each case needs
 // its own module registry — vitest.resetModules plus a re-import, with the env
@@ -68,16 +72,32 @@ afterAll(() => {
 });
 
 describe('before the token exists', () => {
-  test('a real wallet is granted its first desk', async () => {
-    const { game, economy } = await engineWith(false);
+  /*
+   * The case that changed, and the one a relaunch actually lands in: no token
+   * configured, and still no free money. This window is where every wallet
+   * looks new, because the wipe just made them all new.
+   */
+  test('a real wallet starts empty even with no token configured', async () => {
+    const { game } = await engineWith(false);
     const user = game.getOrCreateUser(fresh(REAL));
-    expect(user.osr_balance).toBe(economy.STARTER_GREEN_GRANT);
+    expect(user.osr_balance).toBe(0);
   });
 
-  test('the grant covers a desk, which is the only reason it exists', async () => {
-    const { economy } = await engineWith(false);
-    const cheapest = Math.min(...economy.NODE_FAMILIES.map((f) => f.burnCostGreen));
-    expect(economy.STARTER_GREEN_GRANT).toBeGreaterThanOrEqual(cheapest);
+  test('and no starter_grant is written for it', async () => {
+    const { game, db } = await engineWith(false);
+    const w = fresh(REAL);
+    game.getOrCreateUser(w);
+    const rows = db
+      .getDb()
+      .prepare("SELECT COUNT(*) n FROM ledger WHERE wallet = ? AND kind = 'starter_grant'")
+      .get(w) as { n: number };
+    expect(rows.n).toBe(0);
+  });
+
+  test('the demo is still funded here too', async () => {
+    const { game } = await engineWith(false);
+    const user = game.getOrCreateUser(fresh(DEMO));
+    expect(user.osr_balance).toBe(DEMO_GREEN);
   });
 });
 
@@ -191,12 +211,24 @@ describe('the demo grant', () => {
 });
 
 describe('regardless of network', () => {
-  test('a wallet is granted at most once', async () => {
-    const { game, economy } = await engineWith(false);
+  test('a repeated read never credits a real wallet', async () => {
+    const { game } = await engineWith(false);
     const w = fresh(REAL);
     game.getOrCreateUser(w);
     const second = game.getOrCreateUser(w);
-    expect(second.osr_balance).toBe(economy.STARTER_GREEN_GRANT);
+    expect(second.osr_balance).toBe(0);
+  });
+
+  /*
+   * The demo grant is still once-only. It is the only grant left, so it is the
+   * only place the "credited exactly once" rule can still be got wrong.
+   */
+  test('a demo wallet is credited exactly once', async () => {
+    const { game } = await engineWith(false);
+    const w = fresh(DEMO);
+    game.getOrCreateUser(w);
+    const second = game.getOrCreateUser(w);
+    expect(second.osr_balance).toBe(DEMO_GREEN);
   });
 
   /**

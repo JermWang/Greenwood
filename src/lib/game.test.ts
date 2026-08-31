@@ -53,12 +53,20 @@ afterAll(() => {
 });
 
 describe('new wallet bootstrap', () => {
-  test('starter grant covers the first Desk Fab', () => {
+  /*
+   * A real wallet starts EMPTY, and cannot build until it has earned.
+   *
+   * This used to assert the opposite — that the grant covered the first desk,
+   * "so a brand-new wallet can reach its first node unaided". That is no longer
+   * how the game is funded: every sink is denominated in GREEN a player earned,
+   * and a grant during an unconfigured window mints against the next token.
+   * See starterGrantFor.
+   */
+  test('a real wallet starts empty and cannot build on nothing', () => {
     const w = wallet(1);
     const user = getOrCreateUser(w);
-    expect(user.osr_balance).toBe(STARTER_GREEN_GRANT);
-    // The whole point: a brand-new wallet can reach its first node unaided.
-    expect(() => mintNode(w, 'equity_desk')).not.toThrow();
+    expect(user.osr_balance).toBe(0);
+    expect(() => mintNode(w, 'equity_desk')).toThrow();
   });
 
   test('grant is credited exactly once', () => {
@@ -301,10 +309,11 @@ describe('full game cycle', () => {
     expect(inventory(w).items).toHaveLength(0);
     expect(settleUser(w, false).nodes).toHaveLength(0);
 
-    // Registering still works, and still grants.
+    // Registering still creates the row. It no longer credits anything: the
+    // grant is demo-only now, so the ledger stays empty for a real wallet.
     getOrCreateUser(w);
     expect(rows()).toBe(1);
-    expect(ledger()).toBe(1);
+    expect(ledger()).toBe(0);
   });
 
   test('a node upgrade refuses to apply a quote taken at a different level', () => {

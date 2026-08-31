@@ -40,7 +40,7 @@ const UNSTYLED_ON_PURPOSE: Record<string, string> = {
 
 /** Prefixes the project uses for its own hand-written CSS. */
 const PROJECT =
-  /^(eg|mkt|wm|exchange|df|gr|npc|machine|iso|hq|tf|intro|stat|btn|desk|op|quest|craft|pack|loot|tree|world|vault|stake|lb|prof|demo|tx|guide|dock|chat|wp|comp|node|crate|rar|slot|hud|toast|panel|card|scene|title|onboarding)-/;
+  /^(eg|mk|mkt|wm|exchange|df|gr|npc|machine|iso|hq|tf|intro|stat|btn|desk|op|quest|craft|pack|loot|tree|world|vault|stake|lb|prof|demo|tx|guide|dock|chat|wp|comp|node|crate|rar|slot|hud|toast|panel|card|scene|title|onboarding)-/;
 
 function tsxFiles(dir = ROOT, out: string[] = []): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

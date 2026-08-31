@@ -16,7 +16,8 @@ interface PageShellProps {
 
 const ROUTE_CODES: Record<string, string> = {
   '/app/inventory': 'BAY-02 / INSTRUMENT CONTROL',
-  '/app/market': 'EX-04 / PEER LIQUIDITY',
+  // No '/app/market' — the Exchange is a table on the Trading Floor now, not a
+  // route. See MarketPanel.
   '/app/outfitter': 'FLR-10 / OUTFITTER',
   '/app/stake': 'VLT-05 / FIXED INCOME',
   '/app/vault': 'CORE-06 / RESERVE ANALYTICS',

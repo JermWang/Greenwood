@@ -35,7 +35,6 @@ const ROUTE_TITLES: Record<string, string> = {
   ...Object.fromEntries(REGIONS.map((region) => [region.href, region.name])),
   '/app/inventory': 'Instruments',
   '/app/ops': 'Analytics',
-  '/app/market': 'Exchange',
   '/app/vault': 'The Vault',
   '/app/tokenomics': 'GREEN Model',
   '/app/leaderboard': 'Leaderboard',

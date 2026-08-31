@@ -55,8 +55,15 @@ function ThumbLight() {
  */
 const FIT: Record<string, { extent: number; lift: number }> = {
   component: { extent: 1.25, lift: 0.55 },
-  crate: { extent: 1.7, lift: 0 },
-  node: { extent: 2.8, lift: 1.15 },
+  /*
+   * 3.1, not 1.7. CrateModel is a 2.2-unit box — and under an isometric camera
+   * the width that has to fit is the DIAGONAL, 2.2 x root 2, not the side. The
+   * first guess used the side and produced a close-up of the lid with the
+   * corners cut off, which is exactly what "too zoomed in, can't see the
+   * product" describes.
+   */
+  crate: { extent: 3.1, lift: 0 },
+  node: { extent: 3.2, lift: 1.15 },
   cosmetic: { extent: 1.1, lift: 0 },
 };
 

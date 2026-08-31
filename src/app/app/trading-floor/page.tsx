@@ -14,6 +14,8 @@ import { useOperation } from '@/lib/useOperation';
 import { useRememberRegion } from '@/lib/last-region';
 import QuestPanel from '@/components/ui/QuestPanel';
 import CosmeticsShop from '@/components/ui/CosmeticsShop';
+import MarketPanel from '@/components/ui/MarketPanel';
+import type { MarketItemKind } from '@/lib/api-client';
 import type { PresenceIdentity } from '@/components/iso/useWorldPresence';
 
 const IsoTradingFloor = dynamic(() => import('@/components/iso/IsoTradingFloor'), { ssr: false });
@@ -22,6 +24,19 @@ const IsoTradingFloor = dynamic(() => import('@/components/iso/IsoTradingFloor')
 function wornAvatar(catalog: CosmeticsResponse | null) {
   return catalog?.items.find((item) => item.slot === 'avatar' && item.equipped) ?? null;
 }
+
+/**
+ * Which slice of the book each market table shows.
+ *
+ * Keyed off the stall so the room decides the category — walking to the
+ * Instruments table is the filter, and the tab strip in the panel is only
+ * there so you can change your mind without walking back.
+ */
+const STALL_KIND: Record<string, MarketItemKind | 'all' | undefined> = {
+  instruments: 'component',
+  allocations: 'crate',
+  desks: 'node',
+};
 
 export default function TradingFloorPage() {
   const wallet = useOperation((state) => state.wallet);
@@ -32,6 +47,8 @@ export default function TradingFloorPage() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<CosmeticsResponse | null>(null);
   const [shopOpen, setShopOpen] = useState(false);
+  /** Which category the Exchange is open at, or null when it is shut. */
+  const [marketKind, setMarketKind] = useState<MarketItemKind | 'all' | null>(null);
 
   useEffect(() => {
     if (!wallet) { setDisplayName(null); return; }
@@ -80,7 +97,13 @@ export default function TradingFloorPage() {
     <div className="iso-page">
       <IsoTradingFloor
         identity={identity}
-        onOpenStall={(key) => { if (key === 'outfitter') setShopOpen(true); }}
+        onOpenStall={(key) => {
+          if (key === 'outfitter') { setShopOpen(true); return; }
+          // The three market tables open the same board, each at its own
+          // category — see STALLS in IsoTradingFloor.
+          const kind = STALL_KIND[key];
+          if (kind) setMarketKind(kind);
+        }}
       />
 
       {/* Docked over the floor rather than on a separate screen: a quest list
@@ -96,6 +119,11 @@ export default function TradingFloorPage() {
           </button>
           <CosmeticsShop wallet={wallet} balance={op?.greenBalance} onChanged={onShopChanged} />
         </div>
+      )}
+
+      {/* The Exchange, over the floor rather than at a route of its own. */}
+      {marketKind && (
+        <MarketPanel wallet={wallet} initialKind={marketKind} onClose={() => setMarketKind(null)} />
       )}
     </div>
   );

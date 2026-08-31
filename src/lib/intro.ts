@@ -79,8 +79,19 @@ export interface IntroStep {
   track: XpTrack;
   xp: number;
   scrip: number;
-  /** Where the player has to be. The client links straight to it. */
+  /** Where the player has to be. Used for resuming, never for teleporting. */
   href: string;
+  /**
+   * The ROOM, named the way a player would say it.
+   *
+   * The guide rendered `href` as a "Go there" button, which walked the player
+   * to the door for them. A game whose entire navigation rule is that you move
+   * through the world should not have its tutorial opt out of that on step one
+   * — and a player who is teleported to the Machine Room six times still does
+   * not know where the Machine Room is. Naming it makes the first thing the
+   * introduction teaches "how to get somewhere", which every later step needs.
+   */
+  where: string;
   /**
    * Whether this step can be acted on at all right now.
    *
@@ -146,6 +157,7 @@ export const INTRO_STEPS: IntroStep[] = [
     // a list, which is the wrong first impression of a game you navigate by
     // walking.
     href: '/app/floor',
+    where: 'the Machine Room',
   },
   {
     key: 'intro_claim',
@@ -159,6 +171,7 @@ export const INTRO_STEPS: IntroStep[] = [
     // Routed at the desk that made it, where the storage bar is a thing you can
     // see filling rather than a number in a list.
     href: '/app/floor',
+    where: 'the Machine Room',
   },
   {
     key: 'intro_allocation',
@@ -172,7 +185,8 @@ export const INTRO_STEPS: IntroStep[] = [
     // The dashboard, not the Portfolio. Allocations are OPENED here; the
     // Portfolio is where the instrument lands afterwards, and sending a player
     // there gives them a panel whose own empty state tells them to go back.
-    href: '/app',
+    href: '/app/floor',
+    where: 'the Machine Room',
     /*
      * Two conditions, and the player directly controls neither. An allocation
      * has to be FOUND — desks turn them up as they run, and the whole protocol
@@ -200,6 +214,7 @@ export const INTRO_STEPS: IntroStep[] = [
     xp: 250,
     scrip: 500,
     href: '/app/inventory',
+    where: 'the Machine Room',
     // Depends on the step above having actually paid out an instrument, which
     // is a roll, not a purchase.
     canAct: (ctx) => (ctx.unfittedInstruments ?? 1) > 0,
@@ -216,6 +231,7 @@ export const INTRO_STEPS: IntroStep[] = [
     xp: 250,
     scrip: 400,
     href: '/app/floor',
+    where: 'the Machine Room',
   },
   {
     key: 'intro_upgrade',
@@ -230,6 +246,7 @@ export const INTRO_STEPS: IntroStep[] = [
     // price IS the decision, because the capital is shared with every other
     // desk standing on that floor.
     href: '/app/floor',
+    where: 'the Machine Room',
     // Gated on the CHEAPEST level-up on the floor, not the dearest: the step
     // only asks for one desk to reach level 2, so pricing it off the most
     // expensive desk would park it while an affordable upgrade sat right there.
@@ -247,6 +264,7 @@ export const INTRO_STEPS: IntroStep[] = [
     xp: 300,
     scrip: 400,
     href: '/app/stake',
+    where: 'the Trading Floor',
     canAct: (ctx) => (ctx.greenBalance ?? Infinity) >= (ctx.noteMinimum ?? 0),
     waiting:
       'A Note needs at least the treasury minimum in GREEN and you are short of it. Keep the desk running and route what it makes — this returns as soon as you can cover it.',
@@ -260,7 +278,8 @@ export const INTRO_STEPS: IntroStep[] = [
     track: 'trading',
     xp: 300,
     scrip: 600,
-    href: '/app/market',
+    href: '/app/trading-floor',
+    where: 'the Trading Floor',
     /*
      * The only step in the chain that depends on ANOTHER PLAYER. There is
      * nothing to buy until somebody else lists something, and no amount of
@@ -281,6 +300,7 @@ export const INTRO_STEPS: IntroStep[] = [
     xp: 250,
     scrip: 400,
     href: '/app/grounds',
+    where: 'Evergreen Grounds',
   },
   {
     key: 'intro_pack',
@@ -292,6 +312,7 @@ export const INTRO_STEPS: IntroStep[] = [
     xp: 350,
     scrip: 600,
     href: '/app/grounds',
+    where: 'Evergreen Grounds',
   },
 ];
 

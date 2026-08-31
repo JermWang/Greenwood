@@ -48,9 +48,8 @@
 // rather than followed a prompt.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowRight, CaretDown, CaretUp, Check, Compass, Hourglass, Sparkle } from '@phosphor-icons/react';
+import { MapPin, CaretDown, CaretUp, Check, Compass, Hourglass, Sparkle } from '@phosphor-icons/react';
 import { api, type IntroResponse } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
 
@@ -264,13 +263,21 @@ export default function IntroGuide() {
                             <Hourglass size={12} weight="duotone" /> Waiting
                           </span>
                         ) : (
-                          /* Links to the room the step happens in. A tutorial
-                             that tells you what to do without saying where is a
-                             riddle. Collapses on the way, so arriving somewhere
-                             does not arrive under a panel. */
-                          <Link className="intro-go" href={row.href} onClick={() => setOpen(false)}>
-                            Go there <ArrowRight size={12} weight="bold" />
-                          </Link>
+                          /*
+                             NAMES the room. Does not go there.
+
+                             This was a "Go there" link that pushed the route,
+                             which meant the tutorial taught the one habit the
+                             game does not have: travel by menu. A player walked
+                             to the Machine Room six times without ever learning
+                             where it is, and then had to find it unaided the
+                             first time nothing told them to. A tutorial that
+                             tells you what to do without saying where is a
+                             riddle — but one that walks you there is a riddle
+                             you never got to solve either.
+                          */
+                          <span className="intro-where">
+                            <MapPin size={12} weight="fill" /> Go to {row.where}</span>
                         )}
                       </div>
                     </div>

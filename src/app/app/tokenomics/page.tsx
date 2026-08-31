@@ -414,11 +414,11 @@ export default function TokenomicsPage() {
             <Link href="/app/vault" className="text-lime-300 hover:underline">
               <strong>The Vault</strong>
             </Link>{' '}
-            for the full event feed and{' '}
-            <Link href="/app/market" className="text-lime-300 hover:underline">
-              <strong>Exchange</strong>
-            </Link>{' '}
-            for aggregated metrics.
+            for the full event feed. The Exchange is a table you walk to on the{' '}
+            <Link href="/app/trading-floor" className="text-lime-300 hover:underline">
+              <strong>Trading Floor</strong>
+            </Link>
+            .
           </p>
         </Section>
 

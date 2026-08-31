@@ -195,9 +195,30 @@ function starterGrantFor(wallet: string): number {
   // real grant off once the token is live must not also empty the demo, which
   // is the one account that can never buy anything with real tokens.
   if (isDemoWallet(wallet)) return DEMO_GREEN;
-  if (STARTER_GREEN_GRANT <= 0) return 0;
-  // Pre-token, everyone is playing the mirrored game.
-  return TOKEN_LIVE ? 0 : STARTER_GREEN_GRANT;
+  /*
+   * A REAL WALLET IS GIVEN NOTHING. Ever.
+   *
+   * This used to read `TOKEN_LIVE ? 0 : STARTER_GREEN_GRANT` — free GREEN for
+   * everybody whenever no token was configured, on the reasoning that a
+   * pre-token game is a mirrored game where the balance is not worth anything.
+   *
+   * That reasoning does not survive a RELAUNCH. Between clearing the old token
+   * address and configuring the new one the game is unconfigured but not
+   * worthless: balances earned in that window are the balances the new token
+   * pays out against, so a grant there mints real money one address at a time,
+   * and the address count is not something we control. It is also the exact
+   * window where the wipe has just made every wallet look new.
+   *
+   * Every sink in the game — opening allocations, levelling desks, the burn
+   * split — is denominated in GREEN a player earned. Handing out the first
+   * 1,000 makes the first desk free, which is the one purchase the whole
+   * economy is calibrated on.
+   *
+   * The demo keeps its grant, above, and that is not an inconsistency: a demo
+   * address is minted per browser, can never settle on-chain, and its balance
+   * can never leave the demo.
+   */
+  return 0;
 }
 
 export function getOrCreateUser(wallet: string): UserRow {

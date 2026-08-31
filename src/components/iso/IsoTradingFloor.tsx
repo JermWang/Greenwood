@@ -78,9 +78,19 @@ interface Stall {
  * and leaving the scene to shop would hide the only reason to shop.
  */
 const STALLS: Stall[] = [
-  { key: 'instruments', label: 'Instruments', blurb: 'Enhancement parts', href: '/app/market', x: -7, z: -7, accent: ISO.bright },
-  { key: 'allocations', label: 'Allocations', blurb: 'Sealed deal flow', href: '/app/market', x: 7, z: -7, accent: ISO.mint },
-  { key: 'desks', label: 'Desks', blurb: 'Upgraded machines', href: '/app/market', x: -7, z: 7, accent: ISO.accent },
+  /*
+   * The three market tables, and `href: null` is the change that matters.
+   *
+   * They used to route to /app/market — a whole separate screen for the one
+   * part of the game that most needs other people standing in it. So the
+   * Exchange was reachable from anywhere and the room it belongs to was empty.
+   * The board opens over the floor now, filtered to the table you walked to,
+   * which is also where the market's categories come from: they are not a
+   * filter bar to discover, they are the tables in the room.
+   */
+  { key: 'instruments', label: 'Instruments', blurb: 'Enhancement parts', href: null, x: -7, z: -7, accent: ISO.bright },
+  { key: 'allocations', label: 'Allocations', blurb: 'Sealed deal flow', href: null, x: 7, z: -7, accent: ISO.mint },
+  { key: 'desks', label: 'Desks', blurb: 'Upgraded machines', href: null, x: -7, z: 7, accent: ISO.accent },
   { key: 'notes', label: 'Fixed Income', blurb: 'Lock GREEN for yield', href: '/app/stake', x: 7, z: 7, accent: ISO.amber },
   { key: 'outfitter', label: 'Outfitter', blurb: 'Looks and refinements', href: null, x: 0, z: -9, accent: ISO.deep },
 ];

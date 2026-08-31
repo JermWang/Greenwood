@@ -426,3 +426,75 @@ export function recentSales(limit = 50) {
     )
     .all(limit);
 }
+
+/** One side of one completed trade, from this wallet's point of view. */
+export interface TradeRecord {
+  id: number;
+  side: 'bought' | 'sold';
+  itemKind: ItemKind;
+  itemId: number;
+  priceGreen: number;
+  /** What the seller actually received. Zero on a buy — the buyer paid gross. */
+  netGreen: number;
+  feeGreen: number;
+  at: number;
+  /** The other party. */
+  counterparty: string;
+  item: Record<string, unknown> | null;
+}
+
+/**
+ * What this wallet has bought and sold.
+ *
+ * Straight off the listings table, because a sold listing IS the receipt — it
+ * keeps the buyer, the price, the fee and the timestamp, which is exactly why
+ * rows are kept rather than deleted on sale ("Rows are kept for price history",
+ * lib/db). No second ledger to drift from it.
+ *
+ * NET IS ONLY MEANINGFUL ON A SALE. A buyer pays the gross price; the fee comes
+ * out of the seller's side. Reporting a "net" on a purchase would invent a
+ * number, so a buy reports zero and the panel shows the gross it actually paid.
+ *
+ * `item` is resolved per row through the same describeItem the board uses, so a
+ * history entry and a live listing describe the thing identically — and an item
+ * that has since been consumed (an allocation opened, a desk sold on) still
+ * renders, because describeItem returns null rather than throwing.
+ */
+export function tradeHistory(wallet: string, limit = 40): TradeRecord[] {
+  const w = wallet.toLowerCase();
+  const rows = getDb()
+    .prepare(
+      `SELECT id, seller, buyer, item_kind, item_id, sold_price_osr, sold_at, fee_osr
+         FROM listings
+        WHERE status = 'sold'
+          AND (lower(seller) = ? OR lower(buyer) = ?)
+        ORDER BY sold_at DESC LIMIT ?`
+    )
+    .all(w, w, limit) as Array<{
+    id: number;
+    seller: string;
+    buyer: string | null;
+    item_kind: ItemKind;
+    item_id: number;
+    sold_price_osr: number;
+    sold_at: number;
+    fee_osr: number | null;
+  }>;
+
+  return rows.map((row) => {
+    const sold = row.seller.toLowerCase() === w;
+    const fee = Number(row.fee_osr ?? 0);
+    return {
+      id: row.id,
+      side: sold ? ('sold' as const) : ('bought' as const),
+      itemKind: row.item_kind,
+      itemId: row.item_id,
+      priceGreen: Number(row.sold_price_osr),
+      netGreen: sold ? Number(row.sold_price_osr) - fee : 0,
+      feeGreen: fee,
+      at: Number(row.sold_at),
+      counterparty: sold ? (row.buyer ?? '') : row.seller,
+      item: describeItem(row.item_kind, row.item_id),
+    };
+  });
+}
