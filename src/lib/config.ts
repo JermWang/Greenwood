@@ -100,19 +100,24 @@ export const GREEN_TREASURY_ADDRESS = process.env.NEXT_PUBLIC_OSR_TREASURY_WALLE
 /**
  * On-chain identity required before any browser wallet prompt is allowed.
  *
- * STILL 'BNTY', AND THAT IS NOT A MISSED RENAME. The ticker the game shows is
- * GREEN, but this value is not branding — settlement-client reads symbol() off
- * the deployed contract and refuses to build a transfer if the two disagree.
- * The token at NEXT_PUBLIC_OSR_TOKEN reports symbol "BNTY" and name
- * "Greenwood", both immutable, so pointing this at GREEN would not rename
- * anything: it would block every on-chain transaction in the game.
+ * 'GREEN' SINCE 2026-08-31, AND STILL NOT BRANDING. This value exists so that
+ * settlement-client can read symbol() off the deployed contract and REFUSE to
+ * build a transfer when the two disagree — it is a guard against being pointed
+ * at the wrong token, not a label. Nothing renders it.
  *
- * It moves when a new token is deployed, in lockstep with the address, and not
- * before. Same reasoning that keeps the OSR_* env vars and osr_* columns where
- * they are (CLAUDE.md) — a name that something outside this codebase already
- * agreed to is not ours to change unilaterally.
+ * It read 'BNTY' for a long time and that was correct while it was true: the
+ * old contract reported symbol "BNTY" / name "Greenwood", both immutable, so
+ * setting this to GREEN then would not have renamed anything — it would have
+ * blocked every on-chain transaction in the game. The rule was that it moves
+ * when a new token is deployed, in lockstep with the address, and not before.
+ *
+ * That is what happened. The token at NEXT_PUBLIC_OSR_TOKEN is now
+ * 0x244088dd…be4d on Robinhood Chain 4663, which reports name "Evergreen",
+ * symbol "GREEN" and 18 decimals — read off the chain before this was changed,
+ * not assumed from the ticker. If this and the address ever move apart again,
+ * every transfer stops; they change together or not at all.
  */
-export const EXPECTED_TOKEN_SYMBOL = process.env.NEXT_PUBLIC_GPU_TOKEN_SYMBOL ?? 'BNTY';
+export const EXPECTED_TOKEN_SYMBOL = process.env.NEXT_PUBLIC_GPU_TOKEN_SYMBOL ?? 'GREEN';
 
 export function isConfiguredAddress(value: string): value is `0x${string}` {
   return /^0x[0-9a-fA-F]{40}$/.test(value) && value.toLowerCase() !== ZERO_ADDRESS;

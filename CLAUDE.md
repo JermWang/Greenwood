@@ -91,19 +91,33 @@ Three things were handled differently, and all three will surprise you:
   empty directory beside it and boots the game with no players, no balances and
   no funds. It moves only behind a deliberate copy, with backups, and never as
   part of a rename.
-- **The ticker is GREEN, but the DEPLOYED TOKEN IS NOT — and only ONE of those
-  facts is allowed on screen.** The contract at `NEXT_PUBLIC_OSR_TOKEN` reports
-  `symbol() = "BNTY"` and `name() = "Greenwood"`, and both are immutable.
-  `EXPECTED_TOKEN_SYMBOL` in `lib/config` therefore still reads BNTY on purpose:
-  `settlement-client` compares it against the contract and REFUSES TO BUILD A
-  TRANSFER when they disagree, so "finishing" that rename would not rename
-  anything — it would block every on-chain transaction in the game. It moves
-  when a GREEN token is deployed, in lockstep with the address.
+- **The ticker and the deployed token finally agree — and that took a new
+  contract, not a rename.** The token at `NEXT_PUBLIC_OSR_TOKEN` is
+  `0x244088dd04c7875449f90762a4617ad290febe4d` on Robinhood Chain 4663, reporting
+  `name() = "Evergreen"`, `symbol() = "GREEN"`, 18 decimals, 1e9 supply. All four
+  were read off the chain before anything was pointed at it.
 
-  **What is NOT allowed is showing that symbol to a player.** The evm store used
-  to carry a `greenSymbol` read off the contract, and the reserve module in the
-  top bar — the single most-read number in the game — printed it, so the game
-  said BNTY in the one place everybody looks. The argument for it was that a
+  `EXPECTED_TOKEN_SYMBOL` in `lib/config` now reads GREEN. For most of this
+  project's life it read **BNTY on purpose**, because the old contract
+  (`0x05b612…92ed`, now dead) reported that immutably, and `settlement-client`
+  compares this value against the contract and REFUSES TO BUILD A TRANSFER when
+  they disagree — so "finishing" that rename would not have renamed anything, it
+  would have blocked every on-chain transaction in the game. The standing rule
+  was that it moves in lockstep with the address. **That rule still holds in the
+  other direction: the address and this symbol change together or not at all.**
+
+  **SETTING THE ADDRESS IS WHAT TURNS REAL MONEY ON.** There is no separate
+  switch — `SETTLEMENT_CONFIGURED` is token + treasury + a signer whose address
+  IS the treasury, and the latter two were already configured, so the token
+  address was the last bolt. `NEXT_PUBLIC_ONCHAIN` looks like that switch and is
+  not: it is read NOWHERE, and `lib/settlement` says so at length. Do not treat
+  it as a safety.
+
+  **What is NOT allowed is showing a contract's symbol to a player.** The evm
+  store used to carry a `greenSymbol` read off the contract, and the reserve
+  module in the top bar — the single most-read number in the game — printed it,
+  so the game said BNTY in the one place everybody looks. The argument for it
+  was that a
   balance should agree with the chain; that is right about the AMOUNT and wrong
   about the WORD. Agreeing with the chain matters when tokens are about to move,
   and `settlement-client` does that itself at transaction time. A label on a
