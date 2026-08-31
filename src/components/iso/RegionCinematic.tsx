@@ -100,7 +100,10 @@ const SHOTS: Partial<Record<RegionId, Shot>> = {
     grade: true,
   },
   grounds: {
-    render: () => <GroundsScene felled={NOTHING_FELLED} />,
+    // The tile grid is turned down for the same reason the Deep Forest's is:
+    // it is a play aid for judging your next step, and behind a lockup or a
+    // form it reads as a wireframe over the settlement rather than as ground.
+    render: () => <GroundsScene felled={NOTHING_FELLED} gridStrength={0.07} />,
     // South of centre, where the settlement is: the Machine Room and the
     // Trading Floor are the two things on the Grounds worth looking at.
     centre: { x: 0, z: 6 },

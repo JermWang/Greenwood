@@ -147,13 +147,16 @@ const CENTRE = {
   z: (BOUNDS.minZ + BOUNDS.maxZ) / 2,
 };
 
-const Ground = memo(function Ground() {
+const Ground = memo(function Ground({ gridStrength }: { gridStrength: number }) {
   // Odd span AND an integer centre, together, are what keep grid lines on tile
   // edges: the plane's near corner then lands on a half-integer, which is
   // exactly where a cell boundary is. Break either and the whole floor slides
   // half a tile out of agreement with the map it represents.
   const span = Math.max(BOUNDS.maxX - BOUNDS.minX, BOUNDS.maxZ - BOUNDS.minZ) + 1 + GROUND_PAD;
-  const texture = useMemo(() => gridTexture('#5c6b46', 'rgba(206, 220, 186, 0.22)', span), [span]);
+  const texture = useMemo(
+    () => gridTexture('#5c6b46', `rgba(206, 220, 186, ${gridStrength})`, span),
+    [span, gridStrength]
+  );
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
@@ -428,11 +431,28 @@ const Scatter = memo(function Scatter({ felled }: { felled: Set<string> }) {
  * lib/grounds-map, so what a player can walk through and what they can read are
  * one list. A label without a door would be a sign for a place you cannot reach.
  */
-const GroundsScene = memo(function GroundsScene({ felled }: { felled: Set<string> }) {
+const GroundsScene = memo(function GroundsScene({
+  felled,
+  /**
+   * How strongly the tile grid is drawn.
+   *
+   * The region's own value by default. It is turned down when this scene is
+   * WALLPAPER — behind the start flow and the dashboard — because the grid is
+   * a play aid: it exists so you can judge which tile you are about to step on.
+   * Nobody is stepping anywhere behind a form, and at the region's own strength
+   * it reads as a wireframe laid over the settlement rather than as ground.
+   *
+   * Same prop, same reasoning and same name as DeepForestScene's.
+   */
+  gridStrength = 0.22,
+}: {
+  felled: Set<string>;
+  gridStrength?: number;
+}) {
   return (
     <>
       <GroundsLighting />
-      <Ground />
+      <Ground gridStrength={gridStrength} />
       <Paths />
       <Scatter felled={felled} />
       <Fence />
