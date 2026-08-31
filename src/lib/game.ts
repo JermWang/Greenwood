@@ -1109,16 +1109,60 @@ export function upgradeNode(
 // Aggregate views
 // ---------------------------------------------------------------------------
 
+/**
+ * Ledger kinds that count as lifetime production, and as lifetime burn.
+ *
+ * One definition each, because three places compute these totals — the
+ * operation payload, the leaderboard, and the profile projection that feeds the
+ * global leaderboard — and they are the same question. They were written out
+ * separately, which is how the projection ended up reporting a burn of zero
+ * while the leaderboard beside it computed a real one.
+ */
+const PRODUCED_KINDS = ['claim', 'compound_claim'] as const;
+const BURNED_KINDS = [
+  'mint_node',
+  'crate_open',
+  'compound_upgrade',
+  'compound_expedite',
+  'node_upgrade',
+] as const;
+
+const inClause = (kinds: readonly string[]) => kinds.map(() => '?').join(',');
+
+/** Lifetime GREEN claimed by one wallet. */
+function producedBy(wallet: string): number {
+  return (
+    getDb()
+      .prepare(
+        `SELECT COALESCE(SUM(amount),0) AS t FROM ledger
+          WHERE wallet = ? AND kind IN (${inClause(PRODUCED_KINDS)})`
+      )
+      .get(wallet, ...PRODUCED_KINDS) as { t: number }
+  ).t;
+}
+
+/**
+ * Lifetime GREEN burned by one wallet.
+ *
+ * Negated, because a burn is a debit and the ledger stores it that way — the
+ * leaderboard's own query already did `SUM(-amount)` and this is that query.
+ */
+export function burnedBy(wallet: string): number {
+  return (
+    getDb()
+      .prepare(
+        `SELECT COALESCE(SUM(-amount),0) AS t FROM ledger
+          WHERE wallet = ? AND kind IN (${inClause(BURNED_KINDS)})`
+      )
+      .get(wallet, ...BURNED_KINDS) as { t: number }
+  ).t;
+}
+
 export function userOperation(wallet: string) {
   const { user, nodes, userRate, userGp, networkGp, boost } = settleUser(wallet);
   const compound = compoundInfo(wallet);
   const allowance = crateAllowance(user);
-  const db = getDb();
-  const totals = db
-    .prepare(
-      "SELECT COALESCE(SUM(amount),0) AS t FROM ledger WHERE wallet = ? AND kind IN ('claim','compound_claim')"
-    )
-    .get(wallet) as { t: number };
+  const totals = { t: producedBy(wallet) };
   const claimCooldownRemainingMs = Math.max(0, CLAIM_COOLDOWN_MS - (Date.now() - lastClaimAt(wallet)));
 
   return {
@@ -1132,6 +1176,15 @@ export function userOperation(wallet: string) {
     welcomeBoostFactor: boost,
     greenBalance: user.osr_balance,
     totalProduced: totals.t,
+    /**
+     * Lifetime burn, carried so the profile projection can record it.
+     *
+     * touch_profile was being handed a hardcoded 0 because the operation had
+     * nothing else to give it, which left the leaderboard's `total_burned`
+     * metric ranking every player at zero permanently — the one metric that
+     * measures the thing players actually spend to do.
+     */
+    totalBurned: burnedBy(wallet),
     totals: { GREEN: totals.t },
     pending: { GREEN: nodes.reduce((s, n) => s + n.pendingGreen, 0) },
     claimCooldownRemainingMs,
@@ -1194,7 +1247,19 @@ export function protocolOverview() {
       .prepare('SELECT COALESCE(SUM(osr_balance), 0) AS t FROM users WHERE wallet NOT LIKE ?')
       .get(DEMO_WALLET_LIKE) as { t: number }
   ).t;
-  const operators = (db.prepare('SELECT COUNT(*) AS c FROM users').get() as { c: number }).c;
+  /*
+   * Demo accounts excluded here too — the note directly above applies word for
+   * word, and this line ignored it. `activeOperators` is a PUBLIC number on the
+   * protocol page, and a demo session costs nothing to mint and needs no
+   * credential, so counting them meant the headline "how many people are
+   * playing" figure could be inflated to any value by anyone with a loop. It
+   * was reporting 64 while the real number was a fraction of that.
+   */
+  const operators = (
+    db
+      .prepare('SELECT COUNT(*) AS c FROM users WHERE wallet NOT LIKE ?')
+      .get(DEMO_WALLET_LIKE) as { c: number }
+  ).c;
   return {
     networkProductionRate: halving.currentRatePerSec,
     emissionFactors: { shareCap: SHARE_CAP },
@@ -1257,16 +1322,10 @@ export function leaderboard(metric = 'compound_level') {
     .all(DEMO_WALLET_LIKE) as { wallet: string }[];
   const rows = users.map(({ wallet }) => {
     const { user, nodes, userRate } = settleUser(wallet);
-    const claimed = db
-      .prepare(
-        "SELECT COALESCE(SUM(amount),0) AS t FROM ledger WHERE wallet = ? AND kind IN ('claim','compound_claim')"
-      )
-      .get(wallet) as { t: number };
-    const burned = db
-      .prepare(
-        "SELECT COALESCE(SUM(-amount),0) AS t FROM ledger WHERE wallet = ? AND kind IN ('mint_node','crate_open','compound_upgrade','compound_expedite','node_upgrade')"
-      )
-      .get(wallet) as { t: number };
+    // Shared with the operation payload and the profile projection, so all
+    // three answer "produced" and "burned" the same way. See PRODUCED_KINDS.
+    const claimed = { t: producedBy(wallet) };
+    const burned = { t: burnedBy(wallet) };
     return {
       wallet,
       compoundLevel: user.compound_level,

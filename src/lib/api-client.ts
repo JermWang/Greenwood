@@ -59,6 +59,9 @@ export interface UserOperation {
   welcomeBoostFactor: number;
   greenBalance: number;
   totalProduced: number;
+  /** Lifetime burn. Carried so the profile projection can record a real figure
+      rather than the 0 it used to hardcode — see touchGlobalProfile. */
+  totalBurned: number;
   totals: Record<string, number>;
   pending: Record<string, number>;
   claimCooldownRemainingMs: number;

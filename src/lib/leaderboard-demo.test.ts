@@ -21,7 +21,7 @@ const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'osr-leaderboard-test-'))
 process.env.OSR_DATA_DIR = DATA_DIR;
 delete process.env.VERCEL;
 
-const { leaderboard } = await import('./game');
+const { leaderboard, protocolOverview, burnedBy, userOperation } = await import('./game');
 const { getDb } = await import('./db');
 const { DEMO_PREFIX, isDemoWallet } = await import('./demo');
 
@@ -101,5 +101,68 @@ describe('leaderboard excludes demo accounts', () => {
     insert(demo(2), 4);
 
     expect(leaderboard('compound_level')).toEqual([]);
+  });
+});
+
+describe('activeOperators excludes demo accounts', () => {
+  // The public "how many people are playing" number. A demo session costs
+  // nothing to mint and needs no credential, so counting them let anyone with a
+  // loop set this figure to whatever they liked — the same argument the comment
+  // above the balances query already made, on the line it did not reach.
+  test('counts real wallets only', () => {
+    insert(real(1), 1);
+    insert(real(2), 1);
+    insert(demo(1), 1);
+    insert(demo(2), 1);
+    insert(demo(3), 1);
+
+    expect(protocolOverview().activeOperators).toBe(2);
+  });
+
+  test('is zero when only demo accounts exist', () => {
+    insert(demo(1), 1);
+    expect(protocolOverview().activeOperators).toBe(0);
+  });
+});
+
+describe('lifetime burn is a real figure', () => {
+  function burn(w: string, kind: string, amount: number) {
+    getDb()
+      .prepare('INSERT INTO ledger (wallet, kind, amount, created_at) VALUES (?,?,?,?)')
+      .run(w, kind, -amount, Date.now());
+  }
+
+  test('burnedBy sums the burning kinds and ignores claims', () => {
+    insert(real(1), 1);
+    burn(real(1), 'mint_node', 1000);
+    burn(real(1), 'crate_open', 250);
+    // A claim is production, not burn, and must not be counted here.
+    getDb()
+      .prepare('INSERT INTO ledger (wallet, kind, amount, created_at) VALUES (?,?,?,?)')
+      .run(real(1), 'claim', 5000, Date.now());
+
+    expect(burnedBy(real(1))).toBe(1250);
+  });
+
+  /**
+   * The regression that mattered: touch_profile was handed a hardcoded 0, so
+   * the global leaderboard's `total_burned` metric ranked everybody at zero.
+   * The projection can only be as good as what the operation hands it, so that
+   * is what this pins.
+   */
+  test('userOperation carries the burn total for the profile projection', () => {
+    insert(real(1), 1);
+    burn(real(1), 'compound_upgrade', 700);
+
+    expect(userOperation(real(1)).totalBurned).toBe(700);
+  });
+
+  test('the leaderboard reports the same burn the helper does', () => {
+    insert(real(1), 1);
+    burn(real(1), 'node_upgrade', 480);
+
+    const row = leaderboard('total_burned').find((r) => r.wallet === real(1));
+    expect(row?.totalBurned).toBe(burnedBy(real(1)));
+    expect(row?.totalBurned).toBe(480);
   });
 });

@@ -167,7 +167,17 @@ export async function touchGlobalProfile(wallet: string, operation?: UserOperati
     p_sum_node_levels: nodes.reduce((sum, node) => sum + node.level, 0),
     p_production_rate: operation?.productionRate ?? 0,
     p_total_produced: operation?.totalProduced ?? 0,
-    p_total_burned: 0,
+    /*
+     * Was a hardcoded 0, which made the leaderboard's `total_burned` metric
+     * permanently meaningless: the projection is what the global board reads,
+     * so every player ranked at zero burn no matter how much they had spent.
+     * The operation now carries the real figure, computed from the same ledger
+     * kinds the local leaderboard uses.
+     *
+     * Still 0 on the sign-in call, which passes no operation — that path only
+     * establishes the row exists, and the next operation read fills it in.
+     */
+    p_total_burned: operation?.totalBurned ?? 0,
   });
   if (error) throw new Error(`Supabase profile sync failed: ${error.message}`);
   return profileFromRow(data as ProfileRow);
