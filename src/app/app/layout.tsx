@@ -8,14 +8,14 @@ import { DemoBanner, DemoButton } from '@/components/ui/DemoButton';
 import IntroGuide from '@/components/ui/IntroGuide';
 import ChatDock from '@/components/ui/ChatDock';
 import { MARK_SRC } from '@/lib/brand-assets';
-import MarketHud from '@/components/ui/MarketHud';
+import HudDock from '@/components/ui/HudDock';
 import { useOperation } from '@/lib/useOperation';
 import DeployNotice from '@/components/ui/DeployNotice';
 import SoundToggle from '@/components/ui/SoundToggle';
 import TransactionSafetyModal from '@/components/ui/TransactionSafetyModal';
 import { useEvmWallet } from '@/lib/evm';
 import { CHAIN, TOKEN_LIVE } from '@/lib/config';
-import { REGIONS, isHostileRegion } from '@/lib/regions';
+import { REGIONS } from '@/lib/regions';
 
 /*
  * `/app` is deliberately absent: it is a door, not a room (see app/app/page), so
@@ -70,8 +70,8 @@ function GreenBalanceModule() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const wallet = useOperation((s) => s.wallet);
-  /** Whether the player is somewhere that can kill them. See the HUD below. */
-  const hostileHere = REGIONS.some((region) => region.href === pathname && isHostileRegion(region));
+  /** Whether this pathname is a place in the world rather than a flat page. */
+  const inRegion = REGIONS.some((region) => region.href === pathname);
   return (
     <div className="eg-os min-h-screen">
       <DeployNotice />
@@ -127,24 +127,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         */}
         {pathname !== '/app' && <ChatDock />}
         {/*
-          The one menu, and now only where its own argument holds.
+          Market and Items, bottom-right, mirroring the chat.
 
-          It was on every screen under /app, which is what made it look
-          arbitrary: on the Grounds it was a floating shortcut to the Trading
-          Floor, a building thirty tiles away with a door you walk through —
-          two ways to reach one place, one of which contradicts the rule that
-          navigation happens in the world. It also fought the chat dock for the
-          bottom of the screen.
+          IN THE WORLD SCREENS ONLY. The old Exchange HUD was on every page
+          under /app including the flat ones, which is part of what made it look
+          arbitrary — a floating price panel on top of the full Exchange page is
+          a panel arguing with the thing it summarises. HUD furniture belongs on
+          the screens that have a HUD, so this is gated on the pathname actually
+          being a region.
 
-          The exception it was granted is specifically about being OUT there:
-          deciding whether the salvage in your pack is worth the walk home is a
-          decision you make while carrying it, in a region that can kill you,
-          and sending someone indoors to look up a number is what the exception
-          exists to avoid. So it appears where there are hostiles and nowhere
-          else — read from the region table rather than a path list, so a
-          region added later gets the right answer without this being edited.
+          Neither panel trades or equips. The Exchange is reached by walking
+          into the Trading Floor and up to a stall; instruments are fitted at a
+          desk in the Machine Room. See the header in HudDock.
         */}
-        {hostileHere && <MarketHud wallet={wallet} />}
+        {inRegion && <HudDock wallet={wallet} />}
       </div>
       <TransactionSafetyModal />
     </div>

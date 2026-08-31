@@ -127,14 +127,20 @@ Income Note, Trading Floor, The Vault.
   state, never against a coordinate in a request body.
 - **`CARRIABLE` in `lib/packs` is an allowlist.** It decides what a player can
   lose. A denylist would fail open.
-- **Navigation happens in the world.** There is no nav rail and no dock — the
-  Exchange HUD is the single deliberate exception, because checking prices
-  mid-run is a decision input rather than a destination. **It now renders only
-  where there are hostiles** (`isHostileRegion`, checked in `app/app/layout`),
-  which is the whole of the exception it was granted: on the Grounds it was a
-  floating shortcut to a building thirty tiles away with a door on it, so the
-  one screen that broke the rule was also the one where the rule was easiest to
-  follow. Gate it on the region table, never on a path list.
+- **Navigation happens in the world.** There is no nav rail and no dock. The
+  bottom edge carries two READ-ONLY docks and nothing else: chat bottom-left,
+  and `HudDock` bottom-right with Market and Items. Neither trades nor equips,
+  and that is the line — they tell you a number where you are standing, and
+  acting on it is still a place you walk to (the Exchange is a stall inside the
+  Trading Floor, instruments are fitted at a desk in the Machine Room). A dock
+  that grew a Buy button would be the nav rail arriving in disguise.
+
+  They render on REGION screens only, gated on the region table rather than a
+  path list. The Exchange HUD they replaced sat on every page under `/app`
+  including the flat ones — and, worth knowing before you trust that a
+  component which exists also works, **it had markup and no CSS at all** beyond
+  a single mobile touch-target rule. It rendered as bare text across the bottom
+  of the screen. It was not badly designed; it was never designed.
 - **The browser cannot write to world chat, and that is arranged rather than
   checked.** The chat channel is opened with `private: true`, and the RLS policy
   on `realtime.messages` grants SELECT and deliberately withholds INSERT, so

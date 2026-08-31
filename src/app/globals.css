@@ -2861,6 +2861,184 @@ body {
 }
 
 /* ===========================================================================
+   The right-hand dock: Market and Items.
+
+   The mirror of the chat, and built from the same parts on purpose — same
+   glass, same pill, same panel, opposite corner. Two docks at opposite ends of
+   the bottom edge read as one system with a left half and a right half; three
+   widgets each inventing their own shape read as three widgets.
+
+   It sits ABOVE the world map rather than beside it. The map is the anchor of
+   that corner and was there first, and a row of pills that shoves it somewhere
+   else to make room would be the new thing winning an argument it should not
+   even be having.
+
+   Only ONE panel opens at a time. Both stacked up the right edge would cover
+   the part of the board this dock exists to stay clear of, and a HUD that
+   defeats its own budget is the thing CLAUDE.md measures.
+   =========================================================================== */
+.eg-dock {
+  position: fixed;
+  z-index: 26;
+  right: clamp(10px, 1.6vw, 18px);
+  /* Clears the map pill (~38px) plus its own bottom offset. */
+  bottom: calc(clamp(10px, 1.6vw, 18px) + 46px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+.eg-dock > * { pointer-events: auto; }
+
+.eg-dock-tabs {
+  display: flex;
+  gap: 8px;
+}
+.eg-dock-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid rgba(212, 210, 207, 0.2);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(18, 22, 16, 0.62) 0%, rgba(9, 11, 8, 0.72) 100%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  font: 700 9px var(--font-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.62);
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+.eg-dock-tab:hover { border-color: rgba(204, 255, 0, 0.45); color: #fff; }
+.eg-dock-tab.is-open {
+  border-color: rgba(204, 255, 0, 0.55);
+  color: var(--robin-neon, #ccff00);
+}
+
+.eg-dock-panel {
+  display: flex;
+  width: min(272px, calc(100vw - 20px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(212, 210, 207, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(18, 22, 16, 0.62) 0%, rgba(9, 11, 8, 0.72) 100%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 26px 70px -40px #000;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.eg-dock-panel header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border-bottom: 1px solid rgba(212, 210, 207, 0.12);
+  color: rgba(226, 235, 239, 0.5);
+}
+.eg-dock-panel header b {
+  font: 800 9px var(--font-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+}
+/* The count, so "Instruments 12" is one glance rather than a row count. */
+.eg-dock-panel header em {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(204, 255, 0, 0.14);
+  font: 700 8.5px var(--font-mono), monospace;
+  font-style: normal;
+  color: var(--robin-neon, #ccff00);
+}
+.eg-dock-panel header button {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  place-items: center;
+  border-radius: 5px;
+  color: rgba(226, 235, 239, 0.5);
+  cursor: pointer;
+}
+.eg-dock-panel header button:hover { color: var(--robin-neon, #ccff00); }
+
+.eg-dock-list {
+  margin: 0;
+  padding: 5px 7px;
+  list-style: none;
+  font-size: 11px;
+}
+.eg-dock-list li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 4px;
+  border-radius: 6px;
+}
+.eg-dock-list li + li { border-top: 1px solid rgba(212, 210, 207, 0.07); }
+.eg-dock-pip {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 999px;
+  box-shadow: 0 0 6px currentColor;
+}
+.eg-dock-what {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  color: rgba(240, 246, 248, 0.94);
+}
+.eg-dock-what small {
+  font: 600 8.5px var(--font-mono), monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.38);
+}
+.eg-dock-price {
+  display: flex;
+  margin-left: auto;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  font: 700 11px var(--font-mono), monospace;
+  color: var(--robin-neon, #ccff00);
+}
+.eg-dock-price i {
+  font: 600 8px var(--font-mono), monospace;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  color: rgba(226, 235, 239, 0.34);
+}
+.eg-dock-empty {
+  color: rgba(226, 235, 239, 0.34);
+  font-size: 10.5px;
+  font-style: italic;
+}
+.eg-dock-foot {
+  margin: 0;
+  padding: 7px 10px;
+  border-top: 1px solid rgba(212, 210, 207, 0.12);
+  font: 600 9px var(--font-mono), monospace;
+  letter-spacing: 0.06em;
+  color: rgba(226, 235, 239, 0.42);
+}
+
+/* Narrow screens: the two docks would meet in the middle, so the panel takes
+   the width it needs and the pills stay on one row. */
+@media (max-width: 560px) {
+  .eg-dock-panel { width: min(248px, calc(100vw - 20px)); }
+  .eg-dock-tab span { display: none; }
+  .eg-dock-tab { padding: 9px 11px; }
+}
+
+/* ===========================================================================
    World chat, bottom-left.
 
    Shaped after the chatbox every player of this kind of game already knows: a
