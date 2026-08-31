@@ -21,7 +21,7 @@ const DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'osr-leaderboard-test-'))
 process.env.OSR_DATA_DIR = DATA_DIR;
 delete process.env.VERCEL;
 
-const { leaderboard, protocolOverview, burnedBy, userOperation } = await import('./game');
+const { leaderboard, protocolOverview, burnedBy, userOperation, mintNode } = await import('./game');
 const { getDb } = await import('./db');
 const { DEMO_PREFIX, isDemoWallet } = await import('./demo');
 
@@ -33,13 +33,13 @@ const real = (n: number) => `0x${String(n).padStart(40, '0')}`;
  */
 const demo = (n: number) => `${DEMO_PREFIX}${String(n).padStart(42 - DEMO_PREFIX.length, '0')}`;
 
-function insert(w: string, compoundLevel: number) {
+function insert(w: string, compoundLevel: number, balance = 0) {
   getDb()
     .prepare(
       `INSERT OR REPLACE INTO users (wallet, osr_balance, compound_level, created_at, last_seen)
        VALUES (?,?,?,?,?)`
     )
-    .run(w, 0, compoundLevel, Date.now(), Date.now());
+    .run(w, balance, compoundLevel, Date.now(), Date.now());
 }
 
 function reset() {
@@ -122,6 +122,51 @@ describe('activeOperators excludes demo accounts', () => {
   test('is zero when only demo accounts exist', () => {
     insert(demo(1), 1);
     expect(protocolOverview().activeOperators).toBe(0);
+  });
+});
+
+describe('protocol totals count real money only', () => {
+  function desk(w: string, family: 'oil' | 'mine') {
+    getDb()
+      .prepare(
+        `INSERT INTO nodes (wallet, family, level, created_at, last_claim_at, accrued, accrued_updated_at)
+         VALUES (?,?,1,?,?,0,?)`
+      )
+      .run(w, family, Date.now(), Date.now(), Date.now());
+  }
+
+  test('desk counts exclude demo-owned desks', () => {
+    insert(real(1), 1);
+    insert(demo(1), 1);
+    desk(real(1), 'oil');
+    desk(demo(1), 'oil');
+    desk(demo(1), 'mine');
+
+    const o = protocolOverview();
+    expect(o.totalNodes).toBe(1);
+    expect(o.totalEquityDesks).toBe(1);
+    expect(o.totalTreasuryDesks).toBe(0);
+  });
+
+  /**
+   * The forgeable headline. `burned` is a stored cumulative counter, and a demo
+   * session needs no credential and costs nothing to open — so bumping it for
+   * demo spends meant anyone with a loop could set the game's most quoted
+   * number to anything. Asserted through the counter, not the ledger, because
+   * the ledger row is still written for demos on purpose.
+   */
+  test('a demo spend does not move the protocol burn counter', () => {
+    // A real wallet needs funding; a demo is granted DEMO_GREEN on creation,
+    // which is the whole point — that money was never minted by anyone.
+    insert(real(1), 1, 1_000_000);
+    insert(demo(1), 1, 1_000_000);
+
+    const before = protocolOverview().totalGreenBurned;
+    mintNode(demo(1), 'equity_desk');
+    expect(protocolOverview().totalGreenBurned).toBe(before);
+
+    mintNode(real(1), 'equity_desk');
+    expect(protocolOverview().totalGreenBurned).toBeGreaterThan(before);
   });
 });
 

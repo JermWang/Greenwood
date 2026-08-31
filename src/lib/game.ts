@@ -86,10 +86,33 @@ export function protocolCounters() {
 }
 
 function paySplits(wallet: string, kind: string, osr: number, splits: { burn: number; reserve?: number; treasury: number }, feeEth = 0, meta?: object) {
-  bumpProtocolCounter('burned', splits.burn);
-  if (splits.reserve) bumpProtocolCounter('reserve', splits.reserve);
-  bumpProtocolCounter('treasury', splits.treasury);
-  if (feeEth > 0) bumpProtocolCounter('solRevenue', feeEth);
+  /*
+   * THE PROTOCOL'S COUNTERS MEASURE REAL MONEY ONLY.
+   *
+   * These four are the economy's headline figures — total burned, the emission
+   * reserve, the treasury, fee revenue — and they were bumped for every spend
+   * including demo ones. A demo account is handed 50,000 GREEN that was never
+   * minted, and a demo session needs no credential and costs nothing to open,
+   * so anyone willing to loop the demo endpoint could drive "total GREEN
+   * burned" to any number they liked. It is the single most quoted figure the
+   * game publishes and it was the easiest to forge.
+   *
+   * The debit itself is NOT here — every caller has already decremented
+   * osr_balance — so a demo player's own balance and history behave exactly as
+   * before. Only the protocol-wide totals stop counting fiction.
+   *
+   * Note these counters are CUMULATIVE and stored, so this stops the bleeding
+   * rather than undoing it: whatever demo burn is already banked stays banked
+   * until the value is corrected deliberately.
+   */
+  if (!isDemoWallet(wallet)) {
+    bumpProtocolCounter('burned', splits.burn);
+    if (splits.reserve) bumpProtocolCounter('reserve', splits.reserve);
+    bumpProtocolCounter('treasury', splits.treasury);
+    if (feeEth > 0) bumpProtocolCounter('solRevenue', feeEth);
+  }
+  // Written for demos too: it is that player's own history, and burnedBy reads
+  // it for the totals their own screens show.
   addLedger(wallet, kind, -osr, { ...meta, ...splits, feeEth });
 }
 
@@ -1224,9 +1247,22 @@ export function protocolOverview() {
   // page read empty rather than honest.
   const counters = protocolCounters();
   const db = getDb();
-  const totalNodes = (db.prepare('SELECT COUNT(*) AS c FROM nodes').get() as { c: number }).c;
-  const totalEquityDesks = (db.prepare("SELECT COUNT(*) AS c FROM nodes WHERE family = 'oil'").get() as { c: number }).c;
-  const totalTreasuryDesks = (db.prepare("SELECT COUNT(*) AS c FROM nodes WHERE family = 'mine'").get() as { c: number }).c;
+  /*
+   * Desk counts, real operators only — same reason as the balances above and
+   * the burn counter in paySplits. A demo starts with 50,000 GREEN, which is
+   * enough to build desks, so an unfiltered COUNT(*) reported a network far
+   * larger than the one anybody paid for. It was showing 8 desks while every
+   * real player owned none.
+   */
+  const deskCount = (where: string, ...args: string[]) =>
+    (
+      db
+        .prepare(`SELECT COUNT(*) AS c FROM nodes WHERE wallet NOT LIKE ?${where}`)
+        .get(DEMO_WALLET_LIKE, ...args) as { c: number }
+    ).c;
+  const totalNodes = deskCount('');
+  const totalEquityDesks = deskCount(' AND family = ?', 'oil');
+  const totalTreasuryDesks = deskCount(' AND family = ?', 'mine');
   const halving = halvingInfo(g, now);
   const reserve = Math.max(0, EMISSION_RESERVE - counters.emitted + counters.reserve);
 
