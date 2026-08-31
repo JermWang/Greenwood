@@ -26,6 +26,54 @@ export const dynamic = 'force-dynamic';
 const CONFIRM = 'WIPE-ALL-GAME-STATE';
 
 export async function POST(request: Request) {
+  const secret = (process.env.OSR_ADMIN_TOKEN ?? '').trim();
+  if (!secret) {
+    return NextResponse.json({ error: 'OSR_ADMIN_TOKEN is not configured' }, { status: 503 });
+  }
+  if ((request.headers.get('authorization') ?? '') !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+
+  /*
+   * A dry run, so the irreversible thing can be inspected before it is done.
+   *
+   * DELIBERATELY ABOVE THE TOKEN GUARD, and that ordering is the point. It
+   * reads and changes nothing, and the moment somebody most needs to see what a
+   * wipe would take is while planning a relaunch — which is exactly when the
+   * game is still live and the guard below is still refusing. A dry run that
+   * only works once it is too late to plan is not a dry run.
+   *
+   * It calls the same resetTargets the wipe calls, rather than describing the
+   * behaviour in prose that could drift from it.
+   */
+  if (body.dryRun === true) {
+    const { wipe, keep } = resetTargets(getDb());
+    const rows: Record<string, number> = {};
+    for (const table of [...wipe, ...keep]) {
+      try {
+        rows[table] = Number(
+          (getDb().prepare(`SELECT COUNT(*) AS n FROM "${table}"`).get() as { n: number }).n
+        );
+      } catch {
+        rows[table] = -1;
+      }
+    }
+    return NextResponse.json({
+      dryRun: true,
+      /** What the guard below would say if this were the real thing. */
+      wouldBeRefused: TOKEN_LIVE && process.env.OSR_ALLOW_RESET !== 'yes-wipe-a-live-game',
+      tokenLive: TOKEN_LIVE,
+      rows,
+      wouldWipe: wipe,
+      wouldKeep: keep,
+      wouldClearRegistry:
+        body.keepRegistry === true ? [] : ['activity_history', 'profiles', 'privy_identities'],
+      backupsSupported: backupsSupported(),
+    });
+  }
+
   /*
    * Unreachable once real money is involved.
    *
@@ -59,34 +107,6 @@ export async function POST(request: Request) {
       },
       { status: 403 }
     );
-  }
-
-  const secret = (process.env.OSR_ADMIN_TOKEN ?? '').trim();
-  if (!secret) {
-    return NextResponse.json({ error: 'OSR_ADMIN_TOKEN is not configured' }, { status: 503 });
-  }
-  if ((request.headers.get('authorization') ?? '') !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  }
-
-  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-
-  /*
-   * A dry run, so the irreversible thing can be inspected before it is done.
-   *
-   * Same guards, same code path for deciding WHAT would go — it calls the same
-   * resetTargets the wipe uses, rather than describing it in prose that could
-   * drift from the behaviour.
-   */
-  if (body.dryRun === true) {
-    const { wipe, keep } = resetTargets(getDb());
-    return NextResponse.json({
-      dryRun: true,
-      wouldWipe: wipe,
-      wouldKeep: keep,
-      wouldClearRegistry: body.keepRegistry === true ? [] : ['activity_history', 'profiles', 'privy_identities'],
-      backupsSupported: backupsSupported(),
-    });
   }
 
   if (body.confirm !== CONFIRM) {
