@@ -32,7 +32,6 @@ export default function WalletButton() {
     chainId,
     nativeBalance,
     greenBalance,
-    greenSymbol,
     connecting,
     initialized,
     error,
@@ -187,7 +186,9 @@ export default function WalletButton() {
               <div className="mt-1.5 flex items-center justify-between text-xs">
                 <span className="text-steel-400">Token balance</span>
                 <span className="font-mono text-white">
-                  {TOKEN_LIVE ? `${displayBalance(greenBalance, 3)} ${greenSymbol}` : 'Not live yet'}
+                  {/* GREEN, always. The amount is the chain's; the word is the
+                      game's — see the note in lib/evm's balances(). */}
+                  {TOKEN_LIVE ? `${displayBalance(greenBalance, 3)} GREEN` : 'Not live yet'}
                 </span>
               </div>
             </div>

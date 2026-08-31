@@ -1,13 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Cpu, Lightning, Radio } from '@phosphor-icons/react';
 import WalletButton from '@/components/ui/WalletButton';
 import { DemoBanner, DemoButton } from '@/components/ui/DemoButton';
 import IntroGuide from '@/components/ui/IntroGuide';
 import ChatDock from '@/components/ui/ChatDock';
-import { MARK_SRC } from '@/lib/brand-assets';
+import HomeMark from '@/components/ui/HomeMark';
 import HudDock from '@/components/ui/HudDock';
 import { useOperation } from '@/lib/useOperation';
 import DeployNotice from '@/components/ui/DeployNotice';
@@ -44,15 +43,23 @@ const ROUTE_TITLES: Record<string, string> = {
   '/app/docs': 'Handbook',
 };
 
-function routeTitle(pathname: string) {
+/**
+ * The name of the screen, or null where there is no specific one.
+ *
+ * NULL RATHER THAN 'Evergreen'. The fallback used to be the brand name, which
+ * was harmless while the mark was hidden on desktop — and became a duplicate
+ * the moment the mark came back, since `/app` deliberately has no title of its
+ * own (it is a door, not a room). A chip repeating the wordmark beside it says
+ * nothing twice.
+ */
+function routeTitle(pathname: string): string | null {
   const exact = ROUTE_TITLES[pathname];
   if (exact) return exact;
-  return Object.entries(ROUTE_TITLES).find(([path]) => pathname.startsWith(path))?.[1] ?? 'Evergreen';
+  return Object.entries(ROUTE_TITLES).find(([path]) => pathname.startsWith(path))?.[1] ?? null;
 }
 
 function GreenBalanceModule() {
   const greenBalance = useEvmWallet((state) => state.greenBalance);
-  const symbol = useEvmWallet((state) => state.greenSymbol);
   return (
     <div className="eg-balance-module">
       <span className="eg-balance-glyph"><Lightning size={14} weight="fill" /></span>
@@ -60,7 +67,11 @@ function GreenBalanceModule() {
         <span className="block font-mono text-[8px] uppercase tracking-[.18em] text-emerald-100/45">Green reserve</span>
         <span className="mt-0.5 block font-mono text-[12px] font-bold text-white">
           {TOKEN_LIVE && greenBalance != null ? Number(greenBalance).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}{' '}
-          <span className="text-lime-300">{TOKEN_LIVE ? symbol : 'GREEN'}</span>
+          {/* The word is always GREEN. This printed the deployed contract's own
+              symbol() when a token was configured, which is why the reserve
+              module — the single most-read number in the game — said BNTY.
+              See lib/evm's balances() for why that is not a safety check. */}
+          <span className="text-lime-300">GREEN</span>
         </span>
       </span>
     </div>
@@ -71,22 +82,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const wallet = useOperation((s) => s.wallet);
   /** Whether this pathname is a place in the world rather than a flat page. */
-  const inRegion = REGIONS.some((region) => region.href === pathname);
+  const region = REGIONS.find((r) => r.href === pathname) ?? null;
+  const inRegion = region !== null;
+  const title = routeTitle(pathname);
   return (
     <div className="eg-os min-h-screen">
       <DeployNotice />
       <div className="eg-stage">
         <header className="eg-topbar">
-          <Link href="/" className="flex items-center gap-2 lg:hidden" aria-label="Evergreen home">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={MARK_SRC} alt="" className="h-8 w-8 rounded-[10px]" />
-            {/* The wordmark goes below 640px and the mark stays. The bar has
-                room for exactly one more thing at that width, and the guide is
-                that thing — the mark alone already says where you are. */}
-            <span className="eg-topbar-wordmark font-mono text-sm font-bold tracking-[.24em] text-white">Evergreen</span>
-          </Link>
+          {/*
+            The mark, at every width now.
+
+            It was `lg:hidden` — the logo appeared on phones and vanished on
+            desktop, where the only thing in that corner was a route chip whose
+            fallback happened to read "Evergreen". So the brand was missing from
+            the widest screens and something that merely looked like it stood in.
+
+            It guards the click in a region. See HomeMark: a stray hit on the
+            corner of the screen should not take somebody out of the world they
+            are standing in without asking.
+          */}
+          <HomeMark guard={inRegion} place={region?.name ?? null} />
           <div className="hidden min-w-0 items-center gap-3 lg:flex">
-            <span className="eg-route-chip"><Cpu size={15} weight="duotone" /> {routeTitle(pathname)}</span>
+            {title && <span className="eg-route-chip"><Cpu size={15} weight="duotone" /> {title}</span>}
             <span className="h-4 w-px bg-white/10" />
             <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[.18em] text-emerald-100/45">
               <Radio size={13} className="text-lime-300" /> {CHAIN.name} · {CHAIN.id}

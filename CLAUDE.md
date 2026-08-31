@@ -91,16 +91,28 @@ Three things were handled differently, and all three will surprise you:
   empty directory beside it and boots the game with no players, no balances and
   no funds. It moves only behind a deliberate copy, with backups, and never as
   part of a rename.
-- **The ticker is GREEN, but the DEPLOYED TOKEN IS NOT.** The contract at
-  `NEXT_PUBLIC_OSR_TOKEN` reports `symbol() = "BNTY"` and `name() = "Greenwood"`,
-  and both are immutable. `EXPECTED_TOKEN_SYMBOL` in `lib/config` therefore
-  still reads BNTY on purpose: `settlement-client` compares it against the
-  contract and REFUSES TO BUILD A TRANSFER when they disagree, so "finishing"
-  that rename would not rename anything — it would block every on-chain
-  transaction in the game. It moves when a GREEN token is deployed, in lockstep
-  with the address. A connected wallet also shows the chain's symbol, so it
-  reads BNTY where the rest of the game reads GREEN; that is the deployed token
-  being older than the name, and it is not a bug to "fix" in the UI.
+- **The ticker is GREEN, but the DEPLOYED TOKEN IS NOT — and only ONE of those
+  facts is allowed on screen.** The contract at `NEXT_PUBLIC_OSR_TOKEN` reports
+  `symbol() = "BNTY"` and `name() = "Greenwood"`, and both are immutable.
+  `EXPECTED_TOKEN_SYMBOL` in `lib/config` therefore still reads BNTY on purpose:
+  `settlement-client` compares it against the contract and REFUSES TO BUILD A
+  TRANSFER when they disagree, so "finishing" that rename would not rename
+  anything — it would block every on-chain transaction in the game. It moves
+  when a GREEN token is deployed, in lockstep with the address.
+
+  **What is NOT allowed is showing that symbol to a player.** The evm store used
+  to carry a `greenSymbol` read off the contract, and the reserve module in the
+  top bar — the single most-read number in the game — printed it, so the game
+  said BNTY in the one place everybody looks. The argument for it was that a
+  balance should agree with the chain; that is right about the AMOUNT and wrong
+  about the WORD. Agreeing with the chain matters when tokens are about to move,
+  and `settlement-client` does that itself at transaction time. A label on a
+  number is not a safety check — it just teaches a second name for the currency.
+
+  So `greenSymbol` is gone from the store entirely and there is no path from
+  contract metadata to a player's screen. The one place the real symbol still
+  appears is the config-mismatch error in `settlement-client`, where naming what
+  the contract actually reported IS the message.
 - **Browser storage keys were renamed WITH a carry-over** (`lib/legacy-keys`).
   Storage is the third place state lives, after env vars and columns, and the
   argument that froze `OSR_*` applies to it: `gw-wallet-store` holds terms
@@ -127,20 +139,29 @@ Income Note, Trading Floor, The Vault.
   state, never against a coordinate in a request body.
 - **`CARRIABLE` in `lib/packs` is an allowlist.** It decides what a player can
   lose. A denylist would fail open.
-- **Navigation happens in the world.** There is no nav rail and no dock. The
-  bottom edge carries two READ-ONLY docks and nothing else: chat bottom-left,
-  and `HudDock` bottom-right with Market and Items. Neither trades nor equips,
-  and that is the line — they tell you a number where you are standing, and
-  acting on it is still a place you walk to (the Exchange is a stall inside the
-  Trading Floor, instruments are fitted at a desk in the Machine Room). A dock
-  that grew a Buy button would be the nav rail arriving in disguise.
+- **Navigation happens in the world; TRADING does not have to.** There is no nav
+  rail. The bottom edge carries two docks: chat bottom-left, and `HudDock`
+  bottom-right with Market and Items.
+
+  Market trades — buy, list, cancel — against the same four routes the full
+  Exchange page uses, settlement lifecycle included. An earlier version was
+  read-only and argued at length that it had to stay that way; that was a
+  product call, not a safety one, and it was made differently. Nothing on the
+  server changed: those routes already authenticated the caller and re-checked
+  the listing, which is why this was a UI decision to begin with.
+
+  Items stays read-only, and that is a DIFFERENT argument rather than the same
+  one half-applied: fitting an instrument means choosing a desk to fit it to,
+  which is the Machine Room's whole screen. A picker for it in a 330px panel
+  would be a worse copy of something twenty tiles away.
 
   They render on REGION screens only, gated on the region table rather than a
   path list. The Exchange HUD they replaced sat on every page under `/app`
   including the flat ones — and, worth knowing before you trust that a
   component which exists also works, **it had markup and no CSS at all** beyond
   a single mobile touch-target rule. It rendered as bare text across the bottom
-  of the screen. It was not badly designed; it was never designed.
+  of the screen. It was not badly designed; it was never designed. There is a
+  standing audit for that class of bug: see "Working here".
 - **The browser cannot write to world chat, and that is arranged rather than
   checked.** The chat channel is opened with `private: true`, and the RLS policy
   on `realtime.messages` grants SELECT and deliberately withholds INSERT, so
@@ -168,6 +189,12 @@ Income Note, Trading Floor, The Vault.
   anything done.
 - `/dev/assets` — every model in the game on a turntable. **Look at anything you
   add here before wiring it into a scene.**
+- **`lib/styles.test.ts` fails the build if a project class name has no CSS
+  rule.** It exists because the Exchange HUD shipped with markup and no styles
+  at all and nobody noticed: that type-checks, builds and renders, and looks
+  wrong only to somebody who opens that exact screen. If it flags a class,
+  write the rule — or add it to `UNSTYLED_ON_PURPOSE` with the reason, which is
+  a claim that the element looks right without one.
 - `NEXT_PUBLIC_OSR_DEV_WALLET` in `.env.local` skips Privy sign-in and opens
   region gates locally. Null in every production build (`lib/dev-mode`).
 - Comments explain **why**, not what. Several in this codebase record a bug that

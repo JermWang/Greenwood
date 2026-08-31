@@ -60,7 +60,6 @@ interface EvmState {
   chainId: number | null;
   nativeBalance: string | null;
   greenBalance: string | null;
-  greenSymbol: string;
   connecting: boolean;
   initialized: boolean;
   error: string | null;
@@ -123,24 +122,36 @@ async function balances(provider: Eip1193Provider, address: Address) {
   const client = createPublicClient({ chain: robinhoodChain, transport: custom(provider) });
   const native = await client.getBalance({ address });
   let greenBalance: string | null = null;
-  // The brand ticker, as a PLACEHOLDER for the unconfigured case below. When a
-  // token is configured this is overwritten by the contract's own symbol(),
-  // because a wallet balance has to agree with the chain rather than with us --
-  // and today that means a connected wallet reads BNTY here while the rest of
-  // the game says GREEN. That is the deployed token being older than the name;
-  // it resolves when a GREEN contract is deployed, not in this file.
-  let greenSymbol = 'GREEN';
+  /*
+   * THE CONTRACT'S symbol() IS NOT READ HERE, AND MUST NOT BE.
+   *
+   * It used to be, and it was surfaced to players: the store carried a
+   * `greenSymbol` that the balance module and the wallet button printed, so a
+   * connected wallet read the deployed contract's ticker while every other
+   * word in the game said GREEN. The argument for it was that a wallet balance
+   * should agree with the chain, and that argument is wrong about WHERE it
+   * applies. Agreeing with the chain matters when we are about to move tokens;
+   * settlement-client does exactly that, reading symbol() itself at
+   * transaction time and refusing to build a transfer when it disagrees with
+   * EXPECTED_TOKEN_SYMBOL. That guard is untouched by this and is the only
+   * place the on-chain ticker is load-bearing.
+   *
+   * A LABEL ON A NUMBER IS NOT A SAFETY CHECK. It taught players a second name
+   * for the currency, which is the opposite of what a ticker is for.
+   *
+   * So the amount comes off the chain and the word does not. The game prices in
+   * GREEN everywhere it speaks, and there is now no path from a contract's
+   * metadata to a player's screen.
+   */
   if (isConfiguredAddress(GREEN_TOKEN_ADDRESS)) {
     const token = getAddress(GREEN_TOKEN_ADDRESS);
-    const [amount, decimals, symbol] = await Promise.all([
+    const [amount, decimals] = await Promise.all([
       client.readContract({ address: token, abi: erc20Abi, functionName: 'balanceOf', args: [address] }),
       client.readContract({ address: token, abi: erc20Abi, functionName: 'decimals' }),
-      client.readContract({ address: token, abi: erc20Abi, functionName: 'symbol' }),
     ]);
     greenBalance = formatUnits(amount, decimals);
-    greenSymbol = symbol;
   }
-  return { nativeBalance: formatEther(native), greenBalance, greenSymbol };
+  return { nativeBalance: formatEther(native), greenBalance };
 }
 
 function unbindProvider() {
@@ -214,7 +225,6 @@ export const useEvmWallet = create<EvmState>()((set, get) => ({
   chainId: null,
   nativeBalance: null,
   greenBalance: null,
-  greenSymbol: 'GREEN',
   connecting: false,
   initialized: false,
   error: null,

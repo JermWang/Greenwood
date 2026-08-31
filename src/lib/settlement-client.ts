@@ -135,7 +135,16 @@ export async function submitPayment(
   if (tokenSymbol.trim().toUpperCase() !== EXPECTED_TOKEN_SYMBOL.toUpperCase()) {
     throw new Error(`Configured token identifies as ${tokenSymbol}, not ${EXPECTED_TOKEN_SYMBOL}; wallet request blocked`);
   }
-  if (balance < validated.amount) throw new Error(`Insufficient ${tokenSymbol} balance for this action`);
+  /*
+   * "GREEN", not the contract's ticker.
+   *
+   * This is the one message here a PLAYER sees — running out of money is an
+   * ordinary thing that happens mid-game — so it speaks the game's currency.
+   * The mismatch error above keeps the real symbols on purpose: it fires only
+   * when the token is misconfigured, and naming what the contract actually
+   * reported is the entire content of that message.
+   */
+  if (balance < validated.amount) throw new Error('Insufficient GREEN balance for this action');
 
   // viem recommends simulation before writeContract. Passing its returned
   // request straight into the wallet ensures the exact simulated calldata is
