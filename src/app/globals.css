@@ -2859,3 +2859,165 @@ body {
   .eg-guide-panel { width: auto; }
   .eg-guide-chip { justify-content: flex-start; }
 }
+
+/* ===========================================================================
+   World chat, bottom-left.
+
+   Shaped after the chatbox every player of this kind of game already knows: a
+   log you read top-to-bottom, a name in colour, the message in white, and a
+   single line to type in. It overlays the world rather than reserving space,
+   which is why it collapses to a tab — a permanent 240px box in the corner of a
+   game you are trying to look at is the thing people turn off.
+
+   Bottom-LEFT is where it was asked for and it is also the right corner: the
+   world map and the layout score are bottom-right, the contextual prompts are
+   bottom-centre, and the introduction took the upper right. The Machine Room's
+   desk book shares this corner and sits above the collapsed tab; opening the
+   chat covers it, which is what a chat window is allowed to do.
+   =========================================================================== */
+.eg-chat,
+.eg-chat-tab {
+  position: fixed;
+  z-index: 44;
+  left: clamp(10px, 1.6vw, 18px);
+  bottom: clamp(10px, 1.6vw, 18px);
+}
+
+/* Collapsed: a tab, with the unread count on it. */
+.eg-chat-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid rgba(212, 210, 207, 0.16);
+  border-radius: 999px;
+  background: rgba(12, 14, 10, 0.82);
+  backdrop-filter: blur(10px);
+  font: 700 9px var(--font-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.62);
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+.eg-chat-tab:hover { border-color: rgba(204, 255, 0, 0.45); color: #fff; }
+.eg-chat-tab.has-unread { border-color: rgba(204, 255, 0, 0.6); color: #fff; }
+.eg-chat-tab b {
+  display: grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--robin-neon, #ccff00);
+  color: #17160f;
+  font-size: 9px;
+}
+
+/* Open: header, log, one line to type in. */
+.eg-chat {
+  display: flex;
+  width: min(360px, calc(100vw - 20px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(212, 210, 207, 0.16);
+  border-radius: 10px;
+  background: rgba(10, 12, 9, 0.9);
+  box-shadow: 0 26px 70px -40px #000;
+  backdrop-filter: blur(14px);
+}
+.eg-chat header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border-bottom: 1px solid rgba(212, 210, 207, 0.12);
+  color: rgba(226, 235, 239, 0.5);
+}
+.eg-chat header b {
+  font: 800 9px var(--font-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.eg-chat header span {
+  margin-left: auto;
+  font: 600 8px var(--font-mono), monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.3);
+}
+.eg-chat header span.is-live { color: var(--robin-neon, #ccff00); }
+.eg-chat header button {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 5px;
+  color: rgba(226, 235, 239, 0.5);
+  cursor: pointer;
+}
+.eg-chat header button:hover { color: var(--robin-neon, #ccff00); }
+
+/*
+ * The log.
+ *
+ * Fixed height rather than growing with content: a box that gets taller as
+ * people talk is a box that eventually covers the game, and the scrollback is
+ * what history is for. Messages wrap with a hanging indent so a long line reads
+ * as one message rather than as several.
+ */
+.eg-chat-log {
+  height: 168px;
+  margin: 0;
+  padding: 7px 9px;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(232, 240, 243, 0.9);
+  overflow-wrap: anywhere;
+}
+.eg-chat-log li { padding: 1px 0 1px 10px; text-indent: -10px; }
+.eg-chat-name { color: var(--robin-neon, #ccff00); font-weight: 600; }
+.eg-chat-log li.is-mine .eg-chat-name { color: #8ab4ff; }
+.eg-chat-text { color: rgba(232, 240, 243, 0.88); }
+.eg-chat-empty {
+  color: rgba(226, 235, 239, 0.34);
+  font-size: 10.5px;
+  font-style: italic;
+}
+
+.eg-chat-entry {
+  display: flex;
+  gap: 6px;
+  padding: 7px;
+  border-top: 1px solid rgba(212, 210, 207, 0.12);
+}
+.eg-chat-entry input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid rgba(212, 210, 207, 0.14);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 11.5px;
+  color: #fff;
+}
+.eg-chat-entry input:focus { outline: none; border-color: rgba(204, 255, 0, 0.45); }
+.eg-chat-entry input::placeholder { color: rgba(226, 235, 239, 0.28); }
+.eg-chat-entry button {
+  display: grid;
+  width: 30px;
+  place-items: center;
+  border-radius: 7px;
+  background: rgba(204, 255, 0, 0.12);
+  color: var(--robin-neon, #ccff00);
+  cursor: pointer;
+}
+.eg-chat-entry button:disabled { opacity: 0.35; cursor: default; }
+
+@media (max-width: 760px) {
+  /* Shorter, because a phone in portrait has the world in the same rectangle. */
+  .eg-chat-log { height: 128px; }
+}

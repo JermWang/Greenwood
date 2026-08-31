@@ -6,6 +6,7 @@ import { Cpu, Lightning, Radio } from '@phosphor-icons/react';
 import WalletButton from '@/components/ui/WalletButton';
 import { DemoBanner, DemoButton } from '@/components/ui/DemoButton';
 import IntroGuide from '@/components/ui/IntroGuide';
+import ChatDock from '@/components/ui/ChatDock';
 import { MARK_SRC } from '@/lib/brand-assets';
 import MarketHud from '@/components/ui/MarketHud';
 import { useOperation } from '@/lib/useOperation';
@@ -114,6 +115,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           hanging under it. It anchors itself now — see .eg-guide.
         */}
         <IntroGuide />
+        {/*
+          World chat, per shard, bottom-left.
+          
+          Everywhere except the doorway. /app is a figure and a button (see
+          app/app/page) and a chat box is the first of the eleven panels coming
+          back; the conversation belongs where the people are, which is in the
+          regions.
+        */}
+        {pathname !== '/app' && <ChatDock />}
         {/* The one menu. Everything else is reached by walking to it. */}
         <MarketHud wallet={wallet} />
       </div>
