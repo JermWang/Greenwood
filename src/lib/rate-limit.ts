@@ -67,6 +67,21 @@ export const LIMITS = {
   /** Expedition movement, which is the highest-frequency legitimate action. */
   expedition: { max: 90, windowMs: 10_000 },
   /**
+   * Talking in world chat.
+   *
+   * The only bucket that is a MODERATION control as much as a load one. Chat
+   * reaches every player on the shard at once, so the failure it prevents is
+   * not a busy server, it is one person making the room unusable for forty
+   * others. Eight in ten seconds is a fast conversation and an impossible
+   * flood -- a person typing flat out manages perhaps three.
+   *
+   * Spent per WALLET, after the session check, like every other bucket. That
+   * is the strongest thing available: the send gap in the browser is a
+   * courtesy against a stuck key and nothing more, because the browser is no
+   * longer what decides whether a line reaches the room. See api/chat/say.
+   */
+  chat: { max: 8, windowMs: 10_000 },
+  /**
    * Sign-in nonce requests, keyed by IP rather than wallet.
    *
    * The only unauthenticated write in the app, so it is the only bucket a

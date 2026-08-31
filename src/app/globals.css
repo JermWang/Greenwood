@@ -2982,6 +2982,22 @@ body {
 .eg-chat-name { color: var(--robin-neon, #ccff00); font-weight: 600; }
 .eg-chat-log li.is-mine .eg-chat-name { color: #8ab4ff; }
 .eg-chat-text { color: rgba(232, 240, 243, 0.88); }
+/* The room's own voice: a refusal, or a note about the connection. Amber
+   rather than neon, so it reads as the game talking and is never mistaken
+   for a player -- there is no name a person can pick that renders like this. */
+.eg-chat-log li.is-system .eg-chat-name { color: #d8a657; }
+.eg-chat-log li.is-system .eg-chat-text { color: rgba(216, 166, 87, 0.82); }
+/* Shown in place of the input to an account that may read but not talk. */
+.eg-chat-locked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 9px 10px;
+  border-top: 1px solid rgba(212, 210, 207, 0.12);
+  color: rgba(226, 235, 239, 0.42);
+  font-size: 10.5px;
+}
 .eg-chat-empty {
   color: rgba(226, 235, 239, 0.34);
   font-size: 10.5px;

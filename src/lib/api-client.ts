@@ -732,6 +732,21 @@ export const api = {
    * separates the two ways it can be unusable: false is "never set up for this
    * environment", true is "set up but not answering". See lib/profiles.
    */
+  /**
+   * Say something in world chat.
+   *
+   * Text only. The wallet is here so the session check has something to compare
+   * against, and every other field on the line — who said it, what they are
+   * called, when — is decided by the server and handed back in the reply. The
+   * dock draws what comes back rather than what was typed, which is why there
+   * is a return value at all: it is the only way a player's own line and
+   * everybody else's are the same object.
+   */
+  say: (wallet: string, text: string) =>
+    post<{ line: { wallet: string; name: string; text: string; at: number }; shard: string }>(
+      '/chat/say',
+      { wallet, text }
+    ),
   profile: (wallet: string) =>
     request<{
       configured: boolean;

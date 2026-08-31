@@ -130,6 +130,26 @@ Income Note, Trading Floor, The Vault.
 - **Navigation happens in the world.** There is no nav rail and no dock — the
   Exchange HUD is the single deliberate exception, because checking prices
   mid-run is a decision input rather than a destination.
+- **The browser cannot write to world chat, and that is arranged rather than
+  checked.** The chat channel is opened with `private: true`, and the RLS policy
+  on `realtime.messages` grants SELECT and deliberately withholds INSERT, so
+  Realtime drops a forged frame before any subscriber sees it. The only writer
+  is `api/chat/say`, which stamps the wallet and the display name from a session
+  it verified — a name has to be *looked up*, never accepted from a payload.
+
+  Three ways to undo this by accident. Dropping `private: true` from the
+  `supabase.channel(...)` call silently returns the room to a public channel
+  anyone can write to. Renaming `chatTopic()` away from the policy's
+  `evergreen:%:worldchat` pattern un-authorises the channel, and the symptom is
+  a room that is simply silent. And a denied browser `send()` **still returns
+  `'ok'`** — the socket accepted the frame, the server discarded it — so a
+  client genuinely cannot tell it was refused, which is why the send path is
+  HTTP and not a socket.
+
+  The presence and position channels are still PUBLIC and must stay that way:
+  they are hot, they carry nothing worth forging, and RLS on `realtime.messages`
+  does not apply to them at all. Verified after the policy landed — 8/8
+  positions delivered.
 
 ## Working here
 
