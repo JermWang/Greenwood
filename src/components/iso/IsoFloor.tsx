@@ -34,6 +34,9 @@ const CrateCinematic = dynamic(() => import('@/components/three/CrateCinematic')
 
 export type { MachineKind, IsoMachine };
 
+/** Which HUD panels this browser left open. See togglePanel in IsoFloor. */
+const PANEL_KEY = 'evergreen:floor-panels';
+
 /** Catalog glyph per silhouette, so the book reads the same way the board does. */
 const KIND_ICON: Record<MachineKind, typeof ChartLineUp> = {
   equity: ChartLineUp,
@@ -98,10 +101,23 @@ export default function IsoFloor({
   const refresh = useOperation((s) => s.refresh);
   const [bonus, setBonus] = useState<FloorBonus | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'error'>('idle');
-  // Both HUD panels fold to their title bar. On a board you are constantly
-  // clicking, panels that cannot get out of the way are just obstacles.
-  const [bookOpen, setBookOpen] = useState(true);
-  const [yieldOpen, setYieldOpen] = useState(true);
+  /*
+   * Both HUD panels fold to their title bar, and they START folded.
+   *
+   * Open by default, the two of them covered about 12% of the board — a quarter
+   * of its width at the near edge, permanently, on the one screen whose entire
+   * job is to show you a room. Neither is something you read continuously: the
+   * desk book is for rearranging a floor you have already built, and the layout
+   * score is a number you check after moving something. Both are glances.
+   *
+   * Folded they are two title bars that still carry their headline figure
+   * (`n/m placed`, `+8%`), which is the part anyone actually watches. The rest
+   * is one click away and stays open once opened — see the persistence below,
+   * which is what keeps this from being a default that fights the player who
+   * disagrees with it.
+   */
+  const [bookOpen, setBookOpen] = useState(false);
+  const [yieldOpen, setYieldOpen] = useState(false);
   const [worn, setWorn] = useState<Record<string, { key: string; level: number }>>({});
 
   /**
@@ -222,12 +238,54 @@ export default function IsoFloor({
     setSelectedId(null);
   }, [selectedId]);
 
-  // On a phone the book is a full-width sheet over the board, so it starts
-  // folded — the board is the thing you came to look at. Set after mount rather
-  // than in the initial state so server and client render the same markup.
+  /*
+   * Whichever way the player left them.
+   *
+   * Read after mount rather than in the initial state, so server and client
+   * render the same markup — the same reason the phone fold was an effect. A
+   * player who wants the desk book open while they lay out a floor should not
+   * have to reopen it in every room they walk back into.
+   */
   useEffect(() => {
-    if (window.innerWidth <= 760) setBookOpen(false);
+    try {
+      const raw = window.localStorage.getItem(PANEL_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { book?: boolean; yield?: boolean };
+      if (typeof saved?.book === 'boolean') setBookOpen(saved.book);
+      if (typeof saved?.yield === 'boolean') setYieldOpen(saved.yield);
+    } catch {
+      // Blocked storage just means the folded default, which is the one we want
+      // for somebody arriving fresh anyway.
+    }
   }, []);
+  /**
+   * Written on the CLICK, not in an effect watching the state.
+   *
+   * The effect version needed a "skip the first pass" ref so it would not write
+   * the folded default over the value the read above was still on its way to
+   * fetching — and that ref does not survive React's development double-invoke.
+   * A ref persists across the simulated remount while state resets, so the
+   * second pass saw `hydrated` already true and wrote `false` a tick before the
+   * restored `true` landed. The symptom was a desk book that reopened correctly
+   * exactly once and was folded again on the reload after that.
+   *
+   * The click is the intent. Recording it where it happens removes the ordering
+   * question entirely rather than guarding against it.
+   */
+  const togglePanel = useCallback(
+    (which: 'book' | 'yield') => {
+      const next =
+        which === 'book'
+          ? { book: !bookOpen, yield: yieldOpen }
+          : { book: bookOpen, yield: !yieldOpen };
+      setBookOpen(next.book);
+      setYieldOpen(next.yield);
+      try {
+        window.localStorage.setItem(PANEL_KEY, JSON.stringify(next));
+      } catch { /* nothing to do about a browser that will not store it */ }
+    },
+    [bookOpen, yieldOpen]
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -706,15 +764,9 @@ export default function IsoFloor({
         />
       )}
 
-      <header className="eg-sandbox-top">
-        <div>
-          <b>MACHINE ROOM</b>
-          <span>{holdingId ? 'CLICK A TILE TO PLACE' : `${layout.length}/${machines.length} DESKS RUNNING`}</span>
-        </div>
-      </header>
 
       <aside className="eg-build-catalog is-open">
-        <button className="eg-build-title" onClick={() => setBookOpen((v) => !v)} aria-expanded={bookOpen}>
+        <button className="eg-build-title" onClick={() => togglePanel('book')} aria-expanded={bookOpen}>
           <span>DESK BOOK</span>
           <b>{layout.length}/{machines.length} placed {bookOpen ? <CaretUp size={10} weight="bold" /> : <CaretDown size={10} weight="bold" />}</b>
         </button>
@@ -800,7 +852,7 @@ export default function IsoFloor({
       </aside>
 
       <aside className="eg-yield-panel">
-        <button className="eg-yield-head" onClick={() => setYieldOpen((v) => !v)} aria-expanded={yieldOpen}>
+        <button className="eg-yield-head" onClick={() => togglePanel('yield')} aria-expanded={yieldOpen}>
           <span>LAYOUT YIELD</span>
           <b className={bonus && bonus.multiplier < 1 ? 'is-down' : 'is-up'}>
             {bonus ? `${bonus.multiplier >= 1 ? '+' : ''}${Math.round((bonus.multiplier - 1) * 100)}%` : '—'}
@@ -844,11 +896,26 @@ export default function IsoFloor({
         </footer>
       </aside>
 
+      {/*
+        ONE bottom rail, not two.
+
+        The room name and the controls hint used to be separate strips stacked
+        on top of each other at the bottom of the board — a full-width header
+        saying "MACHINE ROOM / 0/0 DESKS RUNNING" above a pill of key hints. The
+        name duplicated the route chip in the top bar, the desk count duplicated
+        the desk book's own header, and between them they claimed 65px of the
+        near edge of the room to say two things that were already on screen.
+
+        What is left is the part that is genuinely only here: what you are
+        holding, and which keys act on it.
+      */}
       <div className="eg-sandbox-controls">
-        {selectedMachine ? (
+        {holdingId ? (
+          <><b>Click a tile to place</b><kbd>ESC</kbd><span>Cancel</span></>
+        ) : selectedMachine ? (
           <><b>{selectedMachine.label}</b><kbd>R</kbd><span>Rotate</span><kbd>DEL</kbd><span>Store</span></>
         ) : (
-          <><span>Pick a desk, then click a tile</span><kbd>DRAG</kbd><span>Pan</span><kbd>SCROLL</kbd><span>Zoom</span></>
+          <><span>Drag to pan · scroll to zoom</span></>
         )}
       </div>
 

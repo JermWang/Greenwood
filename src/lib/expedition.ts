@@ -16,8 +16,9 @@ import { GameError } from './errors';
 import { spendScrip } from './scrip';
 import { recordQuestProgress } from './quests';
 import { progressionOf } from './progression';
-import { canEnter, regionById, arrivalCellFor, type EntryCheck, type Region } from './regions';
+import { canEnter, regionById, arrivalCellFor, type EntryCheck, type Region, type RegionId } from './regions';
 import { isWalkable } from './deep-forest-map';
+import { DEFAULT_SHARD, shardById } from './shards';
 import {
   CREATURES,
   PLAYER_REACH,
@@ -273,6 +274,45 @@ export function positionOf(wallet: string): { x: number; z: number } | null {
  * SQLite here is local and synchronous, and these are single-row upserts. The
  * cost is nothing; the correctness is the whole feature.
  */
+/**
+ * Which world this player is in, and which region of it.
+ *
+ * Read from their own row rather than passed down through every call, because a
+ * player is in exactly ONE world at a time and that fact belongs to them, not to
+ * each function that happens to need it. Threading it through twenty signatures
+ * would give twenty chances to pass the wrong one, and passing the wrong one
+ * here means seeing into another world.
+ *
+ * Defaults to the first shard and the Deep Forest, which is where everybody
+ * already was: expeditions existed in exactly one region and one pool before
+ * this, so an un-migrated row is not missing information, it is describing the
+ * only place it could have been.
+ */
+export function whereabouts(wallet: string): { shard: string; region: string } {
+  const row = getDb()
+    .prepare('SELECT shard_id, region_id FROM expedition_state WHERE wallet = ?')
+    .get(wallet) as { shard_id: string; region_id: string } | undefined;
+  return { shard: row?.shard_id ?? DEFAULT_SHARD, region: row?.region_id ?? 'deep-forest' };
+}
+
+/**
+ * Bind this player to a world and a region for the session.
+ *
+ * Called by the entry gate, which is the one place a player commits to being
+ * somewhere. The shard comes from their cookie and is validated against the
+ * table on the way in, so an edited cookie lands on a real world rather than
+ * inventing a private one.
+ */
+export function beginExpedition(wallet: string, regionId: string, shardId: string): void {
+  const shard = shardById(shardId)?.id ?? DEFAULT_SHARD;
+  getDb()
+    .prepare(
+      `INSERT INTO expedition_state (wallet, health, shard_id, region_id) VALUES (?,?,?,?)
+         ON CONFLICT(wallet) DO UPDATE SET shard_id = excluded.shard_id, region_id = excluded.region_id`
+    )
+    .run(wallet, MAX_HEALTH, shard, regionId);
+}
+
 function readState(wallet: string): { x: number | null; z: number | null; health: number } {
   const row = getDb()
     .prepare('SELECT x, z, health FROM expedition_state WHERE wallet = ?')
@@ -392,10 +432,10 @@ function rowToPile(row: {
   };
 }
 
-function pilesIn(regionId: string): LootPile[] {
+function pilesIn(shardId: string, regionId: string): LootPile[] {
   const rows = getDb()
-    .prepare('SELECT * FROM loot_piles WHERE region_id = ?')
-    .all(regionId) as unknown as Parameters<typeof rowToPile>[0][];
+    .prepare('SELECT * FROM loot_piles WHERE shard_id = ? AND region_id = ?')
+    .all(shardId, regionId) as unknown as Parameters<typeof rowToPile>[0][];
   return rows.map(rowToPile);
 }
 
@@ -408,7 +448,10 @@ function pilesIn(regionId: string): LootPile[] {
  */
 export function visiblePiles(wallet: string, regionId: string, now = Date.now()): VisiblePile[] {
   const viewer = positionOf(wallet) ?? { x: Infinity, z: Infinity };
-  return pilesVisibleTo(pilesIn(regionId), viewer, now);
+  // Scoped to the viewer's own world. A pack dropped on Ashby is not on the
+  // ground in Cardell, and showing it would be worse than useless -- it would
+  // send somebody across a map to a pile that cannot be picked up.
+  return pilesVisibleTo(pilesIn(whereabouts(wallet).shard, regionId), viewer, now);
 }
 
 /** One pile, stripped to what this wallet may know about it. */
@@ -514,10 +557,10 @@ export function lootPile(
  * A missing row means untouched and at full health, so a wiped table simply
  * repopulates the forest rather than leaving a map of corpses nobody can clear.
  */
-function readCreature(id: string): { health: number | null; swung_at: number } {
+function readCreature(shard: string, id: string): { health: number | null; swung_at: number } {
   const row = getDb()
-    .prepare('SELECT health, swung_at FROM creature_state WHERE spawn_id = ?')
-    .get(id) as { health: number; swung_at: number } | undefined;
+    .prepare('SELECT health, swung_at FROM creature_state WHERE shard_id = ? AND spawn_id = ?')
+    .get(shard, id) as { health: number; swung_at: number } | undefined;
   return row ?? { health: null, swung_at: 0 };
 }
 
@@ -534,8 +577,8 @@ export interface CreatureView {
   dead: boolean;
 }
 
-export function creatureHealth(spawn: Spawn): number {
-  return readCreature(spawn.id).health ?? CREATURES[spawn.kind].maxHealth;
+export function creatureHealth(shard: string, spawn: Spawn): number {
+  return readCreature(shard, spawn.id).health ?? CREATURES[spawn.kind].maxHealth;
 }
 
 /**
@@ -547,10 +590,12 @@ export function creatureHealth(spawn: Spawn): number {
  * somebody who logged off a week ago.
  */
 export function creaturesFor(wallet: string): CreatureView[] {
+  // A wolf killed on one world is alive on the others. See lib/shards.
+  const shard = whereabouts(wallet).shard;
   const at = positionOf(wallet);
   return spawns().map((spawn) => {
     const def = CREATURES[spawn.kind];
-    const health = creatureHealth(spawn);
+    const health = creatureHealth(shard, spawn);
     const dist = at ? tilesApart(at.x, at.z, spawn.x, spawn.z) : Infinity;
     return {
       id: spawn.id,
@@ -590,27 +635,28 @@ export function attackCreature(wallet: string, spawnId: string, now = Date.now()
     throw new GameError('Too far away.', 403);
   }
 
+  const shard = whereabouts(wallet).shard;
   const def = CREATURES[spawn.kind];
-  const before = creatureHealth(spawn);
+  const before = creatureHealth(shard, spawn);
   if (before <= 0) throw new GameError('It is already dead.', 400);
 
   const after = Math.max(0, before - UNARMED_DAMAGE);
   getDb()
     .prepare(
-      `INSERT INTO creature_state (spawn_id, health) VALUES (?,?)
-         ON CONFLICT(spawn_id) DO UPDATE SET health = excluded.health`
+      `INSERT INTO creature_state (shard_id, spawn_id, health) VALUES (?,?,?)
+         ON CONFLICT(shard_id, spawn_id) DO UPDATE SET health = excluded.health`
     )
-    .run(spawn.id, after);
+    .run(shard, spawn.id, after);
 
   // It hits back, unless it is dead or has swung too recently.
   let took = 0;
   let died: DeathResult | null = null;
   if (after > 0) {
-    const last = readCreature(spawn.id).swung_at;
+    const last = readCreature(shard, spawn.id).swung_at;
     if (now - last >= def.cadence * 1000) {
       getDb()
-        .prepare('UPDATE creature_state SET swung_at = ? WHERE spawn_id = ?')
-        .run(now, spawn.id);
+        .prepare('UPDATE creature_state SET swung_at = ? WHERE shard_id = ? AND spawn_id = ?')
+        .run(now, shard, spawn.id);
       took = def.damage;
       // Through damage() rather than setHealth, so a bite that takes the last
       // point kills exactly the way a player's swing does — one definition of
@@ -658,11 +704,22 @@ export interface PlayerView {
  * proximity rule.
  */
 export function playersIn(exclude: string): PlayerView[] {
+  // Everyone in the SAME world and the SAME region. Without the shard this was
+  // one global pool, so the four worlds shared one Deep Forest; without the
+  // region it would put Treeline players on the Deep Forest's map, since both
+  // regions write to this one table.
+  const where = whereabouts(exclude);
   const rows = getDb()
     .prepare(
-      'SELECT wallet, x, z, health FROM expedition_state WHERE wallet != ? AND x IS NOT NULL'
+      `SELECT wallet, x, z, health FROM expedition_state
+        WHERE wallet != ? AND x IS NOT NULL AND shard_id = ? AND region_id = ?`
     )
-    .all(exclude) as unknown as Array<{ wallet: string; x: number; z: number; health: number }>;
+    .all(exclude, where.shard, where.region) as unknown as Array<{
+      wallet: string;
+      x: number;
+      z: number;
+      health: number;
+    }>;
   return rows
     .filter((r) => r.health > 0)
     .map((r) => ({ wallet: r.wallet, x: r.x, z: r.z, health: r.health, maxHealth: MAX_HEALTH }));
@@ -692,7 +749,8 @@ export function killPlayer(wallet: string, now = Date.now()): DeathResult {
   const db = getDb();
   const at = positionOf(wallet) ?? arrivalCellFor(regionById('deep-forest')!);
   const carried = packContentsOf(wallet);
-  const respawn = arrivalCellFor(regionById('deep-forest')!);
+  const where = whereabouts(wallet);
+  const respawn = arrivalCellFor(regionById(where.region as RegionId) ?? regionById('deep-forest')!);
   // Tile plus timestamp: two players dying on one tile minutes apart must not
   // collide on a primary key, and a pile id has to survive a despawn sweep.
   const pileId = carried.length > 0 ? `${at.x}:${at.z}:${now}` : null;
@@ -701,9 +759,9 @@ export function killPlayer(wallet: string, now = Date.now()): DeathResult {
   try {
     if (pileId) {
       db.prepare(
-        `INSERT INTO loot_piles (id, region_id, x, z, dropped_by, dropped_at, contents)
-         VALUES (?,?,?,?,?,?,?)`
-      ).run(pileId, 'deep-forest', at.x, at.z, wallet, now, JSON.stringify(carried));
+        `INSERT INTO loot_piles (id, shard_id, region_id, x, z, dropped_by, dropped_at, contents)
+         VALUES (?,?,?,?,?,?,?,?)`
+      ).run(pileId, where.shard, where.region, at.x, at.z, wallet, now, JSON.stringify(carried));
       db.prepare('DELETE FROM pack_contents WHERE wallet = ?').run(wallet);
     }
     db.prepare(

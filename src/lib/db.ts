@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import { DEFAULT_SHARD } from './shards';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -407,6 +408,7 @@ function migrate(db: DatabaseSync) {
 
   widenListingKinds(db);
   renameAllocationKinds(db);
+  shardScopeContestedState(db);
   renameTokenReceipts(db);
   dropColumn(db, 'users', 'xstock_xomx');
   dropColumn(db, 'users', 'xstock_cvxx');
@@ -518,6 +520,53 @@ function widenListingKinds(db: DatabaseSync) {
  * Guarded on the constraint text so it runs exactly once, matching
  * widenListingKinds above.
  */
+/**
+ * Put the contested state on a shard.
+ *
+ * lib/shards names exactly three things as per-world: who is standing where,
+ * whose pack is on the ground, and which creatures are dead. All three lived in
+ * one global pool, so the four worlds shared one Deep Forest -- you could pick
+ * Ashby, walk outside, and be killed by somebody who chose Cardell.
+ *
+ * expedition_state and loot_piles take a column with a default, so every row
+ * that already exists lands on the first shard, which is where every existing
+ * player already was.
+ *
+ * creature_state is REBUILT rather than migrated, because its primary key has to
+ * become (shard_id, spawn_id) and SQLite cannot alter one. Dropping it is the
+ * cheap option here and only here: the table holds a creature's current health
+ * and swing cooldown, which is the most transient state in the game. The visible
+ * cost is that any creature part-way through a fight comes back whole, once, on
+ * the deploy that runs this. Doing the same to a loot pile would be somebody's
+ * pack.
+ */
+function shardScopeContestedState(db: DatabaseSync) {
+  // DEFAULT_SHARD interpolated because a SQLite column default must be a
+  // literal. It is a hand-written id from a short table, not user input.
+  ensureColumn(db, 'expedition_state', 'shard_id', `TEXT NOT NULL DEFAULT '${DEFAULT_SHARD}'`);
+  // The region a player is actually in. It defaulted to the Deep Forest for
+  // years by being the only region expeditions existed in -- see lib/expedition.
+  ensureColumn(db, 'expedition_state', 'region_id', "TEXT NOT NULL DEFAULT 'deep-forest'");
+  ensureColumn(db, 'loot_piles', 'shard_id', `TEXT NOT NULL DEFAULT '${DEFAULT_SHARD}'`);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_loot_piles_shard ON loot_piles(shard_id, region_id, dropped_at);');
+
+  const creatures = db
+    .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'creature_state'`)
+    .get() as { sql: string } | undefined;
+  if (creatures?.sql && !creatures.sql.includes('shard_id')) {
+    db.exec('DROP TABLE creature_state;');
+    db.exec(`
+      CREATE TABLE creature_state (
+        shard_id TEXT NOT NULL,
+        spawn_id TEXT NOT NULL,
+        health INTEGER NOT NULL,
+        swung_at INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (shard_id, spawn_id)
+      );
+    `);
+  }
+}
+
 function renameTokenReceipts(db: DatabaseSync) {
   // The ticker the game prices in went from BNTY to GREEN, and the currency a
   // cosmetic was bought with is written into the receipt as that literal.

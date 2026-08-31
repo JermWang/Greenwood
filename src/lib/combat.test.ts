@@ -17,6 +17,9 @@ const { getDb } = await import('./db');
 const { getOrCreateUser } = await import('./game');
 const { addXp, cumulativeXpFor } = await import('./progression');
 const { regionById } = await import('./regions');
+// Creature state is per-world now, so a row planted by hand has to say which
+// one. The test wallet is on the default shard -- it never picks another.
+const { DEFAULT_SHARD } = await import('./shards');
 
 const W = '0x7a3b9c1d4e5f60718293a4b5c6d7e8f901234567';
 const target = spawns()[0];
@@ -124,8 +127,8 @@ describe('trading blows', () => {
     placeAt(target.x, target.z + 1);
     const def = CREATURES[target.kind];
     getDb()
-      .prepare('INSERT INTO creature_state (spawn_id, health) VALUES (?,?)')
-      .run(target.id, UNARMED_DAMAGE);
+      .prepare('INSERT INTO creature_state (shard_id, spawn_id, health) VALUES (?,?,?)')
+      .run(DEFAULT_SHARD, target.id, UNARMED_DAMAGE);
     const r = attackCreature(W, target.id);
     expect(r.creature.dead).toBe(true);
     expect(r.took).toBe(0);
@@ -146,7 +149,9 @@ describe('what the player sees', () => {
 
   test('never reports a dead creature as hunting', () => {
     placeAt(target.x + 1, target.z);
-    getDb().prepare('INSERT INTO creature_state (spawn_id, health) VALUES (?,0)').run(target.id);
+    getDb()
+      .prepare('INSERT INTO creature_state (shard_id, spawn_id, health) VALUES (?,?,0)')
+      .run(DEFAULT_SHARD, target.id);
     const view = creaturesFor(W).find((c) => c.id === target.id)!;
     expect(view.dead).toBe(true);
     expect(view.hunting).toBe(false);

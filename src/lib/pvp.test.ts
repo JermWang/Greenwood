@@ -27,6 +27,8 @@ const { UNARMED_DAMAGE } = await import('./creatures');
 const { arrivalCellFor, regionById } = await import('./regions');
 const { getDb } = await import('./db');
 const { getOrCreateUser } = await import('./game');
+const { beginExpedition } = await import('./expedition');
+const { DEFAULT_SHARD } = await import('./shards');
 const { addXp, cumulativeXpFor } = await import('./progression');
 
 const A = '0x7a3b9c1d4e5f60718293a4b5c6d7e8f901234567';
@@ -90,6 +92,42 @@ describe('presence', () => {
     placeAt(B, 6, 5);
     expect(playersIn(A).map((p) => p.wallet)).toEqual([B]);
     expect(playersIn(B).map((p) => p.wallet)).toEqual([A]);
+  });
+
+  test('a player on another world is not in this one', () => {
+    // The whole point of shards, and the thing that was broken until the
+    // contested state got a shard column: four worlds shared one Deep Forest,
+    // so choosing Ashby put you in with everybody who chose Cardell.
+    placeAt(A, 5, 5);
+    placeAt(B, 6, 5);
+    expect(playersIn(A).map((x) => x.wallet)).toEqual([B]);
+
+    beginExpedition(B, 'deep-forest', 'evergreen-eu');
+    expect(playersIn(A)).toHaveLength(0);
+    expect(playersIn(B)).toHaveLength(0);
+
+    // ...and back, because a shard is a choice rather than a migration.
+    beginExpedition(B, 'deep-forest', DEFAULT_SHARD);
+    expect(playersIn(A).map((x) => x.wallet)).toEqual([B]);
+  });
+
+  test('a player in another region of the same world is not in this one', () => {
+    // Both regions write to one table, so without the region filter a player
+    // standing in the Treeline would appear on the Deep Forest's map.
+    placeAt(A, 5, 5);
+    placeAt(B, 6, 5);
+    beginExpedition(B, 'treeline', DEFAULT_SHARD);
+    expect(playersIn(A)).toHaveLength(0);
+  });
+
+  test('an unknown shard falls back rather than opening a private world', () => {
+    // The shard arrives from a client-writable cookie. An id that is not in the
+    // table must land somewhere real -- otherwise editing devtools is a way to
+    // be alone in a region whose whole point is that you are not.
+    placeAt(A, 5, 5);
+    placeAt(B, 6, 5);
+    beginExpedition(B, 'deep-forest', 'evergreen-nowhere');
+    expect(playersIn(A).map((x) => x.wallet)).toEqual([B]);
   });
 
   test('omits players who have never entered', () => {

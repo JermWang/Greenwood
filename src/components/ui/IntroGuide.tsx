@@ -11,20 +11,32 @@
 //
 // So it lives in the top bar, which is the only chrome present on every route.
 // That is not a nav rail (CLAUDE.md): it never takes you anywhere you could not
-// already walk to, it names one action at a time, and it deletes itself the
-// moment the introduction is finished.
+// already walk to, and it deletes itself the moment the introduction is
+// finished.
 //
 // The corners were all spoken for and that decided the position more than taste
 // did — top-left is the Trading Floor's quest dock, bottom-left is the Machine
-// Room's build prompt, bottom-right is the world map, bottom-centre is the
-// doorway prompt. The top bar is the one surface no region has claimed.
+// Room's desk book, bottom-right is the world map, bottom-centre is the doorway
+// prompt. The top bar is the one surface no region has claimed.
 //
-// Deliberately NOT a checklist. Ten tasks on a fresh account is a wall, and a
-// wall gets dismissed; one task with a stated reason is a next move. The `why`
-// is the whole point and is never behind a tooltip — "open a Treasury Desk" is
-// an instruction, "Treasury Desks reinvest at 0.75% instead of 2%" is a reason,
-// and a player who read the reason has learned the game rather than followed a
-// prompt. If this ever needs to be more compact, the label goes before the why.
+// IT IS A CHECKLIST NOW, and it did not used to be. The argument against one was
+// that ten tasks on a fresh account is a wall, and a wall gets dismissed — so
+// only the current step was ever shown. That solved the wall and created a
+// worse problem: with nothing but the current step visible, a player had no way
+// to see that the introduction was a finite thing they were making progress
+// through. "3 / 10" in the corner is a claim; ten rows with three ticked is
+// evidence, and evidence is what makes somebody finish a list.
+//
+// The wall is avoided a different way instead: the rows are one line each and
+// carry only their label, and ONLY THE CURRENT ROW OPENS — its `why`, its
+// reward and its call to action are inline, on the row, where the tick will
+// eventually go. So the panel still says one thing at a time; it just no longer
+// pretends the other nine do not exist.
+//
+// The `why` stays non-negotiable and is never behind a tooltip — "open a
+// Treasury Desk" is an instruction, "Treasury Desks reinvest at 0.75% instead
+// of 2%" is a reason, and a player who read the reason has learned the game
+// rather than followed a prompt.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -32,6 +44,16 @@ import { usePathname } from 'next/navigation';
 import { ArrowRight, CaretDown, Check, Compass, Hourglass, Sparkle } from '@phosphor-icons/react';
 import { api, type IntroResponse } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
+
+/** One row's state, resolved once so the tick and the styling cannot disagree. */
+type Mark = 'claimed' | 'collect' | 'current' | 'parked' | 'todo';
+
+function markOf(step: IntroResponse['intro']['steps'][number]): Mark {
+  if (step.claimed) return 'claimed';
+  if (step.done) return 'collect';
+  if (step.current) return 'current';
+  return step.parked ? 'parked' : 'todo';
+}
 
 export default function IntroGuide() {
   const wallet = useOperation((s) => s.wallet);
@@ -106,6 +128,19 @@ export default function IntroGuide() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  /**
+   * Keep the open row in view.
+   *
+   * The list scrolls once the chain is a few steps in, and the current step is
+   * the only row worth looking at — landing on a scroll position that hides it
+   * would make the panel look like a list of things already done.
+   */
+  const currentRow = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    currentRow.current?.scrollIntoView({ block: 'nearest' });
+  }, [open, beat]);
+
   const collect = useCallback(async () => {
     if (!wallet || !step) return;
     setBusy(true);
@@ -124,7 +159,7 @@ export default function IntroGuide() {
   // furniture, and this one sits in the chrome of every screen in the game.
   if (!step || !data) return null;
 
-  const { completed, total } = data.intro;
+  const { completed, total, steps } = data.intro;
   const { totalLevel, maxTotalLevel } = data.progression;
 
   return (
@@ -134,55 +169,87 @@ export default function IntroGuide() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <Compass size={14} weight="duotone" />
+        <Compass size={13} weight="duotone" />
         <span className="eg-guide-label">{step.done ? 'Step complete' : step.label}</span>
         <b>{completed}/{total}</b>
-        <CaretDown size={11} weight="bold" className={open ? 'is-open' : undefined} />
+        <CaretDown size={10} weight="bold" className={open ? 'is-open' : undefined} />
       </button>
 
       {open && (
         <section className="intro-panel eg-guide-panel" aria-label="Getting started">
           <header>
-            <div>
-              <span className="intro-eyebrow">Getting started</span>
-              <b>{step.label}</b>
-            </div>
-            <span className="intro-count">{completed} / {total}</span>
+            <span className="intro-eyebrow">Getting started</span>
+            {/* The bar is the same claim as "3 / 10" made visually, and it is
+                the part that reads at a glance from across the screen. */}
+            <span className="intro-progress" aria-hidden>
+              <i style={{ width: `${(completed / total) * 100}%` }} />
+            </span>
+            <span className="intro-count">{completed}/{total}</span>
           </header>
 
-          <p className="intro-why">{step.why}</p>
+          <ol className="intro-list">
+            {steps.map((row) => {
+              const mark = markOf(row);
+              const isCurrent = mark === 'current' || mark === 'collect';
+              return (
+                <li
+                  key={row.key}
+                  ref={isCurrent ? currentRow : undefined}
+                  className={`intro-row is-${mark}`}
+                >
+                  <span className="intro-tick" aria-hidden>
+                    {mark === 'claimed' && <Check size={10} weight="bold" />}
+                    {mark === 'parked' && <Hourglass size={9} weight="duotone" />}
+                  </span>
+                  <span className="intro-row-label">{row.label}</span>
 
-          {/* Said in the panel, not only in the chip, because a step the player
-              cannot act on has to explain itself where they are already looking.
-              See canAct in lib/intro — this is only ever reached when every
-              remaining step is parked, since otherwise the chain moves on. */}
-          {step.parked && step.waiting && <p className="intro-why is-waiting">{step.waiting}</p>}
+                  {/* Only the row you are on opens. Everything below is the
+                      old panel body, moved onto the row it was always about. */}
+                  {isCurrent && (
+                    <div className="intro-row-body">
+                      <p className="intro-why">{row.why}</p>
 
-          <footer>
-            <span className="intro-reward">
-              <Sparkle size={13} weight="duotone" /> {step.xp} XP · {step.scrip.toLocaleString()} Scrip
-            </span>
-            {step.done ? (
-              <button className="intro-collect" onClick={() => void collect()} disabled={busy}>
-                {busy ? '…' : <><Check size={14} weight="bold" /> Collect</>}
-              </button>
-            ) : step.parked ? (
-              /* No button on purpose. Sending somebody to a room to do a thing
-                 they cannot do yet is worse than saying nothing — they arrive,
-                 find no way to act, and conclude the tutorial is broken. The
-                 waiting line above has already said what to do instead. */
-              <span className="intro-waiting">
-                <Hourglass size={13} weight="duotone" /> Waiting
-              </span>
-            ) : (
-              /* Links to the room the step happens in. A tutorial that tells you
-                 what to do without saying where is a riddle. Collapses on the
-                 way, so arriving somewhere does not arrive under a panel. */
-              <Link className="intro-go" href={step.href} onClick={() => setOpen(false)}>
-                Go there <ArrowRight size={13} weight="bold" />
-              </Link>
-            )}
-          </footer>
+                      {/* A step the player cannot act on has to explain itself
+                          where they are already looking. See canAct in
+                          lib/intro — only reached when every remaining step is
+                          parked, since otherwise the chain moves on. */}
+                      {row.parked && row.waiting && (
+                        <p className="intro-why is-waiting">{row.waiting}</p>
+                      )}
+
+                      <div className="intro-row-foot">
+                        <span className="intro-reward">
+                          <Sparkle size={12} weight="duotone" /> {row.xp} XP ·{' '}
+                          {row.scrip.toLocaleString()} Scrip
+                        </span>
+                        {row.done ? (
+                          <button className="intro-collect" onClick={() => void collect()} disabled={busy}>
+                            {busy ? '…' : <><Check size={12} weight="bold" /> Collect</>}
+                          </button>
+                        ) : row.parked ? (
+                          /* No button on purpose. Sending somebody to a room to
+                             do a thing they cannot do yet is worse than saying
+                             nothing — they arrive, find no way to act, and
+                             conclude the tutorial is broken. */
+                          <span className="intro-waiting">
+                            <Hourglass size={12} weight="duotone" /> Waiting
+                          </span>
+                        ) : (
+                          /* Links to the room the step happens in. A tutorial
+                             that tells you what to do without saying where is a
+                             riddle. Collapses on the way, so arriving somewhere
+                             does not arrive under a panel. */
+                          <Link className="intro-go" href={row.href} onClick={() => setOpen(false)}>
+                            Go there <ArrowRight size={12} weight="bold" />
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
 
           <div className="intro-level">
             Level {totalLevel} <i>/ {maxTotalLevel}</i>

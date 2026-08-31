@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireAuthenticatedWallet } from '@/lib/api-util';
 import { GameError } from '@/lib/game';
-import { assertMayEnter } from '@/lib/expedition';
+import { assertMayEnter, beginExpedition } from '@/lib/expedition';
+import { shardFromCookie } from '@/lib/shards';
 import { arrivalCellFor } from '@/lib/regions';
 import { recordQuestProgress } from '@/lib/quests';
 
@@ -43,6 +44,18 @@ export async function POST(request: Request) {
     // Throws 403 with the player-facing reason, or 404 for a region that does
     // not exist. Either way nothing below runs.
     const region = assertMayEnter(wallet, body.region);
+
+    /*
+     * Bind the player to a world, here, because this is the one place entering
+     * is an EVENT rather than a URL changing.
+     *
+     * The shard comes off the cookie and is validated against the table inside
+     * beginExpedition, so an edited cookie lands somewhere real rather than
+     * opening a private world. It is written on every entry rather than once,
+     * which is what makes changing worlds in the start flow take effect: you
+     * pick, you walk back in, and the next door you open puts you there.
+     */
+    beginExpedition(wallet, region.id, shardFromCookie(request.headers.get('cookie')));
 
     // After the gate, never before it: a refusal must not count as a visit.
     // recordQuestProgress swallows its own failures by design, so a broken

@@ -14,6 +14,7 @@ import SoundToggle from '@/components/ui/SoundToggle';
 import TransactionSafetyModal from '@/components/ui/TransactionSafetyModal';
 import { useEvmWallet } from '@/lib/evm';
 import { CHAIN, TOKEN_LIVE } from '@/lib/config';
+import { REGIONS } from '@/lib/regions';
 
 /*
  * `/app` is deliberately absent: it is a door, not a room (see app/app/page), so
@@ -22,8 +23,16 @@ import { CHAIN, TOKEN_LIVE } from '@/lib/config';
  * exists is worse than no chip at all.
  */
 const ROUTE_TITLES: Record<string, string> = {
-  '/app/trading-floor': 'Trading Floor',
-  '/app/floor': 'Machine Room',
+  /*
+   * Every PLACE, taken from the region table rather than written out again.
+   *
+   * The Grounds, the Treeline, HQ and the Deep Forest were missing, so the one
+   * chip that says where you are said "Evergreen" in exactly the regions where
+   * knowing which one you are standing in matters most. Sourced from REGIONS so
+   * a region cannot be added without its name reaching the bar — the copy that
+   * was duplicated here for the rooms is the copy that went stale for the rest.
+   */
+  ...Object.fromEntries(REGIONS.map((region) => [region.href, region.name])),
   '/app/inventory': 'Instruments',
   '/app/ops': 'Analytics',
   '/app/market': 'Exchange',
