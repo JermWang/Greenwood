@@ -281,6 +281,13 @@ export interface PlayerView {
   z: number;
   health: number;
   maxHealth: number;
+  /**
+   * What they are holding, by weapon id, resolved SERVER-SIDE.
+   *
+   * Not carried over presence like an outfit: what somebody appears to be armed
+   * with is information other players act on out there. See lib/expedition.
+   */
+  weapon: string | null;
 }
 
 export interface StrikeResult {
@@ -317,6 +324,14 @@ export interface ExpeditionState {
   position: { x: number; z: number };
   /** False until the first step of the session anchors the player. */
   anchored: boolean;
+  /**
+   * The weapon in this player's hand, by id, or null for fists.
+   *
+   * Resolved by the same code that decides damage, rather than derived from
+   * `pack` below — the axe is not in the pack, and a second implementation of
+   * "which of these is best" is a second answer waiting to disagree.
+   */
+  weapon: string | null;
   pack: PackState;
   piles: VisiblePile[];
   creatures: CreatureView[];

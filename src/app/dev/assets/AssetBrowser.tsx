@@ -48,7 +48,7 @@ function Turntable({ spin, children }: { spin: boolean; children: React.ReactNod
  * target, a prop takes a position. Pretending they share a signature would mean
  * a wrapper per asset, which is more code to keep in step, not less.
  */
-function Preview({ entry, variant, walking, self, refined }: { entry: AssetEntry; variant: AssetVariant; walking: boolean; self: boolean; refined: boolean }) {
+function Preview({ entry, variant, walking, self, refined, armed }: { entry: AssetEntry; variant: AssetVariant; walking: boolean; self: boolean; refined: boolean; armed: boolean }) {
   const props = variant.props;
 
   if (entry.category === 'weapon') {
@@ -87,6 +87,7 @@ function Preview({ entry, variant, walking, self, refined }: { entry: AssetEntry
       <Character
         look={look}
         target={walking ? { x: 0, z: 2 } : { x: 0, z: 0 }}
+        weapon={armed ? 'felling' : null}
         spawn={{ x: 0, z: -2 }}
         name={undefined}
       />
@@ -125,6 +126,9 @@ export default function AssetBrowser() {
   const [walking, setWalking] = useState(false);
   const [self, setSelf] = useState(false);
   const [refined, setRefined] = useState(false);
+  /** Puts an axe in the avatar's hand, so the grip can be checked on the model
+      that actually carries it rather than on a floating weapon. */
+  const [armed, setArmed] = useState(false);
   const [grid, setGrid] = useState(true);
 
   const entry = useMemo(() => ASSETS.find((a) => a.id === selectedId)!, [selectedId]);
@@ -187,7 +191,7 @@ export default function AssetBrowser() {
             <Lighting bounds={PREVIEW_BOUNDS} />
             <Suspense fallback={null}>
               <Turntable spin={spin}>
-                <Preview entry={entry} variant={variant} walking={walking} self={self} refined={refined} />
+                <Preview entry={entry} variant={variant} walking={walking} self={self} refined={refined} armed={armed} />
               </Turntable>
             </Suspense>
             {grid && (
@@ -213,6 +217,12 @@ export default function AssetBrowser() {
               </label>
               <label>
                 <input type="checkbox" checked={refined} onChange={(e) => setRefined(e.target.checked)} /> Max rank
+              </label>
+              {/* The grip is only checkable on the thing that holds it. A
+                  weapon that looks right on a turntable can still sit through
+                  the wrist once an arm is swinging it. */}
+              <label>
+                <input type="checkbox" checked={armed} onChange={(e) => setArmed(e.target.checked)} /> Armed
               </label>
             </>
           )}

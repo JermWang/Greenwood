@@ -384,8 +384,21 @@ export default function DeepForestPage() {
         {/* Two of them, at the south gate. See the note in lib/npcs — a crowd
             out here would undo the one region whose point is that it is empty. */}
         <NpcField region="deep-forest" playerAt={here} onTalk={setTalking} />
-        <CreatureField creatures={creatures} playerAt={here} onAttack={onAttack} />
-        <PlayerField players={players} onStrike={onStrike} />
+        {/* Both fields take the weapon as well as the position: what is in your
+            hand decides how far a swing carries, so it also decides which of
+            these light up when you point at them. */}
+        <CreatureField
+          creatures={creatures}
+          playerAt={here}
+          weapon={state?.weapon ?? null}
+          onAttack={onAttack}
+        />
+        <PlayerField
+          players={players}
+          playerAt={here}
+          weapon={state?.weapon ?? null}
+          onStrike={onStrike}
+        />
         {wallet && state && (
           <DeepForestPlayer
             wallet={wallet}
@@ -396,6 +409,7 @@ export default function DeepForestPage() {
             onCreatures={onCreatures}
             onPlayers={onPlayers}
             action={chopping ? 'chop' : 'idle'}
+            weapon={state.weapon}
             positionRef={livePos}
           />
         )}

@@ -99,6 +99,8 @@ export interface DeepForestPlayerProps {
    * knows that. Cheaper than teaching this component what a tree is.
    */
   action?: CharacterAction;
+  /** What this player is holding, from the expedition state. Null is fists. */
+  weapon?: string | null;
   /**
    * Handed to Character, which writes the live interpolated position into it
    * every frame so the camera can travel with the walk. Especially wanted out
@@ -108,7 +110,7 @@ export interface DeepForestPlayerProps {
   positionRef?: React.MutableRefObject<{ x: number; z: number } | null>;
 }
 
-export default function DeepForestPlayer({ wallet, start, dragRef, onPiles, onCreatures, onPlayers, onMove, action = 'idle', positionRef }: DeepForestPlayerProps) {
+export default function DeepForestPlayer({ wallet, start, dragRef, onPiles, onCreatures, onPlayers, onMove, action = 'idle', weapon = null, positionRef }: DeepForestPlayerProps) {
   const [position, setPosition] = useState<Cell>(start);
   const [route, setRoute] = useState<Cell[]>([]);
   const walking = useRef(false);
@@ -252,6 +254,7 @@ export default function DeepForestPlayer({ wallet, start, dragRef, onPiles, onCr
         spawn={start}
         spawnFacing={spawnFacing}
         action={action}
+        weapon={weapon}
         positionRef={positionRef}
       />
 

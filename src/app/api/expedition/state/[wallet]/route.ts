@@ -10,6 +10,7 @@ import {
   packStateOf,
   positionOf,
   visiblePiles,
+  weaponInHand,
 } from '@/lib/expedition';
 import { arrivalCellFor, regionById } from '@/lib/regions';
 
@@ -42,6 +43,14 @@ export async function GET(request: Request, context: { params: Promise<{ wallet:
       anchored: positionOf(wallet) !== null,
       health: healthOf(wallet),
       maxHealth: MAX_HEALTH,
+      /*
+       * What is in this player's hand, resolved the same way a swing resolves
+       * it. The client could nearly derive it from `pack` below — but not
+       * quite, because the axe is on the users row and not in the pack, and a
+       * second implementation of "which of these is best" is a second answer
+       * waiting to disagree with the one that decides damage.
+       */
+      weapon: weaponInHand(wallet)?.id ?? null,
       pack: packStateOf(wallet),
       piles: visiblePiles(wallet, 'deep-forest'),
       creatures: creaturesFor(wallet),

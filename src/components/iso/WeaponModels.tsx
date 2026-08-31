@@ -174,6 +174,24 @@ function Crossbow({ tier, span, stock }: { tier: number; span: number; stock: nu
 }
 
 /**
+ * How long each model is along its own axis — haft for an axe, stock for a
+ * crossbow.
+ *
+ * Pulled out of the model list because a second thing needs it: gripOffset
+ * below. The alternative was writing 0.86 in two files and finding out they had
+ * drifted the next time a haft was retuned.
+ */
+const LENGTH = {
+  hatchet: 0.58,
+  felling: 0.86,
+  splitting: 0.92,
+  'ironbark-axe': 1.0,
+  'hunting-crossbow': 0.78,
+  'heavy-crossbow': 0.9,
+  'ironbark-crossbow': 0.98,
+} as const;
+
+/**
  * The seven, keyed by the ids lib/weapons uses.
  *
  * Dimensions climb gently rather than dramatically — a Felling Axe is a longer
@@ -181,14 +199,39 @@ function Crossbow({ tier, span, stock }: { tier: number; span: number; stock: nu
  * lives in the material.
  */
 const MODELS: Record<string, () => React.JSX.Element> = {
-  hatchet: () => <Axe tier={1} haft={0.58} head={0.19} bit={0.1} />,
-  felling: () => <Axe tier={2} haft={0.86} head={0.23} bit={0.12} />,
-  splitting: () => <Axe tier={3} haft={0.92} head={0.29} bit={0.16} />,
-  'ironbark-axe': () => <Axe tier={4} haft={1.0} head={0.33} bit={0.18} />,
-  'hunting-crossbow': () => <Crossbow tier={2} span={0.72} stock={0.78} />,
-  'heavy-crossbow': () => <Crossbow tier={3} span={0.86} stock={0.9} />,
-  'ironbark-crossbow': () => <Crossbow tier={4} span={1.0} stock={0.98} />,
+  hatchet: () => <Axe tier={1} haft={LENGTH.hatchet} head={0.19} bit={0.1} />,
+  felling: () => <Axe tier={2} haft={LENGTH.felling} head={0.23} bit={0.12} />,
+  splitting: () => <Axe tier={3} haft={LENGTH.splitting} head={0.29} bit={0.16} />,
+  'ironbark-axe': () => <Axe tier={4} haft={LENGTH['ironbark-axe']} head={0.33} bit={0.18} />,
+  'hunting-crossbow': () => (
+    <Crossbow tier={2} span={0.72} stock={LENGTH['hunting-crossbow']} />
+  ),
+  'heavy-crossbow': () => <Crossbow tier={3} span={0.86} stock={LENGTH['heavy-crossbow']} />,
+  'ironbark-crossbow': () => (
+    <Crossbow tier={4} span={1.0} stock={LENGTH['ironbark-crossbow']} />
+  ),
 };
+
+/**
+ * How far to slide a model along its own axis so a fist lands near the butt.
+ *
+ * A FRACTION OF THE LENGTH, NOT A CONSTANT, and that is the whole point of this
+ * function existing. The models are centred on themselves so a marketplace
+ * thumbnail frames them, so a hand at the origin grips the middle. Correcting
+ * that with one fixed number was tuned against the Ironbark Axe and quietly
+ * wrong for the rest of the ladder: the same shift shows up as a quarter of a
+ * hatchet and a third of an ironbark haft, so climbing the ladder would change
+ * how the weapon is CARRIED as well as what it hits for. Scaling by length
+ * means every axe is held at the same point on its haft.
+ *
+ * Crossbows sit deeper because a crossbow is gripped at the very back of the
+ * stock, behind the trigger, where an axe is not held at the very end of a haft.
+ */
+export function gripOffset(id: string): number {
+  const length = LENGTH[id as keyof typeof LENGTH];
+  if (!length) return 0;
+  return -length * (id.endsWith('crossbow') ? 0.31 : 0.23);
+}
 
 export default function WeaponModel({ id }: { id: string }) {
   const Model = MODELS[id];

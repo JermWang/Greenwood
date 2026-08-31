@@ -12,6 +12,8 @@
 // the two to disagree.
 
 import { memo, useMemo, useRef } from 'react';
+import WeaponModel, { gripOffset } from './WeaponModels';
+import { weaponById } from '@/lib/weapons';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -314,6 +316,7 @@ function Limb({
   trim,
   glow,
   end,
+  hold,
   groupRef,
 }: {
   x: number;
@@ -325,6 +328,15 @@ function Limb({
   glow?: number;
   /** Hands sit square on the wrist; boots are deeper and step forward. */
   end?: { kind: 'hand' | 'boot'; color: string };
+  /**
+   * Something carried in this hand.
+   *
+   * Placed inside the pivoting group for exactly the reason the hand block is:
+   * it then swings with the arm for free. A weapon animated separately would
+   * have to re-derive the chop cycle and would drift out of phase with the arm
+   * holding it on the first frame anybody looked closely.
+   */
+  hold?: string | null;
   groupRef: React.RefObject<THREE.Group | null>;
 }) {
   const boot = end?.kind === 'boot';
@@ -352,6 +364,73 @@ function Limb({
           {surface(end.color)}
         </mesh>
       )}
+      {hold && (
+        <group position={[0, -length + 0.02, 0]}>
+          <Held weapon={hold} />
+        </group>
+      )}
+    </group>
+  );
+}
+
+/**
+ * A weapon in the fist, oriented for the hand rather than for the turntable.
+ *
+ * The models are authored lying along Z with the working end at -Z, which is
+ * how they read in a marketplace thumbnail. A hand needs them scaled, because
+ * the models are sized against a 44px tile while this character is about 1.25
+ * units tall — two hands' worth of axe at full size reaches the floor.
+ *
+ * AN AXE RIDES HEAD-UP. The first version tipped it head-down and forward on
+ * the reasoning that the head should lead, which is true of a swing and wrong
+ * of a carry: from the fixed iso camera a downward head sinks into the leg and
+ * the tile shadow, so the one silhouette that says "this person is armed"
+ * disappeared into the ground. Pointing it up puts the head above the shoulder
+ * line, against sky rather than against floor, and it is readable from across
+ * the clearing.
+ *
+ * A crossbow does NOT get the same treatment — a prod aimed at the sky reads as
+ * a mistake — so it stays levelled and only the axes stand up.
+ */
+function Held({ weapon }: { weapon: string }) {
+  const ranged = weaponById(weapon)?.weaponClass === 'crossbow';
+  return (
+    <group
+      // TURNED END FOR END, AND THIS IS THE IMPORTANT HALF.
+      //
+      // Two conventions disagree here and nothing forces them to match: the
+      // weapon models are authored with the working end at -Z, because that is
+      // what frames a marketplace thumbnail, while Character faces +Z — see the
+      // atan2(dx, dz) in the walk. Dropping a model into the hand unrotated
+      // therefore aims every axe head and every crossbow prod out of the
+      // player's BACK, which is what it did. The Y flip is the fix, and it
+      // belongs here rather than in the models: the thumbnails are framed
+      // against the authored orientation and would all need re-aiming.
+      //
+      // The X tilt is negative BECAUSE of the flip. Euler order XYZ applies Y
+      // first, so after the turn the head sits at +Z and a positive tilt would
+      // drive it back into the floor — the exact thing this started as.
+      //
+      // Nothing on Z. A side cant was tried both ways and both were wrong: it
+      // swings the weapon out of the plane the arm is in, so it stops looking
+      // held and starts looking stuck on. Tilt is the only freedom this needs.
+      rotation={ranged ? [0.2, Math.PI, 0] : [-0.86, Math.PI, 0]}
+      // Sits IN the hand — no outboard nudge. Pushing it clear of the chest was
+      // tried to keep a dark head off a dark coat, and it bought that legibility
+      // by parking the axe beside the fist instead of in it, which is a worse
+      // lie than a low-contrast silhouette. The head clears the shoulder on the
+      // tilt alone.
+      position={[0, -0.02, 0.05]}
+      scale={0.85}
+    >
+      {/* Gripped near the BUTT, not at the middle, by an amount the model
+          decides — see gripOffset. It is per-weapon rather than a constant here
+          so that a hatchet and an ironbark axe are held at the same point on
+          their own hafts; a single number tuned on the longest one grips the
+          shortest one at its collar. */}
+      <group position={[0, 0, gripOffset(weapon)]}>
+        <WeaponModel id={weapon} />
+      </group>
     </group>
   );
 }
@@ -399,6 +478,15 @@ export interface CharacterProps {
    * person is what confirms the PERSON is the thing about to be clicked.
    */
   highlight?: boolean;
+  /**
+   * What this character is holding, by weapon id.
+   *
+   * Server-resolved for both the local player and every peer -- see
+   * weaponInHand and playersIn. Not broadcast through presence like an outfit
+   * is, because in a region where people kill each other the weapon somebody
+   * appears to be carrying should be the one they can actually swing.
+   */
+  weapon?: string | null;
 }
 
 export default function Character({
@@ -412,6 +500,7 @@ export default function Character({
   spawnFacing = 0,
   positionRef,
   highlight = false,
+  weapon = null,
 }: CharacterProps) {
   const root = useRef<THREE.Group>(null);
   /** The footprint square, held square to the grid while the body turns. */
@@ -632,6 +721,7 @@ export default function Character({
           trim={look.piping ? look.trim : undefined}
           glow={look.piping ? armGlow : 0}
           end={handEnd}
+          hold={weapon}
           groupRef={armR}
         />
       </group>

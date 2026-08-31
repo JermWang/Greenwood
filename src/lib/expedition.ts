@@ -761,6 +761,17 @@ export interface PlayerView {
   z: number;
   health: number;
   maxHealth: number;
+  /**
+   * What they are holding, by weapon id, so the scene can draw it.
+   *
+   * Resolved on the SERVER for every peer rather than broadcast over presence
+   * the way an outfit is. An outfit is decoration and a lie about one costs
+   * nothing; in a region where people kill each other, the weapon somebody
+   * appears to be carrying is information you make decisions on — whether to
+   * approach, whether to run — so it has to be the weapon they can actually
+   * swing.
+   */
+  weapon: string | null;
 }
 
 /**
@@ -796,7 +807,14 @@ export function playersIn(exclude: string): PlayerView[] {
     }>;
   return rows
     .filter((r) => r.health > 0)
-    .map((r) => ({ wallet: r.wallet, x: r.x, z: r.z, health: r.health, maxHealth: MAX_HEALTH }));
+    .map((r) => ({
+      wallet: r.wallet,
+      x: r.x,
+      z: r.z,
+      health: r.health,
+      maxHealth: MAX_HEALTH,
+      weapon: weaponInHand(r.wallet)?.id ?? null,
+    }));
 }
 
 export interface DeathResult {
