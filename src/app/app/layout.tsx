@@ -89,11 +89,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Radio size={13} className="text-lime-300" /> {CHAIN.name} · {CHAIN.id}
             </span>
           </div>
-          {/* The introduction, wherever the player is. A fund now starts
-              outside on the Grounds rather than on this dashboard, so the guide
-              has to travel — see the header of IntroGuide. It renders nothing
-              at all once the introduction is finished. */}
-          <IntroGuide />
           <div className="ml-auto flex items-center gap-2">
             {/* Beside Connect, not on a landing page of its own. The thing
                 standing between a curious person and this game IS the connect
@@ -106,6 +101,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <div className="eg-stage-content">{children}</div>
+        {/*
+          The introduction, wherever the player is, and NOT IN THIS BAR.
+
+          It lived in the top bar so that it would travel — a fund starts
+          outside on the Grounds, so a guide pinned to one screen is a guide
+          the player has to already know how to find. That reasoning still
+          holds and this still travels; what was wrong was the CONTROL. The
+          only way to collapse the panel was a chip sitting in the global nav
+          bar, among the wallet, the balance and the sound toggle, which reads
+          as another piece of chrome rather than as the handle on the panel
+          hanging under it. It anchors itself now — see .eg-guide.
+        */}
+        <IntroGuide />
         {/* The one menu. Everything else is reached by walking to it. */}
         <MarketHud wallet={wallet} />
       </div>

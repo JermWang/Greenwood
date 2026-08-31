@@ -2346,17 +2346,28 @@ body {
   padding: clamp(16px, 4vw, 48px);
 }
 /*
- * The figure, sized by the shorter axis.
+ * The figure takes WHATEVER IS LEFT, rather than a slice of the viewport.
  *
- * A square keeps the turntable centred at every viewport: the avatar rotates
- * through its own full width, so a wide box would let it swing off a fixed
- * frame and a tall one would crop the head at the top of the arc.
+ * It was `min(74vw, 46vh, 440px)`, and every time something else joined the
+ * column — the guide opening over the top, then the carrying strip below —
+ * that fraction had to be guessed down again, and the guess was wrong the
+ * moment the next thing appeared. Twice the head ended up behind the guide.
+ *
+ * Flexing removes the arithmetic: the button and the strip are `flex: none`,
+ * so they take what they need and this takes the remainder. `aspect-ratio`
+ * turns that height into a width, which keeps the box SQUARE — the avatar
+ * rotates through its own full width, so a wide box lets it swing out of frame
+ * and a tall one crops the head at the top of the arc.
  */
 .eg-doorway-figure {
-  width: min(74vw, 46vh, 440px);
+  flex: 1 1 auto;
+  min-height: 0;
   aspect-ratio: 1;
+  max-width: min(74vw, 440px);
   touch-action: none;
 }
+.eg-doorway-play,
+.eg-doorway-carry { flex: none; }
 .eg-doorway-figure canvas { display: block; }
 
 .eg-doorway-play {
@@ -2673,10 +2684,178 @@ body {
  * guard this would leave a permanent gap at the top for a panel that is not
  * there.
  */
-.eg-os:has(.eg-guide-panel) .eg-doorway {
-  justify-content: flex-end;
-  padding-bottom: clamp(20px, 7vh, 76px);
+/*
+ * Room for the panel, and only where it is actually in the way.
+ *
+ * The guide is anchored top-RIGHT now rather than hanging centred off the top
+ * bar, so on anything wide enough it sits beside the figure and nothing needs
+ * to move. Below that it is full-width under the bar and does cover the top of
+ * the column, so the column gets shorter — the figure flexes, so reserving
+ * space costs it height rather than pushing it off the bottom.
+ */
+@media (max-width: 860px) {
+  .eg-os:has(.eg-guide-panel) .eg-doorway {
+    padding-top: clamp(150px, 26vh, 240px);
+  }
 }
-.eg-os:has(.eg-guide-panel) .eg-doorway-figure {
-  width: min(68vw, 38vh, 380px);
+
+/* ---------------------------------------------------------------------------
+   The doorway's world.
+
+   The region the PLAY button goes to, moving, behind the figure. See
+   RegionCinematic for why it is the live scene rather than a video.
+   -------------------------------------------------------------------------- */
+.eg-doorway { position: relative; isolation: isolate; overflow: hidden; }
+.eg-doorway-world,
+.eg-doorway-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.eg-doorway-world canvas { display: block; width: 100%; height: 100%; }
+/*
+ * Darker at the edges and under the button than through the middle.
+ *
+ * A flat wash would have cost the same contrast everywhere and taken the world
+ * with it. The figure sits centre, the button sits low, and those are the two
+ * places that have to stay readable — so the scrim is heaviest at the bottom,
+ * present at the vignette, and nearly absent across the upper middle where the
+ * region is doing the work.
+ */
+.eg-doorway-scrim {
+  background:
+    /* A pool of shadow the figure stands in. The first pass put the CLEAR part
+       of the vignette dead centre, which is exactly where the avatar is — so
+       the one element that had to separate from the world was the one given the
+       busiest backdrop. This darkens the middle instead and lets the region
+       breathe at the edges, which is also the half of the frame nothing is
+       written over. */
+    radial-gradient(58% 46% at 50% 56%, rgba(9, 10, 8, 0.82) 0%, rgba(9, 10, 8, 0.55) 45%, transparent 100%),
+    /* Top and bottom, for the command bar and the button. */
+    linear-gradient(to bottom, rgba(9, 10, 8, 0.78) 0%, rgba(9, 10, 8, 0.28) 22%, rgba(9, 10, 8, 0.34) 58%, rgba(9, 10, 8, 0.88) 100%),
+    /* And a flat knock-down over all of it, because a live region is far busier
+       than a still and the subject here is the person, not the place. */
+    rgba(9, 10, 8, 0.34);
+}
+
+/* ---------------------------------------------------------------------------
+   What you are carrying.
+
+   One line under the button: the tiles, then the figures. Deliberately not a
+   locker — see the note on the component.
+   -------------------------------------------------------------------------- */
+.eg-doorway-carry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 18px;
+  max-width: min(92vw, 460px);
+  padding: 9px 14px;
+  border: 1px solid rgba(212, 210, 207, 0.12);
+  border-radius: 999px;
+  background: rgba(12, 14, 10, 0.62);
+  backdrop-filter: blur(10px);
+}
+.eg-carry-tiles { display: flex; gap: 4px; }
+.eg-carry-tiles span { display: block; line-height: 0; }
+.eg-carry-figures { display: flex; align-items: baseline; gap: 16px; }
+.eg-carry-figures > div { display: flex; align-items: baseline; gap: 6px; }
+.eg-carry-figures dt {
+  font: 700 8px var(--font-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.42);
+}
+.eg-carry-figures dd {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font: 700 13px var(--font-mono), monospace;
+  color: #fff;
+}
+.eg-carry-figures dd small {
+  font: 600 8px var(--font-mono), monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(226, 235, 239, 0.38);
+}
+
+@media (max-width: 560px) {
+  /* The tiles are the first thing to go: they are the decorative half, and the
+     counts are the half that answers a question. */
+  .eg-carry-tiles { display: none; }
+  .eg-carry-figures { gap: 12px; }
+}
+
+/* ===========================================================================
+   The introduction, anchored to itself.
+
+   It used to be a chip in the top bar with the panel hanging off it, and the
+   chip was the only way to collapse it. That put the handle for a panel in the
+   middle of the global nav — beside the wallet, the balance and the sound
+   toggle — which is the one strip on screen that reads as "app chrome" rather
+   than as "the thing below me". It was not discoverable, and being told so is
+   how this got rewritten.
+
+   Now it owns a corner. Open, it is a panel with a collapse control in its own
+   header; collapsed, it is a pill IN THE SAME PLACE. The control never leaves
+   the thing it controls.
+
+   Top-right, below the bar: bottom-left is the Machine Room's desk book,
+   bottom-right is the world map and the layout score, bottom-centre is every
+   contextual prompt in the game, and top-left is the Trading Floor's quest dock.
+   The upper right is the one corner nothing has claimed.
+   =========================================================================== */
+.eg-guide {
+  position: fixed;
+  z-index: 46;
+  top: calc(var(--eg-topbar-h) + 10px);
+  right: clamp(10px, 1.6vw, 20px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  /* The wrapper is a hanger, not a surface: only the pill and the panel inside
+     it should take a click, or this would eat the top-right of every scene. */
+  pointer-events: none;
+}
+.eg-guide > * { pointer-events: auto; }
+
+/* Static now that the wrapper does the positioning — it was absolutely placed
+   against the chip it used to hang from. */
+.eg-guide-panel {
+  position: static;
+  top: auto;
+  left: auto;
+  translate: none;
+  width: min(320px, calc(100vw - 20px));
+}
+
+/* The collapse control, on the panel's own header. */
+.intro-collapse {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  place-items: center;
+  margin-left: 2px;
+  border: 1px solid rgba(212, 210, 207, 0.16);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(226, 235, 239, 0.55);
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+.intro-collapse:hover {
+  border-color: rgba(204, 255, 0, 0.5);
+  color: var(--robin-neon, #ccff00);
+}
+
+@media (max-width: 640px) {
+  /* Full width under the bar, where a 320px panel pinned right would otherwise
+     hang half off a 375px screen. */
+  .eg-guide { left: 10px; right: 10px; align-items: stretch; }
+  .eg-guide-panel { width: auto; }
+  .eg-guide-chip { justify-content: flex-start; }
 }

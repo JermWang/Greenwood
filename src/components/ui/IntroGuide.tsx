@@ -9,15 +9,24 @@
 // already know how to find. The very first instruction it gives — open a desk —
 // is carried out two rooms away.
 //
-// So it lives in the top bar, which is the only chrome present on every route.
-// That is not a nav rail (CLAUDE.md): it never takes you anywhere you could not
-// already walk to, and it deletes itself the moment the introduction is
-// finished.
+// So it floats over every route, anchored to the upper right. That is not a nav
+// rail (CLAUDE.md): it never takes you anywhere you could not already walk to,
+// and it deletes itself the moment the introduction is finished.
 //
-// The corners were all spoken for and that decided the position more than taste
-// did — top-left is the Trading Floor's quest dock, bottom-left is the Machine
-// Room's desk book, bottom-right is the world map, bottom-centre is the doorway
-// prompt. The top bar is the one surface no region has claimed.
+// IT USED TO LIVE IN THE TOP BAR, and the reason it does not any more is worth
+// keeping. The panel hung off a chip in that bar, and the chip was the only way
+// to collapse it — so the handle for a panel sat in the middle of the global
+// nav, between the wallet, the balance and the sound toggle. That strip reads
+// as "app chrome", not as "the thing hanging under me", and a player looking
+// for a way to shut a panel does not look three hundred pixels above it in a
+// row of unrelated controls. The control belongs to the panel; it is in the
+// panel's own header now, and when the panel is collapsed the pill that brings
+// it back sits in exactly the same corner.
+//
+// Upper right because everything else is taken: top-left is the Trading Floor's
+// quest dock, bottom-left is the Machine Room's desk book, bottom-right is the
+// world map and the layout score, and bottom-centre is every contextual prompt
+// in the game.
 //
 // IT IS A CHECKLIST NOW, and it did not used to be. The argument against one was
 // that ten tasks on a fresh account is a wall, and a wall gets dismissed — so
@@ -41,7 +50,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowRight, CaretDown, Check, Compass, Hourglass, Sparkle } from '@phosphor-icons/react';
+import { ArrowRight, CaretDown, CaretUp, Check, Compass, Hourglass, Sparkle } from '@phosphor-icons/react';
 import { api, type IntroResponse } from '@/lib/api-client';
 import { useOperation } from '@/lib/useOperation';
 
@@ -164,16 +173,27 @@ export default function IntroGuide() {
 
   return (
     <div className="eg-guide">
-      <button
-        className={`eg-guide-chip${step.done ? ' is-ready' : ''}`}
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
-        <Compass size={13} weight="duotone" />
-        <span className="eg-guide-label">{step.done ? 'Step complete' : step.label}</span>
-        <b>{completed}/{total}</b>
-        <CaretDown size={10} weight="bold" className={open ? 'is-open' : undefined} />
-      </button>
+      {/*
+        Collapsed, the guide is this pill — IN THE SAME PLACE the panel was,
+        not in the top bar.
+
+        The control used to be a chip among the wallet, the balance and the
+        sound toggle, which is the one place on screen that means "app chrome"
+        rather than "the thing under me". Nobody should have to discover that a
+        nav-bar button is the handle for a panel three hundred pixels below it.
+      */}
+      {!open && (
+        <button
+          className={`eg-guide-chip${step.done ? ' is-ready' : ''}`}
+          onClick={() => setOpen(true)}
+          aria-expanded={false}
+        >
+          <Compass size={13} weight="duotone" />
+          <span className="eg-guide-label">{step.done ? 'Step complete' : step.label}</span>
+          <b>{completed}/{total}</b>
+          <CaretDown size={10} weight="bold" />
+        </button>
+      )}
 
       {open && (
         <section className="intro-panel eg-guide-panel" aria-label="Getting started">
@@ -185,6 +205,15 @@ export default function IntroGuide() {
               <i style={{ width: `${(completed / total) * 100}%` }} />
             </span>
             <span className="intro-count">{completed}/{total}</span>
+            {/* On the panel, where a person looks for it. Escape still works. */}
+            <button
+              className="intro-collapse"
+              onClick={() => setOpen(false)}
+              aria-label="Collapse the introduction"
+              title="Collapse"
+            >
+              <CaretUp size={11} weight="bold" />
+            </button>
           </header>
 
           <ol className="intro-list">
