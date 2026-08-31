@@ -9,6 +9,7 @@
 // real everywhere it matters.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { playSfx } from '@/lib/sfx';
 import Link from 'next/link';
 import { X } from '@phosphor-icons/react';
 import { Canvas } from '@react-three/fiber';
@@ -196,12 +197,30 @@ export default function DeepForestPage() {
    * worth, and whether it hits back — and returns the whole creature list, so a
    * kill disappears immediately rather than on the next poll.
    */
+  /**
+   * The health the last response reported.
+   *
+   * A ref rather than the state, because onAttack is memoised on [wallet] and
+   * would otherwise compare against whatever health was current when the
+   * callback was built — which after the first bite is permanently stale, and
+   * would either play the hurt cue forever or never again.
+   */
+  const healthRef = useRef(100);
+
   const onAttack = useCallback(
     (id: string) => {
       if (!wallet) return;
+      // The swing is heard immediately; whether it CONNECTED is the server's
+      // answer, and the two are separate sounds for a reason — a hit you gave
+      // and a hit you took have to be told apart without looking, which is the
+      // whole job of the strike/hurt pair.
+      playSfx('strike');
       void api
         .attack(wallet, id)
         .then((r) => {
+          // Health only ever falls out here, so a drop is a bite landing.
+          if (r.health < healthRef.current) playSfx('hurt');
+          healthRef.current = r.health;
           setCreatures(r.creatures);
           setHealth(r.health);
           // A bite can kill. The server has already spilled the pack and moved
@@ -230,14 +249,20 @@ export default function DeepForestPage() {
       if (!wallet || chopping) return;
       setChopping({ x: tree.x, z: tree.z });
       setWoodNote(null);
+      // On the swing, not on the answer. The request is already raced against
+      // CHOP_SWING_MS so the axe lands on time; a thud that waited for the
+      // network would arrive after the animation that earned it.
+      playSfx('chop');
       try {
         const [result] = await Promise.all([
           api.chopTree(wallet, 'deep-forest', tree.x, tree.z),
           new Promise((r) => setTimeout(r, 870)),
         ]);
+        playSfx('timber');
         setStumps(result.stumps);
         setWoodNote(`+${result.logs} ${result.species} · +${result.xp} scouting`);
       } catch (e) {
+        playSfx('error');
         setWoodNote(e instanceof Error ? e.message : 'That did not come down.');
       } finally {
         setChopping(null);

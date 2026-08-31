@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { startMenuMusic, stopMenuMusic } from '@/lib/sfx';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -52,6 +53,20 @@ const MENU = [PRIMARY, ...SECONDARY] as ReadonlyArray<{
 }>;
 
 export default function Landing() {
+  /*
+   * The menu track, for as long as this screen is the one on top.
+   *
+   * Started on mount and released on unmount rather than left running
+   * globally: walking into a region should leave the music behind, and the
+   * cleanup is what makes that automatic instead of something every scene
+   * has to remember to do. It is a no-op while muted, and the browser will
+   * not let it begin before a gesture anyway, so it simply arrives the
+   * moment the player touches anything.
+   */
+  useEffect(() => {
+    startMenuMusic();
+    return () => stopMenuMusic();
+  }, []);
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);

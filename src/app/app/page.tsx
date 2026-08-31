@@ -36,7 +36,7 @@ import { lastRegion } from '@/lib/last-region';
 import type { RegionId } from '@/lib/regions';
 import ComponentTile from '@/components/ui/ComponentTile';
 import { COMPONENT_RARITIES, RARITIES, SLOT_LABELS, type Rarity } from '@/lib/rarity';
-import { playSfx } from '@/lib/sfx';
+import { playSfx, startMenuMusic, stopMenuMusic } from '@/lib/sfx';
 
 // ssr: false for the reason every scene in this codebase is: the portrait builds
 // three.js objects at render scope, and a throw inside a Canvas subtree during
@@ -165,6 +165,20 @@ function Carrying({
 }
 
 export default function DashboardPage() {
+  /*
+   * The menu track, for as long as this screen is the one on top.
+   *
+   * Started on mount and released on unmount rather than left running
+   * globally: walking into a region should leave the music behind, and the
+   * cleanup is what makes that automatic instead of something every scene
+   * has to remember to do. It is a no-op while muted, and the browser will
+   * not let it begin before a gesture anyway, so it simply arrives the
+   * moment the player touches anything.
+   */
+  useEffect(() => {
+    startMenuMusic();
+    return () => stopMenuMusic();
+  }, []);
   const router = useRouter();
   const wallet = useOperation((state) => state.wallet);
   const op = useOperation((state) => state.op);

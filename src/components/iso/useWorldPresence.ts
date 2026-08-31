@@ -171,6 +171,18 @@ export function useWorldPresence(
           outfitLevel: typeof entry.outfitLevel === 'number' ? entry.outfitLevel : 0,
         });
       }
+      /*
+       * Forget the position of anybody no longer on the roster.
+       *
+       * A presence leave already drops them from the roster, so they stop being
+       * drawn — but their last coordinates stayed in the buffer forever. Two
+       * costs: the map grows for the lifetime of the session on a busy shard,
+       * and somebody who leaves and comes back is drawn for one frame at the
+       * tile they left from before their first broadcast lands.
+       */
+      const present = new Set(next.map((peer) => peer.wallet));
+      for (const key of Object.keys(moves)) if (!present.has(key)) delete moves[key];
+
       setOthers(next);
     };
 

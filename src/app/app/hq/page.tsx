@@ -15,6 +15,7 @@
 // never drawn.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { playSfx } from '@/lib/sfx';
 import { useRouter } from 'next/navigation';
 import { Canvas } from '@react-three/fiber';
 import { IsoRig } from '@/components/iso/IsoScene';
@@ -115,6 +116,7 @@ export default function HqPage() {
       setEntering(true);
       setError(null);
       try {
+        playSfx('door');
         const result = await api.enterRegion(wallet, target.region);
         router.push(result.region.href);
       } catch (e) {
@@ -162,6 +164,7 @@ export default function HqPage() {
       setEntering(true);
       setError(null);
       try {
+        playSfx('door');
         const result = await api.enterRegion(wallet, floor.region);
         router.push(result.region.href);
       } catch (e) {

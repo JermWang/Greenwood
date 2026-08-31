@@ -20,6 +20,7 @@
 // prevent. The gate says what you need and hands it to you.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { playSfx } from '@/lib/sfx';
 import { useRouter } from 'next/navigation';
 import { Lock, Backpack } from '@phosphor-icons/react';
 import { Canvas } from '@react-three/fiber';
@@ -220,14 +221,20 @@ export default function GroundsPage() {
       if (!wallet || chopping) return;
       setChopping({ x: tree.x, z: tree.z });
       setWoodNote(null);
+      // On the swing, not on the answer. The request is already raced against
+      // CHOP_SWING_MS so the axe lands on time; a thud that waited for the
+      // network would arrive after the animation that earned it.
+      playSfx('chop');
       try {
         const [result] = await Promise.all([
           api.chopTree(wallet, 'grounds', tree.x, tree.z),
           new Promise((r) => setTimeout(r, CHOP_SWING_MS)),
         ]);
+        playSfx('timber');
         setStumps(result.stumps);
         setWoodNote(`+${result.logs} ${result.species} · +${result.xp} scouting`);
       } catch (e) {
+        playSfx('error');
         setWoodNote(e instanceof Error ? e.message : 'That did not come down.');
       } finally {
         setChopping(null);
@@ -337,6 +344,7 @@ export default function GroundsPage() {
       setEntering(true);
       setError(null);
       try {
+        playSfx('door');
         const result = await api.enterRegion(wallet, target.region);
         // Tell the destination which door to put us at, so we walk in through
         // the matching threshold rather than materialising in the middle of the

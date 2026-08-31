@@ -18,6 +18,7 @@
 // lib/treeline-map is already written to that contract.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { playSfx } from '@/lib/sfx';
 import { useRouter } from 'next/navigation';
 import { Canvas } from '@react-three/fiber';
 import { IsoRig } from '@/components/iso/IsoScene';
@@ -138,6 +139,7 @@ export default function TreelinePage() {
       setEntering(true);
       setError(null);
       try {
+        playSfx('door');
         const result = await api.enterRegion(wallet, target.region);
         router.push(result.region.href);
       } catch (e) {
@@ -169,14 +171,20 @@ export default function TreelinePage() {
       if (!wallet || chopping) return;
       setChopping({ x: tree.x, z: tree.z });
       setWoodNote(null);
+      // On the swing, not on the answer. The request is already raced against
+      // CHOP_SWING_MS so the axe lands on time; a thud that waited for the
+      // network would arrive after the animation that earned it.
+      playSfx('chop');
       try {
         const [result] = await Promise.all([
           api.chopTree(wallet, 'treeline', tree.x, tree.z),
           new Promise((r) => setTimeout(r, CHOP_SWING_MS)),
         ]);
+        playSfx('timber');
         setStumps(result.stumps);
         setWoodNote(`+${result.logs} ${result.species} · +${result.xp} scouting`);
       } catch (e) {
+        playSfx('error');
         setWoodNote(e instanceof Error ? e.message : 'That did not come down.');
       } finally {
         setChopping(null);
