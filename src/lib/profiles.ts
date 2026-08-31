@@ -1,4 +1,5 @@
 import type { UserOperation } from './api-client';
+import { DEMO_WALLET_LIKE } from './demo';
 import {
   getPublicServerSupabase,
   getServerSupabase,
@@ -308,6 +309,12 @@ export async function globalLeaderboard(metric: LeaderboardMetric) {
       const { data, error } = await getPublicServerSupabase()
         .from('profiles')
         .select('*')
+        // Demo accounts are excluded HERE rather than after the fetch, so they
+        // cannot eat the 100 rows a real fund would otherwise occupy. Same rule
+        // the SQLite leaderboard and every solvency aggregate apply — a demo
+        // holds money nobody paid for and nobody can withdraw, so ranking it
+        // against real funds measures nothing. See DEMO_WALLET_LIKE.
+        .not('wallet', 'ilike', DEMO_WALLET_LIKE)
         .order(column, { ascending: false })
         .order('last_seen_at', { ascending: false })
         .limit(100);

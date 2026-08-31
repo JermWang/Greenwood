@@ -1241,7 +1241,20 @@ export function protocolOverview() {
 
 export function leaderboard(metric = 'compound_level') {
   const db = getDb();
-  const users = db.prepare('SELECT wallet FROM users').all() as { wallet: string }[];
+  /*
+   * DEMO ACCOUNTS ARE NOT RANKED, for the same reason they are not counted as
+   * liability — see DEMO_WALLET_LIKE. This read took every row in `users`, so
+   * a leaderboard the game presents as competition between real funds included
+   * tourists spending 50,000 of money nobody paid for and nobody can withdraw.
+   *
+   * It matters most on the metric that looks most like proof of commitment:
+   * `total_burned` ranks players by what they destroyed, and a demo account
+   * burns fiction. Every other aggregate over this table already excludes them
+   * and this one was simply missed.
+   */
+  const users = db
+    .prepare('SELECT wallet FROM users WHERE wallet NOT LIKE ?')
+    .all(DEMO_WALLET_LIKE) as { wallet: string }[];
   const rows = users.map(({ wallet }) => {
     const { user, nodes, userRate } = settleUser(wallet);
     const claimed = db
